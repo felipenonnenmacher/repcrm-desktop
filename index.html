@@ -1125,14 +1125,33 @@ function setSub(eid, sub) {
 
 // ══ DASHBOARD ══
 function buildDash() {
-  const tv = DB.empresas.reduce((a,e)=>{ const ps=DB.pedidos.filter(p=>p.empId===e.id); const hjBD=new Date(); const cur=ps.filter(p=>{ if(!p.dtFat) return false; var d=new Date(p.dtFat); return d.getMonth()===hjBD.getMonth()&&d.getFullYear()===hjBD.getFullYear(); }).reduce((x,p)=>x+(p.valfat||0),0); return a+cur; },0);
-  const tm = DB.empresas.reduce((a,e)=>a+(e.meta||0),0);
-  const pct = tm?Math.round(tv/tm*100):0;
-  const nr = DB.clientes.filter(c=>{ const e=DB.empresas.find(x=>x.id===c.empId); return dias(c)>(e?.risco||60); }).length;
-  const pab = DB.pedidos.filter(p=>!p.dtFat).length;
+  const hjBD=new Date();
+  const mesIdx=hjBD.getMonth();
+  const anoRef=hjBD.getFullYear();
+
+  // Venda Mensal — soma de todas as empresas (data do pedido)
+  const totalVenda=DB.empresas.reduce((sum,e)=>sum+DB.pedidos.filter(p=>p.empId===e.id&&!p.cancelado).filter(p=>{
+    if(!p.dt) return false; var d=new Date(p.dt+'T12:00'); return d.getMonth()===mesIdx&&d.getFullYear()===anoRef;
+  }).reduce((a,p)=>a+(p.val||0),0),0);
+
+  // Faturamento Mensal — soma de todas as empresas (data de faturamento)
+  const totalFat=DB.empresas.reduce((sum,e)=>sum+DB.pedidos.filter(p=>p.empId===e.id&&!p.cancelado).filter(p=>{
+    if(!p.dtFat) return false; var d=new Date(p.dtFat+'T12:00'); return d.getMonth()===mesIdx&&d.getFullYear()===anoRef;
+  }).reduce((a,p)=>a+(p.valfat||p.val||0),0),0);
+
+  // Metas mensais somadas de todas as empresas
+  const totalMetaV=DB.empresas.reduce((sum,e)=>sum+getMetaMensal(e.id,anoRef,mesIdx,'meta'),0);
+  const totalMetaF=DB.empresas.reduce((sum,e)=>sum+getMetaMensal(e.id,anoRef,mesIdx,'metaFat'),0);
+  const pctV=totalMetaV?Math.round(totalVenda/totalMetaV*100):0;
+  const pctF=totalMetaF?Math.round(totalFat/totalMetaF*100):0;
+
+  const nr=DB.clientes.filter(c=>!c.encerrado&&dias(c)>(DB.empresas.find(x=>x.id===c.empId)?.risco||60)).length;
+  const pab=DB.pedidos.filter(p=>!p.cancelado&&!p.dtFat).length;
+  const corPct=p=>p>=100?'var(--grn)':p>=70?'var(--org)':'var(--red)';
+
   document.getElementById('mg-dash').innerHTML=`
-    <div class="mc bl"><div class="mcl">Faturamento mensal</div><div class="mcv">${fmt(tv)}</div><div class="mcs up">+9,4% vs mês anterior</div></div>
-    <div class="mc gr"><div class="mcl">Meta geral</div><div class="mcv">${pct}%</div><div class="mcs">${fmt(tv)} / ${fmt(tm)}</div></div>
+    <div class="mc bl"><div class="mcl">Venda Mensal</div><div class="mcv">${fmt(totalVenda)}</div><div class="mcs" style="color:${corPct(pctV)}">${pctV}% da meta</div></div>
+    <div class="mc gr"><div class="mcl">Faturamento Mensal</div><div class="mcv" style="color:var(--grn)">${fmt(totalFat)}</div><div class="mcs" style="color:${corPct(pctF)}">${pctF}% da meta</div></div>
     <div class="mc or"><div class="mcl">Pedidos em aberto</div><div class="mcv">${pab}</div><div class="mcs">aguardando faturar</div></div>
     <div class="mc re"><div class="mcl">Clientes em risco</div><div class="mcv">${nr}</div><div class="mcs ${nr>0?'dn':''}">acima do prazo</div></div>`;
   // tarefas
@@ -2809,12 +2828,21 @@ function setCfgTab(el,id){
   document.getElementById(id).style.display='block';
   el.closest('.tabs').querySelectorAll('.tab').forEach(t=>t.classList.remove('act'));
   el.classList.add('act');
+  // Carrega checkboxes ao abrir aba Backup
+  if(id==='cf-bkp'){
+    const cfg2=loadCfg();
+    const cbAv=document.getElementById('cfg-aviso-fechar'); if(cbAv) cbAv.checked=cfg2.avisoFechar||false;
+    const cbAu=document.getElementById('cfg-bkp-auto'); if(cbAu) cbAu.checked=cfg2.bkpAuto||false;
+  }
 }
 function setFonte(sz){document.body.style.fontSize=sz+'px';toast('Fonte alterada!');}
-function salvarCfg(){
-  const cfg={nome:document.getElementById('cfg-nome').value,iakey:document.getElementById('cfg-iakey').value};
-  saveCfg(cfg);toast('Configurações salvas!');
+function salvarCfgBkp(){
+  const cfg=loadCfg();
+  cfg.avisoFechar=document.getElementById('cfg-aviso-fechar')?.checked||false;
+  cfg.bkpAuto=document.getElementById('cfg-bkp-auto')?.checked||false;
+  saveCfg(cfg);
 }
+
 
 // ══ IA (análise local) ══
 function toggleIA(){iaOpen=!iaOpen;document.getElementById('ia-p').classList.toggle('open',iaOpen);}
@@ -4423,35 +4451,32 @@ function bulkExcluirPedidos(){
 
 // ══ BACKUP AUTOMÁTICO AO FECHAR ══
 window.addEventListener('beforeunload', function(e) {
-  // Fazer backup automático silencioso
-  try {
-    const dados = {
-      empresas: DB.empresas,
-      clientes: DB.clientes,
-      pedidos:  DB.pedidos,
-      tarefas:  DB.tarefas,
-      eventos:  DB.eventos,
-      exportado: new Date().toISOString(),
-      versao: '1.0'
-    };
-    const json = JSON.stringify(dados);
-    const blob = new Blob([json], {type:'application/json'});
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    const hoje = new Date();
-    const data = hoje.toISOString().split('T')[0];
-    const hora = hoje.toTimeString().slice(0,5).replace(':','-');
-    a.href     = url;
-    a.download = 'RepCRM_backup_' + data + '_' + hora + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch(err) {}
+  const cfg = loadCfg();
+  
+  // Backup automático só se o usuário ativou a opção
+  if(cfg.bkpAuto) {
+    try {
+      const dados = {
+        empresas: DB.empresas, clientes: DB.clientes, pedidos: DB.pedidos,
+        tarefas: DB.tarefas, eventos: DB.eventos,
+        exportado: new Date().toISOString(), versao: '1.0'
+      };
+      const blob = new Blob([JSON.stringify(dados)], {type:'application/json'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      const hoje = new Date();
+      a.href     = url;
+      a.download = 'RepCRM_backup_' + hoje.toISOString().split('T')[0] + '_' + hoje.toTimeString().slice(0,5).replace(':','-') + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch(err) {}
+  }
 
-  // Aviso ao usuário
-  const msg = 'Backup do RepCRM salvo automaticamente na pasta Downloads!\n\n' +
-    'Dica: sincronize sua pasta Downloads com o OneDrive para backup na nuvem.';
-  e.returnValue = msg;
-  return msg;
+  // Aviso ao fechar só se o usuário ativou
+  if(cfg.avisoFechar) {
+    e.returnValue = 'Deseja sair do RepCRM?';
+    return 'Deseja sair do RepCRM?';
+  }
 });
 
 // ══ START ══
