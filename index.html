@@ -12,7 +12,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;font-size:var(--fs-sm)}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--t1);font-size:var(--fs-sm)}
 :root{--fs-xs:7px;--fs-sm:9px;--fs-md:11px;--fs-lg:13px;--bg:#e9edf2;--s1:#f7f9fb;--s2:#eef1f5;--s3:#e3e8ee;--bdr:#d3dae3;--acc:#2563eb;--acc2:#7c3aed;--grn:#059669;--org:#d97706;--red:#dc2626;--cyn:#0891b2;--t1:#1e293b;--t2:#475569;--t3:#94a3b8}
 [data-theme="noturno"]{--bg:#0f1117;--s1:#1a1d27;--s2:#22263a;--s3:#2d3248;--bdr:#3a3f5c;--t1:#e2e8f0;--t2:#94a3b8;--t3:#64748b}
 .app{display:flex;flex-direction:column;height:100%;overflow:hidden}
@@ -68,6 +68,11 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 #mg-com .mcl{font-size:var(--fs-xs);margin-bottom:4px}
 #mg-com .mcv{font-size:var(--fs-md)}
 #mg-com .mcs{font-size:var(--fs-xs);margin-top:3px}
+#mg-emp{grid-template-columns:repeat(5,1fr)}
+#mg-emp .mc{padding:7px 9px}
+#mg-emp .mcl{font-size:8px!important;margin-bottom:3px}
+#mg-emp .mcv{font-size:var(--fs-md)!important;font-weight:700}
+#mg-emp .mcs{font-size:8px!important;margin-top:2px}
 .mcs.up{color:var(--grn)}.mcs.dn{color:var(--red)}
 .card{background:var(--s1);border:1px solid var(--bdr);border-radius:11px;padding:15px;margin-bottom:14px}
 .ct{font-size:var(--fs-sm);font-weight:600;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
@@ -362,7 +367,19 @@ if('serviceWorker' in navigator){
     <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-clock-exclamation" style="color:var(--red)"></i>Ciclo de compra vencendo</div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderCicloVencido()" title="Atualizar"><i class="ti ti-refresh"></i></button></div><div id="ciclo-vencido-list" style="max-height:220px;overflow-y:auto"></div></div>
   </div>
   <div class="card" style="margin-bottom:14px">
-    <div class="ct"><div class="ctl"><i class="ti ti-heart-handshake" style="color:var(--cyn)"></i>Pós-Vendas <span style="font-size:10px;color:var(--t3);font-weight:400">— pedidos faturados há 7–15 dias</span></div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderPosVendas()" title="Atualizar"><i class="ti ti-refresh"></i></button></div>
+    <div class="ct">
+      <div class="ctl"><i class="ti ti-heart-handshake" style="color:var(--cyn)"></i>Pós-Vendas</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;color:var(--t3)">Faturados há</span>
+        <input type="number" id="pv-de" value="7" min="1" max="60" style="width:42px;padding:2px 6px;font-size:11px;border:1px solid var(--bdr);border-radius:5px;background:var(--s2);color:var(--t1);text-align:center" onchange="renderPosVendas()">
+        <span style="font-size:10px;color:var(--t3)">a</span>
+        <input type="number" id="pv-ate" value="15" min="1" max="60" style="width:42px;padding:2px 6px;font-size:11px;border:1px solid var(--bdr);border-radius:5px;background:var(--s2);color:var(--t1);text-align:center" onchange="renderPosVendas()">
+        <span style="font-size:10px;color:var(--t3)">dias</span>
+        <button class="btn bs" style="padding:2px 8px;font-size:10px;color:var(--acc2);border-color:var(--acc2)" onclick="abrirModalMsgPosVendas()" title="Configurar mensagem WhatsApp"><i class="ti ti-message-circle"></i></button>
+        <button class="btn bp" style="padding:2px 8px;font-size:10px" onclick="dispararPosVendasIA()" title="IA: disparar mensagens automaticamente"><i class="ti ti-robot"></i> IA</button>
+        <button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderPosVendas()"><i class="ti ti-refresh"></i></button>
+      </div>
+    </div>
     <div id="pos-vendas-list" style="max-height:220px;overflow-y:auto"></div>
   </div>
   <div class="card" style="margin-bottom:14px">
@@ -949,6 +966,49 @@ if('serviceWorker' in navigator){
 </div></div>
 
 <!-- MODAL CONFIGURAÇÃO DE SITUAÇÃO -->
+<!-- MODAL ALERTA MANHÃ -->
+<div class="mbg" id="mAlertaManha"><div class="modal" style="max-width:500px">
+  <div class="mtt"><i class="ti ti-sun" style="color:var(--org)"></i> Bom dia! Resumo do dia <button class="xb" onclick="cm('mAlertaManha')"><i class="ti ti-x"></i></button></div>
+  <div id="alerta-manha-corpo"></div>
+  <div class="btn-row" style="margin-top:14px">
+    <button class="btn bs" onclick="cm('mAlertaManha')">Fechar</button>
+    <button class="btn bp" id="btn-alerta-pv" style="display:none" onclick="cm('mAlertaManha');setTimeout(function(){sp('edash');setTimeout(dispararPosVendasIA,500);},300)"><i class="ti ti-robot"></i> Gerar mensagens IA agora</button>
+  </div>
+</div></div>
+
+<div class="mbg" id="mMsgPosVendas"><div class="modal" style="max-width:500px">
+  <div class="mtt"><i class="ti ti-message-circle" style="color:#25d366"></i> Mensagem Pós-Vendas — WhatsApp <button class="xb" onclick="cm('mMsgPosVendas')"><i class="ti ti-x"></i></button></div>
+  <div style="font-size:12px;color:var(--t2);margin-bottom:12px">Configure a mensagem enviada no pós-vendas. Use as variáveis abaixo para personalizar.</div>
+  <div style="background:var(--s2);border-radius:8px;padding:10px;margin-bottom:12px;font-size:11px;color:var(--t3);line-height:1.8">
+    <b style="color:var(--t1)">Variáveis disponíveis:</b><br>
+    <code>{CONTATO}</code> — Nome do contato &nbsp;|&nbsp; <code>{CLIENTE}</code> — Razão social<br>
+    <code>{NF}</code> — Número da NF &nbsp;|&nbsp; <code>{VALOR}</code> — Valor faturado<br>
+    <code>{DTFAT}</code> — Data de faturamento &nbsp;|&nbsp; <code>{EMPRESA}</code> — Nome da representada
+  </div>
+  <div class="fg"><label class="fl">Mensagem</label>
+    <textarea class="fi" id="pv-msg-texto" style="height:120px;resize:vertical;font-size:12px" placeholder="Digite a mensagem..."></textarea>
+  </div>
+  <div style="background:var(--s2);border-radius:8px;padding:10px;margin-bottom:12px">
+    <div style="font-size:11px;color:var(--t3);margin-bottom:6px">Pré-visualização:</div>
+    <div id="pv-msg-preview" style="font-size:12px;color:var(--t1);white-space:pre-wrap;line-height:1.6"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn bs" onclick="cm('mMsgPosVendas')">Cancelar</button>
+    <button class="btn bp" onclick="salvarMsgPosVendas()"><i class="ti ti-check"></i> Salvar mensagem</button>
+  </div>
+</div></div>
+
+<!-- MODAL IA PÓS-VENDAS -->
+<div class="mbg" id="mIAPosVendas"><div class="modal" style="max-width:520px">
+  <div class="mtt"><i class="ti ti-robot" style="color:var(--acc2)"></i> IA — Pós-Vendas Automático <button class="xb" onclick="cm('mIAPosVendas')"><i class="ti ti-x"></i></button></div>
+  <div style="font-size:12px;color:var(--t2);margin-bottom:12px">A IA analisa os pedidos faturados e gera uma mensagem personalizada para cada cliente, pronta para envio no WhatsApp.</div>
+  <div id="ia-pv-lista" style="max-height:320px;overflow-y:auto"></div>
+  <div class="btn-row" style="margin-top:14px">
+    <button class="btn bs" onclick="cm('mIAPosVendas')">Fechar</button>
+    <button class="btn bp" onclick="gerarMensagensIAPV()" id="btn-gerar-pv"><i class="ti ti-sparkles"></i> Gerar mensagens com IA</button>
+  </div>
+</div></div>
+
 <div class="mbg" id="mSituacao"><div class="modal" style="max-width:420px">
   <div class="mtt"><i class="ti ti-adjustments" style="color:var(--acc2)"></i> Configurar Situação de Clientes <button class="xb" onclick="cm('mSituacao')"><i class="ti ti-x"></i></button></div>
   <div style="font-size:12px;color:var(--t2);margin-bottom:14px">Define as faixas de dias sem compra para classificar os clientes desta empresa.</div>
@@ -4330,13 +4390,15 @@ function renderPosVendas(){
   const el=document.getElementById('pos-vendas-list'); if(!el) return;
   const e=DB.empresas.find(x=>x.id===empAtual); if(!e){ el.innerHTML=''; return; }
   const hoje=new Date();
+  const pvDe=parseInt(document.getElementById('pv-de')?.value)||7;
+  const pvAte=parseInt(document.getElementById('pv-ate')?.value)||15;
   const pedsFat=DB.pedidos.filter(p=>{
     if(p.empId!==empAtual||!p.dtFat||p.cancelado) return false;
     const d=Math.floor((hoje-new Date(p.dtFat+'T12:00'))/86400000);
-    return d>=7&&d<=15;
+    return d>=pvDe&&d<=pvAte;
   });
   if(!pedsFat.length){
-    el.innerHTML='<div style="color:var(--t3);font-size:11px;padding:8px 0;text-align:center">Nenhum pedido faturado nos últimos 7–15 dias.</div>';
+    el.innerHTML=`<div style="color:var(--t3);font-size:11px;padding:8px 0;text-align:center">Nenhum pedido faturado entre ${pvDe}–${pvAte} dias atrás.</div>`;
     return;
   }
   const porCli={};
@@ -4346,16 +4408,186 @@ function renderPosVendas(){
     const c=DB.clientes.find(x=>x.id===p.cliId);
     const d=Math.floor((hoje-new Date(p.dtFat+'T12:00'))/86400000);
     const tel=(c?.cel||c?.fone||'').replace(/\D/g,'');
-    const wppUrl=tel?`https://wa.me/55${tel}?text=${encodeURIComponent(`Olá${c?.comp?' '+c.comp:''}! Tudo certo com o pedido ${p.nf||''}? Alguma dúvida sobre a entrega?`)}`:'';
+    const msg=montarMsgPosVendas(p,c,e);
+    const wppUrl=tel?`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`:'';
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--s3)">
       <div style="flex:1;min-width:0">
         <div class="lnk" onclick="abrirCli('${p.cliId}','edash')" style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c?.rs||'—'}</div>
         <div style="font-size:10px;color:var(--t3)">NF ${p.nf||'—'} · ${fmtD(p.dtFat)} · ${d}d atrás · ${fmt(p.valfat||0)}</div>
       </div>
-      ${wppUrl?`<a href="${wppUrl}" target="_blank" class="btn bs" style="padding:2px 8px;font-size:10px;color:#25d366;border-color:#25d366;flex-shrink:0"><i class="ti ti-brand-whatsapp"></i></a>`:'<span style="font-size:9px;color:var(--t3)">sem tel</span>'}
+      ${wppUrl?`<a href="${wppUrl}" target="_blank" class="btn bs" style="padding:2px 8px;font-size:10px;color:#25d366;border-color:#25d366;flex-shrink:0" title="Enviar WhatsApp"><i class="ti ti-brand-whatsapp"></i></a>`:'<span style="font-size:9px;color:var(--t3)">sem tel</span>'}
     </div>`;
   }).join('');
 }
+
+function montarMsgPosVendas(p, c, e){
+  const cfg=loadCfg();
+  const template=cfg.pvMsgTemplate||`Olá {CONTATO}! Tudo bem?\nPassando para verificar se o pedido da {EMPRESA} já chegou e se está tudo certo com os produtos e a entrega. 😊\nNF: {NF} · Valor: {VALOR}\nQualquer dúvida estou à disposição!`;
+  return template
+    .replace(/{CONTATO}/g,c?.comp||c?.rs||'')
+    .replace(/{CLIENTE}/g,c?.rs||'')
+    .replace(/{NF}/g,p.nf||'—')
+    .replace(/{VALOR}/g,fmt(p.valfat||0))
+    .replace(/{DTFAT}/g,fmtD(p.dtFat))
+    .replace(/{EMPRESA}/g,e?.nome||'');
+}
+
+function abrirModalMsgPosVendas(){
+  const cfg=loadCfg();
+  const template=cfg.pvMsgTemplate||`Olá {CONTATO}! Tudo bem?\nPassando para verificar se o pedido da {EMPRESA} já chegou e se está tudo certo com os produtos e a entrega. 😊\nNF: {NF} · Valor: {VALOR}\nQualquer dúvida estou à disposição!`;
+  const el=document.getElementById('pv-msg-texto'); if(el) el.value=template;
+  atualizarPreviewPV();
+  om('mMsgPosVendas');
+}
+
+function atualizarPreviewPV(){
+  const txt=document.getElementById('pv-msg-texto')?.value||'';
+  const e=DB.empresas.find(x=>x.id===empAtual);
+  const preview=txt.replace(/{CONTATO}/g,'João').replace(/{CLIENTE}/g,'Loja Exemplo').replace(/{NF}/g,'1234').replace(/{VALOR}/g,'R$ 2.500,00').replace(/{DTFAT}/g,'15/07/2026').replace(/{EMPRESA}/g,e?.nome||'Empresa');
+  const el=document.getElementById('pv-msg-preview'); if(el) el.textContent=preview;
+}
+
+function salvarMsgPosVendas(){
+  const cfg=loadCfg();
+  cfg.pvMsgTemplate=document.getElementById('pv-msg-texto')?.value||'';
+  saveCfg(cfg); toast('Mensagem salva!'); cm('mMsgPosVendas');
+}
+
+document.addEventListener('input',function(ev){ if(ev.target.id==='pv-msg-texto') atualizarPreviewPV(); });
+
+async function dispararPosVendasIA(){
+  const cfg=loadCfg();
+  if(!cfg.iakey){ toast('Configure a API Key do Gemini em Config → IA'); return; }
+  const e=DB.empresas.find(x=>x.id===empAtual); if(!e) return;
+  const hoje=new Date();
+  const pvDe=parseInt(document.getElementById('pv-de')?.value)||7;
+  const pvAte=parseInt(document.getElementById('pv-ate')?.value)||15;
+  const pedsFat=DB.pedidos.filter(p=>{
+    if(p.empId!==empAtual||!p.dtFat||p.cancelado) return false;
+    const d=Math.floor((hoje-new Date(p.dtFat+'T12:00'))/86400000);
+    return d>=pvDe&&d<=pvAte;
+  });
+  const porCli={};
+  pedsFat.forEach(p=>{ if(!porCli[p.cliId]||p.dtFat>porCli[p.cliId].dtFat) porCli[p.cliId]=p; });
+  const lista=Object.values(porCli);
+  if(!lista.length){ toast('Nenhum cliente no prazo de pós-vendas'); return; }
+  om('mIAPosVendas');
+  document.getElementById('ia-pv-lista').innerHTML='<div style="color:var(--t3);padding:16px;text-align:center">⏳ Gerando mensagens personalizadas com IA...</div>';
+  document.getElementById('btn-gerar-pv').disabled=true;
+  let html='';
+  for(let i=0;i<lista.length;i++){
+    const p=lista[i];
+    const cl=DB.clientes.find(x=>x.id===p.cliId);
+    const d=Math.floor((hoje-new Date(p.dtFat+'T12:00'))/86400000);
+    const tel=(cl?.cel||cl?.fone||'').replace(/\D/g,'');
+    const prompt=`Crie uma mensagem WhatsApp amigável e profissional de pós-vendas. MÁXIMO 4 linhas.
+Cliente: ${cl?.rs||''}
+Contato: ${cl?.comp||''}
+Empresa: ${e.nome}
+NF: ${p.nf||''} · Valor: ${fmt(p.valfat||0)} · Faturado há ${d} dias
+Segmento: ${cl?.seg||''}
+Responda APENAS com o texto da mensagem.`;
+    let msg='';
+    try{
+      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',{
+        method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':cfg.iakey},
+        body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:150}})});
+      const dd=await r.json();
+      msg=dd.candidates?.[0]?.content?.parts?.[0]?.text||montarMsgPosVendas(p,cl,e);
+    }catch(err){ msg=montarMsgPosVendas(p,cl,e); }
+    const wppUrl=tel?`https://wa.me/55${tel}?text=${encodeURIComponent(msg)}`:'';
+    html+=`<div style="background:var(--s2);border-radius:8px;padding:10px;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-weight:600;font-size:12px;color:var(--t1)">${cl?.rs||'—'}</div>
+        ${wppUrl?`<a href="${wppUrl}" target="_blank" class="btn bs" style="padding:2px 10px;font-size:11px;color:#25d366;border-color:#25d366"><i class="ti ti-brand-whatsapp"></i> Enviar</a>`:'<span style="font-size:10px;color:var(--t3)">sem telefone</span>'}
+      </div>
+      <div style="font-size:11px;color:var(--t2);white-space:pre-wrap;line-height:1.5;background:var(--s1);border-radius:6px;padding:8px">${msg.trim()}</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:4px">NF ${p.nf||'—'} · ${fmtD(p.dtFat)} · ${d}d · ${fmt(p.valfat||0)}</div>
+    </div>`;
+    document.getElementById('ia-pv-lista').innerHTML=html+'<div style="color:var(--t3);font-size:11px;text-align:center;padding:4px">'+(i+1)+'/'+lista.length+' processados...</div>';
+  }
+  document.getElementById('ia-pv-lista').innerHTML=html;
+  const btn=document.getElementById('btn-gerar-pv'); if(btn) btn.disabled=false;
+}
+// ══ FIM PÓS-VENDAS ══
+
+// ══ ALERTA MATINAL ══
+function verificarAlertaManha(){
+  const hoje=new Date().toISOString().split('T')[0];
+  const cfg=loadCfg();
+  if(cfg.ultimoAlertaManha===hoje) return;
+  const hora=new Date().getHours();
+  if(hora<6||hora>=13) return;
+
+  const hojeRef=new Date();
+  const pvDe=7; const pvAte=15;
+  const clientesPV=[];
+  DB.empresas.forEach(function(e){
+    const pedsFat=DB.pedidos.filter(function(p){
+      if(p.empId!==e.id||!p.dtFat||p.cancelado) return false;
+      const d=Math.floor((hojeRef-new Date(p.dtFat+'T12:00'))/86400000);
+      return d>=pvDe&&d<=pvAte;
+    });
+    const porCli={};
+    pedsFat.forEach(function(p){ if(!porCli[p.cliId]) porCli[p.cliId]={p:p,emp:e}; });
+    Object.values(porCli).forEach(function(x){ clientesPV.push(x); });
+  });
+
+  const atrasadas=DB.tarefas.filter(function(t){ return t.dt&&t.dt<hoje&&!t.done; });
+  const tarefasHoje=DB.tarefas.filter(function(t){ return t.dt===hoje&&!t.done; });
+  const emRisco=DB.clientes.filter(function(c){
+    if(c.encerrado) return false;
+    const d=Math.floor((Date.now()-new Date((c.ultFat||'2000-01-01')+'T12:00'))/86400000);
+    return d>=80&&d<=90;
+  });
+
+  let corpo=`<div style="font-size:13px;color:var(--t2);margin-bottom:14px">${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}</div>`;
+  let temPV=clientesPV.length>0;
+
+  if(clientesPV.length){
+    corpo+=`<div style="background:rgba(37,211,102,.08);border:1px solid rgba(37,211,102,.3);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="font-weight:700;font-size:13px;color:#25d366;margin-bottom:6px"><i class="ti ti-heart-handshake"></i> ${clientesPV.length} cliente(s) para pós-vendas</div>
+      ${clientesPV.slice(0,4).map(function(x){
+        const c=DB.clientes.find(function(cl){return cl.id===x.p.cliId;});
+        const d=Math.floor((hojeRef-new Date(x.p.dtFat+'T12:00'))/86400000);
+        return `<div style="font-size:11px;padding:2px 0;color:var(--t1)">• ${c?.rs||'—'} <span style="color:var(--t3)">(${x.emp.nome} · ${d}d · NF ${x.p.nf||'—'})</span></div>`;
+      }).join('')}${clientesPV.length>4?`<div style="font-size:10px;color:var(--t3);margin-top:4px">+${clientesPV.length-4} outros...</div>`:''}
+    </div>`;
+  }
+  if(atrasadas.length){
+    corpo+=`<div style="background:rgba(220,38,38,.07);border:1px solid rgba(220,38,38,.2);border-radius:10px;padding:10px;margin-bottom:10px">
+      <div style="font-weight:700;font-size:12px;color:var(--red);margin-bottom:4px"><i class="ti ti-alert-triangle"></i> ${atrasadas.length} tarefa(s) atrasada(s)</div>
+      ${atrasadas.slice(0,3).map(function(t){return `<div style="font-size:11px;color:var(--t2);padding:1px 0">• ${t.desc} <span style="color:var(--red)">(${fmtD(t.dt)})</span></div>`;}).join('')}
+    </div>`;
+  }
+  if(tarefasHoje.length){
+    corpo+=`<div style="background:rgba(37,99,235,.07);border:1px solid rgba(37,99,235,.2);border-radius:10px;padding:10px;margin-bottom:10px">
+      <div style="font-weight:700;font-size:12px;color:var(--acc);margin-bottom:4px"><i class="ti ti-calendar-event"></i> ${tarefasHoje.length} tarefa(s) para hoje</div>
+      ${tarefasHoje.slice(0,3).map(function(t){return `<div style="font-size:11px;color:var(--t2);padding:1px 0">• ${t.desc}</div>`;}).join('')}
+    </div>`;
+  }
+  if(emRisco.length){
+    corpo+=`<div style="background:rgba(217,119,6,.07);border:1px solid rgba(217,119,6,.2);border-radius:10px;padding:10px;margin-bottom:10px">
+      <div style="font-weight:700;font-size:12px;color:var(--org);margin-bottom:4px"><i class="ti ti-flame"></i> ${emRisco.length} cliente(s) em risco (80–90 dias)</div>
+      ${emRisco.slice(0,3).map(function(c){
+        const d=Math.floor((Date.now()-new Date((c.ultFat||'2000-01-01')+'T12:00'))/86400000);
+        return `<div style="font-size:11px;color:var(--t2);padding:1px 0">• ${c.rs} <span style="color:var(--org)">(${d}d)</span></div>`;
+      }).join('')}
+    </div>`;
+  }
+  if(!temPV&&!atrasadas.length&&!tarefasHoje.length&&!emRisco.length){
+    corpo+='<div style="text-align:center;padding:20px;color:var(--grn);font-size:13px">✅ Tudo em dia! Bom trabalho hoje.</div>';
+  }
+
+  document.getElementById('alerta-manha-corpo').innerHTML=corpo;
+  const btnPV=document.getElementById('btn-alerta-pv');
+  if(btnPV) btnPV.style.display=temPV?'flex':'none';
+  cfg.ultimoAlertaManha=hoje;
+  saveCfg(cfg);
+  om('mAlertaManha');
+}
+// ══ FIM ALERTA MATINAL ══
+
 // ══ CONFIGURAÇÃO DE SITUAÇÃO ══
 function abrirModalSituacao(){
   const e=DB.empresas.find(x=>x.id===empAtual); if(!e) return;
@@ -6484,6 +6716,7 @@ window.addEventListener('beforeunload', function(e) {
 });
 init();
 initFirebase();
+setTimeout(verificarAlertaManha, 1500);
 </script>
 </body>
 </html>
