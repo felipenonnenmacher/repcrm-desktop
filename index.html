@@ -277,7 +277,10 @@ if('serviceWorker' in navigator){
       <button class="btn bp" onclick="om('mCli')"><i class="ti ti-plus"></i> Novo</button>
     </div>
     <div id="col-menu-cli" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div>
+        <button onclick="toggleColMenu('col-menu-cli')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0"><i class="ti ti-x"></i></button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCli('Cidade',this.checked)"> Cidade</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCli('Contato',this.checked)"> Contato</label>
@@ -342,7 +345,14 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-emp"></div>
-  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-target" style="color:var(--grn)"></i>Progresso da meta de faturamento</div><span id="meta-lbl" style="font-size:11px;color:var(--t3)"></span></div><div class="mbar"><div class="mfill" id="meta-fill"></div></div><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--t3)"><span id="m-cur"></span><span id="m-tot"></span></div></div>
+  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-target" style="color:var(--grn)"></i>Progresso da meta de faturamento</div><span id="meta-lbl" style="font-size:11px;color:var(--t3)"></span></div>
+    <div style="font-size:10px;color:var(--t3);margin-bottom:3px">Faturamento</div>
+    <div class="mbar"><div class="mfill" id="meta-fill"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--t3);margin-bottom:8px"><span id="m-cur"></span><span id="m-tot"></span></div>
+    <div style="font-size:10px;color:var(--t3);margin-bottom:3px">Venda</div>
+    <div class="mbar"><div class="mfill" id="meta-fill-venda"></div></div>
+    <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--t3)"><span id="m-venda-lbl"></span></div>
+  </div>
   <div class="g2">
     <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-chart-line" style="color:var(--acc)"></i>Vendas mensais</div></div><div class="cw tall"><canvas id="cv-men" role="img" aria-label="Vendas mensais">Vendas</canvas></div></div>
     <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-trophy" style="color:var(--org)"></i>Top clientes</div></div><div id="top10"></div></div>
@@ -375,28 +385,20 @@ if('serviceWorker' in navigator){
     </div>
   </div>
 
-  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-building-store" style="color:var(--cyn)"></i>Comparativo por Origem/Feira</div><span id="tipo-lbl" style="font-size:11px;color:var(--t3)"></span></div><div class="cw tall"><canvas id="cv-tipo" role="img" aria-label="Vendas por origem">Vendas por origem</canvas></div></div>
-
-  <div class="card">
-    <div class="ct">
-      <div class="ctl"><i class="ti ti-map-2" style="color:var(--acc2)"></i>Comparativo por Mesorregião — trimestral</div>
-      <span id="meso-lbl" style="font-size:11px;color:var(--t3)"></span>
-    </div>
-    <div class="cw tall"><canvas id="cv-meso" role="img" aria-label="Comparativo por mesorregião">Mesorregião</canvas></div>
-  </div>
-
   <div class="card" style="overflow-x:auto">
     <div class="ct">
       <div class="ctl"><i class="ti ti-list-details" style="color:var(--cyn)"></i>Detalhamento por mês</div>
       <input type="month" class="fi" id="dash-mes-detalhe" style="width:150px;padding:5px 9px;font-size:12px" onchange="renderDetalheMes()">
     </div>
+    <div id="detalhe-mes-soma" style="font-size:11px;color:var(--t2);padding:6px 0 4px;margin-bottom:4px;border-bottom:1px solid var(--s3)"></div>
+    </div>
     <table>
       <thead><tr>
-        <th>Data Pedido</th>
-        <th>Cliente</th>
-        <th>Valor</th>
-        <th>Último Faturamento do Cliente</th>
-        <th>Dias sem comprar</th>
+        <th class="th-sort" onclick="sortDetalheMes('dt')" style="cursor:pointer">Data Pedido <i class="ti ti-arrows-sort sort-ic" id="sort-det-dt"></i></th>
+        <th class="th-sort" onclick="sortDetalheMes('rs')" style="cursor:pointer">Cliente <i class="ti ti-arrows-sort sort-ic" id="sort-det-rs"></i></th>
+        <th class="th-sort" onclick="sortDetalheMes('val')" style="cursor:pointer">Valor <i class="ti ti-arrows-sort sort-ic" id="sort-det-val"></i></th>
+        <th class="th-sort" onclick="sortDetalheMes('ultFat')" style="cursor:pointer">Último Faturamento <i class="ti ti-arrows-sort sort-ic" id="sort-det-ultFat"></i></th>
+        <th class="th-sort" onclick="sortDetalheMes('dias')" style="cursor:pointer">Dias sem comprar <i class="ti ti-arrows-sort sort-ic" id="sort-det-dias"></i></th>
       </tr></thead>
       <tbody id="tb-detalhe-mes"></tbody>
     </table>
@@ -468,7 +470,10 @@ if('serviceWorker' in navigator){
       <button class="btn bp" onclick="om('mPed')"><i class="ti ti-plus"></i> Novo</button>
     </div>
     <div id="col-menu-ped" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div>
+        <button onclick="toggleColMenu('col-menu-ped')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0"><i class="ti ti-x"></i></button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
@@ -532,7 +537,10 @@ if('serviceWorker' in navigator){
       <button class="btn bs" onclick="toggleColMenu('col-menu-com')" title="Escolher colunas"><i class="ti ti-columns"></i></button>
     </div>
     <div id="col-menu-com" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div>
+        <button onclick="toggleColMenu('col-menu-com')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0"><i class="ti ti-x"></i></button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCom('Vl. Faturado',this.checked)"> Vl. Faturado</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCom('Com%',this.checked)"> Com%</label>
@@ -822,7 +830,10 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Comprador</label><input class="fi" id="cli-comp" placeholder="Nome do comprador"></div>
     <div class="fg"><label class="fl">Rede</label><input class="fi" id="cli-rede" placeholder="Ex: Rede Gazin, Grupo Malwee..."></div>
     <div class="fg"><label class="fl">E-mail</label><input class="fi" id="cli-email" placeholder="email@empresa.com"></div>
-    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="cli-seg"><option>Varejo</option><option>Atacado</option><option>Indústria</option><option>Farmácia</option><option>Móveis</option><option>Alimentício</option><option>Tecnologia</option></select></div>
+    <div class="fg"><label class="fl">Segmento</label>
+      <input class="fi" id="cli-seg" list="dl-seg" placeholder="Digite ou selecione..." autocomplete="off">
+      <datalist id="dl-seg"></datalist>
+    </div>
     <div class="fg"><label class="fl">Empresa de origem</label><select class="fi" id="cli-emp"></select><div style="font-size:10px;color:var(--t3);margin-top:4px">O cliente fica disponível para todas as empresas — esta é só a empresa do cadastro inicial</div></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Observações</label><textarea class="fi" id="cli-obs2" style="height:55px;resize:vertical"></textarea></div>
   </div>
@@ -1269,7 +1280,17 @@ const sitCls = s => s==='Ativo'?'b-g':s==='Inativo'?'b-r':s==='Encerrado'?'b-p':
 const nomeEmp = id => DB.empresas.find(e=>e.id===id)?.nome||'?';
 let toastTm;
 const toast = m => { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastTm); toastTm=setTimeout(()=>t.classList.remove('show'),2800); };
-const om = id => document.getElementById(id).classList.add('open');
+const om = id => {
+  document.getElementById(id).classList.add('open');
+  // Popular datalist de segmentos ao abrir modal de cliente
+  if(id==='mCli'){
+    const dl=document.getElementById('dl-seg');
+    if(dl){
+      const segs=[...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))].sort();
+      dl.innerHTML=segs.map(s=>`<option value="${s}">`).join('');
+    }
+  }
+};
 const cm = id => document.getElementById(id).classList.remove('open');
 document.querySelectorAll('.mbg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
 
@@ -2100,18 +2121,29 @@ function renderEmpDash(){
 
   const corPctDash=function(p){ return p>=100?'var(--grn)':p>=70?'var(--org)':'var(--red)'; };
 
+  // Cards topo empresa
+  const pedMesQtd=ps.filter(p=>{ if(!p.dt) return false; var d=new Date(p.dt+'T12:00'); return d.getMonth()===mesIdx&&d.getFullYear()===anoRefDash; }).length;
+  const pedMedioVal=pedMesQtd?Math.round(vendaMes/pedMesQtd):0;
+
   document.getElementById('mg-emp').innerHTML=`
     <div class="mc bl"><div class="mcl">Venda Mensal</div><div class="mcv">${fmt(vendaMes)}</div><div class="mcs" style="color:${corPctDash(pctVenda)}">${pctVenda}% da meta</div></div>
     <div class="mc gr"><div class="mcl">Faturamento Mensal</div><div class="mcv" style="color:var(--grn)">${fmt(fatMes)}</div><div class="mcs" style="color:${corPctDash(pctFat)}">${pctFat}% da meta</div></div>
     <div class="mc or"><div class="mcl">Pedidos em aberto</div><div class="mcv">${pedAbertos}</div><div class="mcs">aguardando faturamento</div></div>
-    <div class="mc re"><div class="mcl">Jurídico</div><div class="mcv">${ps.filter(p=>(p.pays||[]).includes('jd')).length}</div><div class="mcs ${ps.filter(p=>(p.pays||[]).includes('jd')).length>0?'dn':''}">pedidos em disputa</div></div>`;
+    <div class="mc bl" style="border-color:var(--acc2)"><div class="mcl">Total de Pedidos</div><div class="mcv" style="color:var(--acc2)">${pedMesQtd}</div><div class="mcs">pedidos no mês</div></div>
+    <div class="mc bl" style="border-color:var(--cyn)"><div class="mcl">Pedido Médio</div><div class="mcv" style="color:var(--cyn)">${fmt(pedMedioVal)}</div><div class="mcs">valor médio por pedido</div></div>`;
 
-  const cur=fatMes, met=metaFatMes, pct=pctFat;
+  // Progresso meta faturamento + barra de venda
+  const pctV2=metaVendaMes?Math.round(vendaMes/metaVendaMes*100):0;
   const mf=document.getElementById('meta-fill');
-  mf.style.width=pct+'%'; mf.style.background=pct>=100?'var(--grn)':pct>=70?'var(--org)':'var(--red)';
-  document.getElementById('meta-lbl').textContent=`${pct}% atingido`;
-  document.getElementById('m-cur').textContent=fmt(cur);
-  document.getElementById('m-tot').textContent='Meta: '+fmt(met);
+  if(mf){ mf.style.width=pctFat+'%'; mf.style.background=pctFat>=100?'var(--grn)':pctFat>=70?'var(--org)':'var(--red)'; }
+  document.getElementById('meta-lbl').textContent=`Fat: ${pctFat}% · Venda: ${pctV2}%`;
+  document.getElementById('m-cur').textContent=fmt(fatMes);
+  document.getElementById('m-tot').textContent='Meta Fat: '+fmt(metaFatMes);
+  // Barra de venda
+  const mfv=document.getElementById('meta-fill-venda');
+  if(mfv){ mfv.style.width=Math.min(100,pctV2)+'%'; mfv.style.background=pctV2>=100?'var(--grn)':pctV2>=70?'var(--org)':'var(--red)'; }
+  const mVendaLbl=document.getElementById('m-venda-lbl');
+  if(mVendaLbl) mVendaLbl.textContent=fmt(vendaMes)+' / Meta: '+fmt(metaVendaMes);
   const cliEmp=clientesDaEmpresa(empAtual);
   const top=cliEmp.map(c=>({...c,tot:DB.pedidos.filter(p=>p.cliId===c.id).reduce((a,p)=>a+(p.valfat||p.val||0),0)})).sort((a,b)=>b.tot-a.tot).slice(0,8);
   const mx=top[0]?.tot||1;
@@ -5821,6 +5853,20 @@ function limparFiltroDataCom(){
 }
 
 // ══ DETALHAMENTO POR MÊS (Dashboard da Empresa) ══
+// ══ DETALHAMENTO MÊS - ORDENAÇÃO ══
+var _detSortCol = 'dt';
+var _detSortDir = 1; // 1=asc, -1=desc
+
+function sortDetalheMes(col){
+  if(_detSortCol===col){ _detSortDir*=-1; } else { _detSortCol=col; _detSortDir=1; }
+  // Atualiza ícones
+  ['dt','rs','val','ultFat','dias'].forEach(function(c){
+    var ic=document.getElementById('sort-det-'+c);
+    if(ic) ic.className='ti '+(c===col?(_detSortDir===1?'ti-arrow-up':'ti-arrow-down'):'ti-arrows-sort')+' sort-ic';
+  });
+  renderDetalheMes();
+}
+
 function renderDetalheMes(){
   var mesInput = document.getElementById('dash-mes-detalhe')?.value || '';
   var tbody = document.getElementById('tb-detalhe-mes');
@@ -5840,6 +5886,36 @@ function renderDetalheMes(){
   }
 
   doMes.sort(function(a,b){ return (a.dt||'')<(b.dt||'')?-1:1; });
+
+  // Aplica ordenação selecionada
+  doMes.sort(function(a,b){
+    var va, vb;
+    var ca=DB.clientes.find(function(x){return x.id===a.cliId;});
+    var cb=DB.clientes.find(function(x){return x.id===b.cliId;});
+    if(_detSortCol==='dt'){ va=a.dt||''; vb=b.dt||''; }
+    else if(_detSortCol==='rs'){ va=(ca?.rs||'').toLowerCase(); vb=(cb?.rs||'').toLowerCase(); }
+    else if(_detSortCol==='val'){ va=a.val||0; vb=b.val||0; }
+    else if(_detSortCol==='ultFat'){
+      var ufa=ps.filter(function(x){return x.cliId===a.cliId&&x.dtFat;}).sort(function(x,y){return x.dtFat<y.dtFat?1:-1;})[0]?.dtFat||'';
+      var ufb=ps.filter(function(x){return x.cliId===b.cliId&&x.dtFat;}).sort(function(x,y){return x.dtFat<y.dtFat?1:-1;})[0]?.dtFat||'';
+      va=ufa; vb=ufb;
+    }
+    else if(_detSortCol==='dias'){
+      var dfa=ps.filter(function(x){return x.cliId===a.cliId&&x.dtFat;}).sort(function(x,y){return x.dtFat<y.dtFat?1:-1;})[0]?.dtFat;
+      var dfb=ps.filter(function(x){return x.cliId===b.cliId&&x.dtFat;}).sort(function(x,y){return x.dtFat<y.dtFat?1:-1;})[0]?.dtFat;
+      va=dfa?Math.floor((Date.now()-new Date(dfa+'T12:00'))/86400000):9999;
+      vb=dfb?Math.floor((Date.now()-new Date(dfb+'T12:00'))/86400000):9999;
+    }
+    if(va<vb) return -1*_detSortDir;
+    if(va>vb) return 1*_detSortDir;
+    return 0;
+  });
+
+  // Soma total de venda do mês
+  var totalVendaMesDet=doMes.reduce(function(a,p){return a+(p.val||0);},0);
+  var totalFatMesDet=doMes.filter(function(p){return p.dtFat&&p.dtFat.slice(0,7)===mesInput;}).reduce(function(a,p){return a+(p.valfat||0);},0);
+  var somaLbl=document.getElementById('detalhe-mes-soma');
+  if(somaLbl) somaLbl.innerHTML='Total venda: <b style="color:var(--t1)">'+fmt(totalVendaMesDet)+'</b> &nbsp;|&nbsp; Faturado no mês: <b style="color:var(--grn)">'+fmt(totalFatMesDet)+'</b> &nbsp;|&nbsp; <span style="color:var(--t3)">'+doMes.length+' pedidos</span>';
 
   tbody.innerHTML = doMes.map(function(p){
     var c = DB.clientes.find(function(x){ return x.id===p.cliId; });
