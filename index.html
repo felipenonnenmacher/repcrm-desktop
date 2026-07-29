@@ -51,6 +51,7 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .eadd:hover{border-color:var(--acc);color:var(--acc)}
 .main{flex:1;overflow-y:auto;background:var(--bg);padding:18px 20px}
 .main::-webkit-scrollbar{width:12px}.main::-webkit-scrollbar-track{background:var(--bg)}.main::-webkit-scrollbar-thumb{background:#aab4c2;border-radius:6px;border:2px solid var(--bg)}.main::-webkit-scrollbar-thumb:hover{background:#8c98ab}
+#p-agenda,#p-cli,#p-clidet,#p-eped,#p-ecom,#p-evendas,#p-dash,#p-edash,#p-ecli,#p-lembretes{min-height:0;width:100%}
 .ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:12px}
 .pt{font-size:var(--fs-lg);font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px}
 .pt i{color:var(--acc)}
@@ -77,8 +78,8 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 .card{background:var(--s1);border:1px solid var(--bdr);border-radius:11px;padding:15px;margin-bottom:14px}
 .ct{font-size:var(--fs-sm);font-weight:600;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 .ctl{display:flex;align-items:center;gap:7px}
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.g3{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+.g3{display:grid;grid-template-columns:2fr 1fr;gap:14px;align-items:start}
 table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
 th{text-align:left;padding:6px 8px;font-size:var(--fs-xs);font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--bdr);white-space:nowrap}
 td{padding:6px 8px;border-bottom:1px solid rgba(45,52,80,.45);color:var(--t2);vertical-align:middle;font-size:var(--fs-sm)}
@@ -657,27 +658,20 @@ if('serviceWorker' in navigator){
     </div>
 
     <!-- COMPARATIVO POR ORIGEM/TIPO -->
-    <div class="card" style="overflow-x:auto;margin-bottom:16px">
+    <div class="card" style="margin-bottom:16px">
       <div class="ct">
-        <div class="ctl"><i class="ti ti-building-store" style="color:var(--cyn)"></i>Comparativo por Origem/Tipo — Anual</div>
+        <div class="ctl"><i class="ti ti-building-store" style="color:var(--cyn)"></i>Comparativo por Origem/Tipo</div>
         <div style="display:flex;gap:8px;align-items:center">
-          <select class="fi" id="orig-emp-sel" style="width:130px;padding:4px 8px;font-size:11px" onchange="renderComparativoOrigem()">
-            <option value="">Todas as empresas</option>
-          </select>
-          <select class="fi" id="orig-anos-sel" style="width:90px;padding:4px 8px;font-size:11px" onchange="renderComparativoOrigem()">
-            <option value="3">3 anos</option>
-            <option value="4">4 anos</option>
-            <option value="5" selected>5 anos</option>
-            <option value="all">Todos</option>
-          </select>
-          <button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="renderComparativoOrigem()"><i class="ti ti-refresh"></i></button>
+          <button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="renderComparativoOrigem()"><i class="ti ti-refresh"></i> Atualizar</button>
         </div>
       </div>
-      <div id="tb-comparativo-origem"></div>
+      <div id="tb-comparativo-origem" style="font-size:12px;color:var(--t3);padding:12px;text-align:center">Carregando...</div>
     </div>
 
   </div>
 </div>
+
+<!-- MODAL EDITAR PEDIDO/NF -->
 <div class="mbg" id="mEditPed"><div class="modal">
   <div class="mtt"><span id="edit-titulo">Editar Pedido</span> <button class="xb" onclick="cm('mEditPed')"><i class="ti ti-x"></i></button></div>
   <div class="fg2">
@@ -697,7 +691,6 @@ if('serviceWorker' in navigator){
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
     <button class="btn bs" style="color:var(--red);border-color:var(--red)" onclick="excluirPedidoEdit()"><i class="ti ti-trash"></i> Excluir</button>
-    <button class="btn bs" style="color:var(--acc2);border-color:var(--acc2)" onclick="duplicarNFPedido()" title="Registrar nova NF para este mesmo pedido"><i class="ti ti-copy-plus"></i> + Nova NF</button>
     <button class="btn bs" onclick="cm('mEditPed')">Cancelar</button>
     <button class="btn bp" onclick="salvarEdicaoPedido()"><i class="ti ti-check"></i> Salvar</button>
   </div>
@@ -820,7 +813,6 @@ if('serviceWorker' in navigator){
   </div>
 </div>
 
-</div>
 </div>
 </div>
 
@@ -3204,9 +3196,6 @@ function abrirEditPedido(pedId){
   window._paysDtEditAtual = p.paysDt||[];
   gerarCamposDatasParcEdit();
   calcEditCom();
-  // Guarda ID do pedido no modal para o botão Nova NF
-  const modalEl=document.getElementById('mEditPed');
-  if(modalEl) modalEl.dataset.pedid=p.id;
   om('mEditPed');
 }
 function gerarCamposDatasParcEdit(){
@@ -3255,131 +3244,6 @@ function calcEditCom(){
     ${fatV>0?'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--t3)">→ No faturamento (50%)</span><span style="color:var(--org)">'+fmt(fatV)+'</span></div>':''}
     <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--t3)">→ Em ${parc}x parcelas</span><span style="color:var(--acc)">${fmt(liq/parc)}/parc</span></div>`;
 }
-
-// ══ DUPLICAR NF (nova NF do mesmo pedido) ══
-function duplicarNFPedido(){
-  const pedId=document.getElementById('mEditPed')?.dataset?.pedid;
-  const orig=DB.pedidos.find(x=>x.id===pedId);
-  if(!orig){ toast('Salve o pedido antes de adicionar nova NF'); return; }
-  if(!confirm('Criar nova NF para o pedido '+orig.num+'?\nA nova linha terá valor zerado para preencher com os dados da nova NF.')) return;
-  const nova={
-    id:uid(), empId:orig.empId, cliId:orig.cliId,
-    num:orig.num, dt:orig.dt, tipo:orig.tipo,
-    val:0, desc:orig.desc, com:orig.com, parc:orig.parc,
-    fatCom:orig.fatCom, nfRef:pedId, // referência ao pedido original
-    dtFat:'', nf:'', valfat:0, cancelado:false,
-    pays:[], paysVal:[], hist:[{d:new Date().toISOString().split('T')[0],a:'Nova NF vinculada ao ped.'+orig.num}]
-  };
-  DB.pedidos.push(nova);
-  salvarDB();
-  cm('mEditPed');
-  toast('Nova NF criada! Edite para preencher os dados de faturamento.');
-  // Abre edição da nova NF
-  setTimeout(()=>{ abrirEditPed(nova.id); },300);
-}
-
-// ══ COMPARATIVO POR ORIGEM/TIPO ══
-function renderComparativoOrigem(){
-  const el=document.getElementById('tb-comparativo-origem'); if(!el) return;
-  const empSel=document.getElementById('orig-emp-sel')?.value||'';
-  const nAnos=document.getElementById('orig-anos-sel')?.value||'5';
-
-  // Popular select de empresas
-  const sel=document.getElementById('orig-emp-sel');
-  if(sel&&sel.options.length<=1){
-    DB.empresas.forEach(function(e){ sel.add(new Option(e.nome,e.id)); });
-    if(empSel) sel.value=empSel;
-  }
-
-  // Define anos a exibir
-  const anoAtual=new Date().getFullYear();
-  const todosAnos=[...new Set(DB.pedidos.filter(p=>p.dt).map(p=>parseInt(p.dt.slice(0,4))))].sort();
-  let anos=nAnos==='all'?todosAnos:todosAnos.slice(-parseInt(nAnos));
-  if(!anos.length){ el.innerHTML='<div style="color:var(--t3);padding:12px;text-align:center">Nenhum dado encontrado.</div>'; return; }
-
-  // Filtra pedidos
-  let peds=DB.pedidos.filter(p=>!p.cancelado&&p.dt&&p.tipo);
-  if(empSel) peds=peds.filter(p=>p.empId===empSel);
-
-  // Agrupa por Origem
-  const origens=[...new Set(peds.map(p=>p.tipo))].sort();
-  if(!origens.length){ el.innerHTML='<div style="color:var(--t3);padding:12px;text-align:center">Nenhum pedido com Origem cadastrada.</div>'; return; }
-
-  // Monta HTML
-  let html='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)">';
-
-  // Header
-  html+='<thead><tr style="background:var(--s2)">';
-  html+='<th style="padding:7px 10px;text-align:left;color:var(--t3)">Origem / Tipo</th>';
-  anos.forEach(function(a){
-    html+='<th colspan="7" style="padding:7px 10px;text-align:center;color:var(--acc);border-left:2px solid var(--bdr)">'+a+'</th>';
-  });
-  html+='</tr><tr style="background:var(--s3)">';
-  html+='<th style="padding:4px 10px"></th>';
-  anos.forEach(function(){
-    html+='<th style="padding:4px 6px;text-align:right;color:var(--t3);border-left:2px solid var(--bdr)">Venda</th>';
-    html+='<th style="padding:4px 6px;text-align:right;color:var(--t3)">Nº Ped</th>';
-    html+='<th style="padding:4px 6px;text-align:right;color:var(--t3)">Ticket</th>';
-    html+='<th style="padding:4px 6px;text-align:right;color:var(--t3)">%V</th>';
-    html+='<th style="padding:4px 6px;text-align:right;color:var(--grn)">Faturado</th>';
-    html+='<th style="padding:4px 6px;text-align:right;color:var(--grn)">NFs</th>';
-    html+='<th style="padding:4px 6px;text-align:right;color:var(--grn)">%F</th>';
-  });
-  html+='</tr></thead><tbody>';
-
-  // Totais por ano
-  const totalVendaAno={};
-  const totalFatAno={};
-  anos.forEach(function(a){
-    totalVendaAno[a]=peds.filter(p=>parseInt(p.dt.slice(0,4))===a).reduce((s,p)=>s+(p.val||0),0);
-    totalFatAno[a]=peds.filter(p=>p.dtFat&&parseInt(p.dtFat.slice(0,4))===a).reduce((s,p)=>s+(p.valfat||0),0);
-  });
-
-  origens.forEach(function(orig,idx){
-    html+='<tr style="border-bottom:1px solid var(--s3);'+(idx%2?'background:var(--s2)':'')+'">';
-    html+='<td style="padding:6px 10px;font-weight:600;color:var(--t1);white-space:nowrap">'+orig+'</td>';
-    anos.forEach(function(a){
-      const pedOrig=peds.filter(p=>p.tipo===orig&&parseInt(p.dt.slice(0,4))===a);
-      const fatOrig=peds.filter(p=>p.tipo===orig&&p.dtFat&&parseInt(p.dtFat.slice(0,4))===a);
-      const venda=pedOrig.reduce((s,p)=>s+(p.val||0),0);
-      const fat=fatOrig.reduce((s,p)=>s+(p.valfat||0),0);
-      const nPed=pedOrig.length;
-      const nNF=[...new Set(fatOrig.filter(p=>p.nf).map(p=>p.nf))].length;
-      const ticket=nPed?Math.round(venda/nPed):0;
-      const pctV=totalVendaAno[a]?Math.round(venda/totalVendaAno[a]*100):0;
-      const pctF=totalFatAno[a]?Math.round(fat/totalFatAno[a]*100):0;
-      const corV=pctV>0?'color:var(--t1)':'color:var(--t3)';
-      html+='<td style="padding:6px 6px;text-align:right;border-left:2px solid var(--bdr);'+corV+'">'+fmt(venda)+'</td>';
-      html+='<td style="padding:6px 6px;text-align:right;'+corV+'">'+nPed+'</td>';
-      html+='<td style="padding:6px 6px;text-align:right;'+corV+'">'+fmt(ticket)+'</td>';
-      html+='<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+(pctV>0?'var(--acc)':'var(--t3)')+'">'+pctV+'%</td>';
-      html+='<td style="padding:6px 6px;text-align:right;color:'+(fat>0?'var(--grn)':'var(--t3)')+'">'+fmt(fat)+'</td>';
-      html+='<td style="padding:6px 6px;text-align:right;color:'+(nNF>0?'var(--grn)':'var(--t3)')+'">'+nNF+'</td>';
-      html+='<td style="padding:6px 6px;text-align:right;font-weight:600;color:'+(pctF>0?'var(--grn)':'var(--t3)')+'">'+pctF+'%</td>';
-    });
-    html+='</tr>';
-  });
-
-  // Linha de totais
-  html+='<tr style="background:var(--s2);font-weight:700;border-top:2px solid var(--bdr)">';
-  html+='<td style="padding:7px 10px;color:var(--t1)">TOTAL</td>';
-  anos.forEach(function(a){
-    const fat=peds.filter(p=>p.dtFat&&parseInt(p.dtFat.slice(0,4))===a).reduce((s,p)=>s+(p.valfat||0),0);
-    const nNFTotal=[...new Set(peds.filter(p=>p.dtFat&&parseInt(p.dtFat.slice(0,4))===a&&p.nf).map(p=>p.nf))].length;
-    const nPedTotal=peds.filter(p=>parseInt(p.dt.slice(0,4))===a).length;
-    const ticketTotal=nPedTotal?Math.round(totalVendaAno[a]/nPedTotal):0;
-    html+='<td style="padding:7px 6px;text-align:right;border-left:2px solid var(--bdr);color:var(--t1)">'+fmt(totalVendaAno[a])+'</td>';
-    html+='<td style="padding:7px 6px;text-align:right">'+nPedTotal+'</td>';
-    html+='<td style="padding:7px 6px;text-align:right">'+fmt(ticketTotal)+'</td>';
-    html+='<td style="padding:7px 6px;text-align:right">100%</td>';
-    html+='<td style="padding:7px 6px;text-align:right;color:var(--grn)">'+fmt(fat)+'</td>';
-    html+='<td style="padding:7px 6px;text-align:right;color:var(--grn)">'+nNFTotal+'</td>';
-    html+='<td style="padding:7px 6px;text-align:right">100%</td>';
-  });
-  html+='</tr></tbody></table></div>';
-  el.innerHTML=html;
-}
-// ══ FIM COMPARATIVO ORIGEM ══
 
 function salvarEdicaoPedido(){
   if(!pedidoEditId)return;
@@ -5910,14 +5774,6 @@ function renderEmpVendas(){
   document.getElementById('ev-t').innerHTML = '<div style="width:10px;height:10px;border-radius:50%;background:'+e.cor+';display:inline-block;margin-right:8px"></div>'+e.nome+' — Vendas';
   document.getElementById('vendas-ano-lbl').textContent = vendasAnoAtual;
 
-  // Pré-seleciona empresa no comparativo de origem
-  var empOrigSel=document.getElementById('orig-emp-sel');
-  if(empOrigSel&&empOrigSel.options.length<=1){
-    DB.empresas.forEach(function(emp){ empOrigSel.add(new Option(emp.nome,emp.id)); });
-  }
-  if(empOrigSel) empOrigSel.value=empAtual;
-  setTimeout(renderComparativoOrigem, 100);
-
   var ps = DB.pedidos.filter(function(p){ return p.empId===empAtual && !p.cancelado; });
   var nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -6007,12 +5863,115 @@ function renderEmpVendas(){
 
   atualizarIconesOrdenacao('vendas');
   renderComparativosAnuais();
+  setTimeout(renderComparativoOrigem, 100);
 }
 
 // ══ COMPARATIVOS ANUAIS ══
 var chFatAnual = null, chComAnual = null, chCrescAnual = null;
 var overridesFat = {}, overridesCom = {};
 var anosExtras = []; // anos adicionados manualmente pelo botão +
+
+// ══ COMPARATIVO POR ORIGEM/TIPO ══
+function renderComparativoOrigem(){
+  const el=document.getElementById('tb-comparativo-origem'); if(!el) return;
+  const e=DB.empresas.find(x=>x.id===empAtual); if(!e){ el.innerHTML='<div style="color:var(--t3);padding:12px">Selecione uma empresa.</div>'; return; }
+
+  // Pedidos desta empresa
+  let peds=DB.pedidos.filter(p=>p.empId===empAtual&&!p.cancelado&&p.dt&&p.tipo);
+  if(!peds.length){ el.innerHTML='<div style="color:var(--t3);padding:12px;text-align:center">Nenhum pedido com Origem/Tipo cadastrado nesta empresa.</div>'; return; }
+
+  // Origens e anos únicos
+  const origens=[...new Set(peds.map(p=>p.tipo))].sort();
+  const anos=[...new Set(peds.map(p=>p.dt.slice(0,4)))].sort();
+
+  // Total geral de venda por ano (para % relativo)
+  const totalVendaAno={};
+  const totalFatAno={};
+  anos.forEach(a=>{
+    totalVendaAno[a]=peds.filter(p=>p.dt.slice(0,4)===a).reduce((s,p)=>s+(p.val||0),0);
+    totalFatAno[a]=DB.pedidos.filter(p=>p.empId===empAtual&&!p.cancelado&&p.dtFat&&p.dtFat.slice(0,4)===a).reduce((s,p)=>s+(p.valfat||0),0);
+  });
+
+  let html='';
+
+  // Uma tabela por Origem
+  origens.forEach(orig=>{
+    const pedOrig=peds.filter(p=>p.tipo===orig);
+    if(!pedOrig.length) return;
+
+    html+=`<div style="margin-bottom:20px">
+      <div style="background:var(--acc);color:#fff;font-weight:700;font-size:12px;padding:7px 12px;border-radius:7px 7px 0 0;text-align:center;letter-spacing:.5px">${orig}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)">
+        <thead>
+          <tr style="background:var(--s2)">
+            <th rowspan="2" style="padding:6px 10px;border:1px solid var(--bdr);color:var(--t3);text-align:center">ANO</th>
+            <th colspan="4" style="padding:6px 10px;border:1px solid var(--bdr);color:#fff;background:#1a6b3a;text-align:center">VENDA</th>
+            <th colspan="3" style="padding:6px 10px;border:1px solid var(--bdr);color:#fff;background:#1a4fa8;text-align:center">FATURAMENTO</th>
+          </tr>
+          <tr>
+            <th style="padding:5px 8px;border:1px solid var(--bdr);background:#e8f5e9;color:#1a6b3a;text-align:right">VENDA</th>
+            <th style="padding:5px 8px;border:1px solid var(--bdr);background:#e8f5e9;color:#1a6b3a;text-align:right">N DE PED</th>
+            <th style="padding:5px 8px;border:1px solid var(--bdr);background:#e8f5e9;color:#1a6b3a;text-align:right">TICKET MÉDIO</th>
+            <th style="padding:5px 8px;border:1px solid var(--bdr);background:#e8f5e9;color:#1a6b3a;text-align:right">%</th>
+            <th style="padding:5px 8px;border:1px solid var(--bdr);background:#e3eeff;color:#1a4fa8;text-align:right">FATURADO</th>
+            <th style="padding:5px 8px;border:1px solid var(--bdr);background:#e3eeff;color:#1a4fa8;text-align:right">N DE NF</th>
+            <th style="padding:5px 8px;border:1px solid var(--bdr);background:#e3eeff;color:#1a4fa8;text-align:right">% VENDA/FAT</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+    anos.forEach((a,idx)=>{
+      const pedAno=pedOrig.filter(p=>p.dt.slice(0,4)===a);
+      if(!pedAno.length) return;
+      const venda=pedAno.reduce((s,p)=>s+(p.val||0),0);
+      const nPed=pedAno.length;
+      const ticket=nPed?Math.round(venda/nPed):0;
+      const pctVenda=totalVendaAno[a]?Math.round(venda/totalVendaAno[a]*100):0;
+      // Faturamento: pedidos desta origem com dtFat neste ano
+      const fatAno=DB.pedidos.filter(p=>p.empId===empAtual&&!p.cancelado&&p.tipo===orig&&p.dtFat&&p.dtFat.slice(0,4)===a);
+      const faturado=fatAno.reduce((s,p)=>s+(p.valfat||0),0);
+      const nNF=[...new Set(fatAno.filter(p=>p.nf).map(p=>p.nf))].length;
+      const pctVF=venda?Math.round(faturado/venda*100):0;
+      const bg=idx%2?'background:var(--s2)':'';
+      const corPct=pctVenda>=100?'color:var(--grn)':pctVenda>=50?'color:var(--org)':'color:var(--t2)';
+
+      html+=`<tr style="${bg}">
+        <td style="padding:6px 10px;border:1px solid var(--bdr);font-weight:700;color:var(--t2);text-align:center">${a}</td>
+        <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;color:var(--t1)">${fmt(venda)}</td>
+        <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;color:var(--t2)">${nPed}</td>
+        <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;color:var(--t2)">${fmt(ticket)}</td>
+        <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;font-weight:600;${corPct}">${pctVenda}%</td>
+        <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;color:var(--grn)">${fmt(faturado)}</td>
+        <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;color:var(--t2)">${nNF}</td>
+        <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;font-weight:600;color:${pctVF>=80?'var(--grn)':pctVF>=50?'var(--org)':'var(--red)'}">${pctVF}%</td>
+      </tr>`;
+    });
+
+    // Linha de total
+    const totalVenda=pedOrig.reduce((s,p)=>s+(p.val||0),0);
+    const totalNPed=pedOrig.length;
+    const totalTicket=totalNPed?Math.round(totalVenda/totalNPed):0;
+    const totalFatOrig=DB.pedidos.filter(p=>p.empId===empAtual&&!p.cancelado&&p.tipo===orig&&p.dtFat).reduce((s,p)=>s+(p.valfat||0),0);
+    const totalNF=[...new Set(DB.pedidos.filter(p=>p.empId===empAtual&&!p.cancelado&&p.tipo===orig&&p.dtFat&&p.nf).map(p=>p.nf))].length;
+    const totalPctVF=totalVenda?Math.round(totalFatOrig/totalVenda*100):0;
+
+    html+=`<tr style="background:var(--s3);font-weight:700;border-top:2px solid var(--bdr)">
+      <td style="padding:6px 10px;border:1px solid var(--bdr);text-align:center;color:var(--t1)">TOTAL</td>
+      <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;color:var(--t1)">${fmt(totalVenda)}</td>
+      <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right">${totalNPed}</td>
+      <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right">${fmt(totalTicket)}</td>
+      <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right">—</td>
+      <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;color:var(--grn)">${fmt(totalFatOrig)}</td>
+      <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right">${totalNF}</td>
+      <td style="padding:6px 8px;border:1px solid var(--bdr);text-align:right;color:${totalPctVF>=80?'var(--grn)':totalPctVF>=50?'var(--org)':'var(--red)'}">${totalPctVF}%</td>
+    </tr>`;
+
+    html+=`</tbody></table></div>`;
+  });
+
+  el.innerHTML=html||'<div style="color:var(--t3);padding:12px;text-align:center">Nenhum dado encontrado.</div>';
+}
+// ══ FIM COMPARATIVO ORIGEM ══
 
 function adicionarAnoComparativo(){
   var sugestao = new Date().getFullYear() + 1;
