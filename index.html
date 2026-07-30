@@ -68,6 +68,11 @@ html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFo
 #mg-com .mcl{font-size:var(--fs-xs);margin-bottom:4px}
 #mg-com .mcv{font-size:var(--fs-md)}
 #mg-com .mcs{font-size:var(--fs-xs);margin-top:3px}
+#mg-emp{grid-template-columns:repeat(5,1fr)}
+#mg-emp .mc{padding:8px 10px}
+#mg-emp .mcl{font-size:8px!important;margin-bottom:3px}
+#mg-emp .mcv{font-size:var(--fs-md)!important;font-weight:700}
+#mg-emp .mcs{font-size:8px!important;margin-top:2px}
 .mcs.up{color:var(--grn)}.mcs.dn{color:var(--red)}
 .card{background:var(--s1);border:1px solid var(--bdr);border-radius:11px;padding:15px;margin-bottom:14px}
 .ct{font-size:var(--fs-sm);font-weight:600;color:var(--t1);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
@@ -205,18 +210,37 @@ if('serviceWorker' in navigator){
     <div class="pa"><button class="btn bs" onclick="exportarTudo()"><i class="ti ti-file-export"></i> Exportar</button><button class="btn bp" onclick="om('mTar')"><i class="ti ti-plus"></i> Tarefa</button></div>
   </div>
   <div class="mg" id="mg-dash"></div>
-  <div class="card" style="border-left:3px solid var(--org);margin-bottom:14px">
+
+  <!-- Card Vendas por Empresa -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">
+      <div class="ctl"><i class="ti ti-building" style="color:var(--acc)"></i>Vendas por empresa — <span id="dash-mes-lbl" style="color:var(--t3);font-weight:400;font-size:var(--fs-xs)"></span></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:6px 10px;text-align:left;color:var(--t3);font-weight:600">Empresa</th>
+        <th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">Venda</th>
+        <th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">Meta V.</th>
+        <th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">% V.</th>
+        <th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">Faturamento</th>
+        <th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">Meta F.</th>
+        <th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">% F.</th>
+      </tr></thead>
+      <tbody id="tb-dash-empresas"></tbody>
+    </table>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--org);margin-bottom:14px">;margin-bottom:14px">
     <div class="ct"><div class="ctl"><i class="ti ti-clock-exclamation" style="color:var(--org)"></i>Pedidos sem NF — aguardando faturamento</div><span id="lbl-sem-nf" style="font-size:11px;color:var(--t3)"></span></div>
     <div id="lista-sem-nf"></div>
   </div>
+
   <div class="g3">
     <div>
       <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-check" style="color:var(--grn)"></i>Tarefas de hoje</div><button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="om('mTar')"><i class="ti ti-plus"></i></button></div><div id="tsk-list"></div></div>
-      <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-calendar" style="color:var(--acc2)"></i>Próximos eventos</div></div><div id="cal-evts"></div></div>
       <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-clock-exclamation" style="color:var(--red)"></i>Tarefas pendentes</div><span id="badge-tarefas-pend" class="b b-r" style="font-size:9px"></span></div><div id="tarefas-pend-list" style="max-height:200px;overflow-y:auto"></div></div>
     </div>
     <div>
-      <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-alert-triangle" style="color:var(--red)"></i>Clientes em risco</div></div><div id="riscos-list"></div></div>
     </div>
   </div>
 
@@ -323,19 +347,8 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-emp"></div>
-  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-target" style="color:var(--grn)"></i>Progresso da meta de faturamento</div><span id="meta-lbl" style="font-size:11px;color:var(--t3)"></span></div><div class="mbar"><div class="mfill" id="meta-fill"></div></div><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--t3)"><span id="m-cur"></span><span id="m-tot"></span></div></div>
-  <div class="g2">
-    <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-chart-line" style="color:var(--acc)"></i>Vendas mensais</div></div><div class="cw tall"><canvas id="cv-men" role="img" aria-label="Vendas mensais">Vendas</canvas></div></div>
-    <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-trophy" style="color:var(--org)"></i>Top clientes</div></div><div id="top10"></div></div>
-  </div>
-  <div class="g2">
-    <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-activity" style="color:var(--grn)"></i>Atividade</div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderAtividadeEmp()" title="Atualizar"><i class="ti ti-refresh"></i></button></div><div id="atividade-emp-list"></div></div>
-    <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-clock-exclamation" style="color:var(--red)"></i>Ciclo de compra vencendo</div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderCicloVencido()" title="Atualizar"><i class="ti ti-refresh"></i></button></div><div id="ciclo-vencido-list" style="max-height:220px;overflow-y:auto"></div></div>
-  </div>
-  <div class="card" style="margin-bottom:14px">
-    <div class="ct"><div class="ctl"><i class="ti ti-heart-handshake" style="color:var(--cyn)"></i>Pós-Vendas <span style="font-size:10px;color:var(--t3);font-weight:400">— pedidos faturados há 7–15 dias</span></div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderPosVendas()" title="Atualizar"><i class="ti ti-refresh"></i></button></div>
-    <div id="pos-vendas-list" style="max-height:220px;overflow-y:auto"></div>
-  </div>
+  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-target" style="color:var(--grn)"></i>Progresso da meta</div><span id="meta-lbl" style="font-size:10px;color:var(--t3)"></span></div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Faturamento</div><div class="mbar"><div class="mfill" id="meta-fill"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:6px"><span id="m-cur"></span><span id="m-tot"></span></div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Venda</div><div class="mbar"><div class="mfill" id="meta-fill-venda"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3)"><span id="m-venda-cur"></span><span id="m-venda-tot"></span></div></div>
+
   <div class="card" style="margin-bottom:14px">
     <div class="ct">
       <div class="ctl"><i class="ti ti-robot" style="color:var(--acc2)"></i>Assistente IA — <span id="ia-emp-nome" style="color:var(--t2)"></span></div>
@@ -355,6 +368,18 @@ if('serviceWorker' in navigator){
       <button class="btn bp" style="padding:5px 12px" onclick="iaEmpresaChat(document.getElementById('ia-emp-inp').value)"><i class="ti ti-send"></i></button>
     </div>
   </div>
+  <div class="g2">
+    <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-chart-line" style="color:var(--acc)"></i>Vendas mensais</div></div><div class="cw tall"><canvas id="cv-men" role="img" aria-label="Vendas mensais">Vendas</canvas></div></div>
+    <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-trophy" style="color:var(--org)"></i>Top clientes</div></div><div id="top10"></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-activity" style="color:var(--grn)"></i>Atividade</div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderAtividadeEmp()" title="Atualizar"><i class="ti ti-refresh"></i></button></div><div id="atividade-emp-list"></div></div>
+    <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-clock-exclamation" style="color:var(--red)"></i>Ciclo de compra vencendo</div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderCicloVencido()" title="Atualizar"><i class="ti ti-refresh"></i></button></div><div id="ciclo-vencido-list" style="max-height:220px;overflow-y:auto"></div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct"><div class="ctl"><i class="ti ti-heart-handshake" style="color:var(--cyn)"></i>Pós-Vendas <span style="font-size:10px;color:var(--t3);font-weight:400">— pedidos faturados há 7–15 dias</span></div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderPosVendas()" title="Atualizar"><i class="ti ti-refresh"></i></button></div>
+    <div id="pos-vendas-list" style="max-height:220px;overflow-y:auto"></div>
+  </div>
 
   <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-building-store" style="color:var(--cyn)"></i>Comparativo por Origem/Feira</div><span id="tipo-lbl" style="font-size:11px;color:var(--t3)"></span></div><div class="cw tall"><canvas id="cv-tipo" role="img" aria-label="Vendas por origem">Vendas por origem</canvas></div></div>
 
@@ -371,13 +396,14 @@ if('serviceWorker' in navigator){
       <div class="ctl"><i class="ti ti-list-details" style="color:var(--cyn)"></i>Detalhamento por mês</div>
       <input type="month" class="fi" id="dash-mes-detalhe" style="width:150px;padding:5px 9px;font-size:12px" onchange="renderDetalheMes()">
     </div>
+    <div id="detalhe-mes-soma" style="display:flex;gap:20px;padding:7px 10px;background:var(--s2);border-radius:7px;margin-bottom:10px;font-size:11px"></div>
     <table>
       <thead><tr>
-        <th>Data Pedido</th>
-        <th>Cliente</th>
-        <th>Valor</th>
-        <th>Último Faturamento do Cliente</th>
-        <th>Dias sem comprar</th>
+        <th class="th-sort" onclick="sortDetalheMes('dt')" style="cursor:pointer">Data Pedido <i class="ti ti-arrows-sort sort-ic" id="sort-det-dt"></i></th>
+        <th class="th-sort" onclick="sortDetalheMes('rs')" style="cursor:pointer">Cliente <i class="ti ti-arrows-sort sort-ic" id="sort-det-rs"></i></th>
+        <th class="th-sort" onclick="sortDetalheMes('val')" style="cursor:pointer">Valor <i class="ti ti-arrows-sort sort-ic" id="sort-det-val"></i></th>
+        <th class="th-sort" onclick="sortDetalheMes('ultFat')" style="cursor:pointer">Último Faturamento <i class="ti ti-arrows-sort sort-ic" id="sort-det-ultFat"></i></th>
+        <th class="th-sort" onclick="sortDetalheMes('dias')" style="cursor:pointer">Dias sem comprar <i class="ti ti-arrows-sort sort-ic" id="sort-det-dias"></i></th>
       </tr></thead>
       <tbody id="tb-detalhe-mes"></tbody>
     </table>
@@ -803,7 +829,7 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Comprador</label><input class="fi" id="cli-comp" placeholder="Nome do comprador"></div>
     <div class="fg"><label class="fl">Rede</label><input class="fi" id="cli-rede" placeholder="Ex: Rede Gazin, Grupo Malwee..."></div>
     <div class="fg"><label class="fl">E-mail</label><input class="fi" id="cli-email" placeholder="email@empresa.com"></div>
-    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="cli-seg"><option>Varejo</option><option>Atacado</option><option>Indústria</option><option>Farmácia</option><option>Móveis</option><option>Alimentício</option><option>Tecnologia</option></select></div>
+    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="cli-seg"><option value="">— Selecione —</option></select></div>
     <div class="fg"><label class="fl">Empresa de origem</label><select class="fi" id="cli-emp"></select><div style="font-size:10px;color:var(--t3);margin-top:4px">O cliente fica disponível para todas as empresas — esta é só a empresa do cadastro inicial</div></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Observações</label><textarea class="fi" id="cli-obs2" style="height:55px;resize:vertical"></textarea></div>
   </div>
@@ -879,6 +905,7 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Transportadora</label><select class="fi" id="ped-transp" onchange="atualizarCampoRastreio()"></select></div>
     <div class="fg" id="fg-cod"><label class="fl">Código / NF rastreio</label><input class="fi" id="ped-cod" placeholder="Ex: BR123456789BR"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Origem / Tipo do pedido</label><input class="fi" id="ped-tipo" list="lista-tipos-pedido" placeholder="Ex: Feira ABC, Visita, WhatsApp, Indicação..."><datalist id="lista-tipos-pedido"></datalist></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Observação</label><textarea class="fi" id="ped-obs" placeholder="Observações sobre o pedido..." style="resize:vertical;min-height:60px;font-size:var(--fs-sm)"></textarea></div>
     <div class="fg" style="grid-column:span 2" id="ped-datas-parc-box"></div>
     <div class="fg" style="grid-column:span 2"><div class="com-prev" id="com-prev-box"></div></div>
   </div>
@@ -1045,6 +1072,7 @@ if('serviceWorker' in navigator){
     <div class="tab" onclick="setCfgTab(this,'cf-bkp')"><i class="ti ti-download"></i> Backup</div>
     <div class="tab" onclick="setCfgTab(this,'cf-nuvem')"><i class="ti ti-cloud"></i> Nuvem</div>
     <div class="tab" onclick="setCfgTab(this,'cf-ia')"><i class="ti ti-robot"></i> IA</div>
+    <div class="tab" onclick="setCfgTab(this,'cf-seg')"><i class="ti ti-tag"></i> Segmentos</div>
   </div>
 
   <!-- ABA EMPRESAS -->
@@ -1148,6 +1176,14 @@ if('serviceWorker' in navigator){
     <div style="font-size:11px;color:var(--t3);margin-top:-6px;margin-bottom:14px">console.cloud.google.com → Places API (nova)</div>
     <button class="btn bp" onclick="salvarCfg()"><i class="ti ti-check"></i> Salvar</button>
   </div>
+  <div id="cf-seg" style="display:none">
+    <div style="font-size:12px;color:var(--t2);margin-bottom:12px">Gerencie os segmentos disponíveis no cadastro de clientes.</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input class="fi" id="cfg-seg-novo" placeholder="Novo segmento..." style="flex:1" onkeydown="if(event.key==='Enter')adicionarSegmento()">
+      <button class="btn bp" onclick="adicionarSegmento()"><i class="ti ti-plus"></i> Adicionar</button>
+    </div>
+    <div id="cfg-seg-lista" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+  </div>
 
 </div></div>
 
@@ -1250,7 +1286,10 @@ const sitCls = s => s==='Ativo'?'b-g':s==='Inativo'?'b-r':s==='Encerrado'?'b-p':
 const nomeEmp = id => DB.empresas.find(e=>e.id===id)?.nome||'?';
 let toastTm;
 const toast = m => { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastTm); toastTm=setTimeout(()=>t.classList.remove('show'),2800); };
-const om = id => document.getElementById(id).classList.add('open');
+const om = id => {
+  document.getElementById(id).classList.add('open');
+  if(id==='mCli') setTimeout(atualizarSelectSegmento, 50);
+};
 const cm = id => document.getElementById(id).classList.remove('open');
 document.querySelectorAll('.mbg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
 
@@ -1399,8 +1438,8 @@ function buildDash() {
   const nr = DB.clientes.filter(c=>!c.encerrado&&dias(c)>(DB.empresas.find(x=>x.id===c.empId)?.risco||60)).length;
   const pab = DB.pedidos.filter(p=>!p.cancelado&&!p.dtFat).length;
   document.getElementById('mg-dash').innerHTML=`
-    <div class="mc bl"><div class="mcl">Venda Mensal</div><div class="mcv">${fmt(tvVenda)}</div><div class="mcs" style="color:${corPct(pctV)}">${pctV}% da meta</div></div>
-    <div class="mc gr"><div class="mcl">Faturamento Mensal</div><div class="mcv" style="color:var(--grn)">${fmt(tv)}</div><div class="mcs" style="color:${corPct(pctF)}">${pctF}% da meta</div></div>
+    <div class="mc bl"><div class="mcl">Venda Mensal</div><div class="mcv">${fmt(tvVenda)}</div><div class="mcs">${DB.empresas.length} empresa(s)</div></div>
+    <div class="mc gr"><div class="mcl">Faturamento Mensal</div><div class="mcv" style="color:var(--grn)">${fmt(tv)}</div><div class="mcs">mês vigente</div></div>
     <div class="mc or"><div class="mcl">Pedidos em aberto</div><div class="mcv">${pab}</div><div class="mcs">aguardando faturar</div></div>
     <div class="mc re"><div class="mcl">Clientes em risco</div><div class="mcv">${nr}</div><div class="mcs ${nr>0?'dn':''}">acima do prazo</div></div>`;
   // tarefas
@@ -1415,11 +1454,11 @@ function buildDash() {
   }).join('') : '<div style="color:var(--t3);font-size:12px;padding:8px 0">Sem tarefas para hoje!</div>';
   // riscos
   const riscos=DB.clientes.filter(c=>dias(c)>30).sort((a,b)=>dias(b)-dias(a)).slice(0,5);
-  document.getElementById('riscos-list').innerHTML=riscos.length?riscos.map(c=>{
+  if(document.getElementById('riscos-list')) document.getElementById('riscos-list').innerHTML=riscos.length?riscos.map(c=>{
     const d=dias(c);return`<div class="ri"><div class="av">${inic(c.rs)}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--t1)">${c.rs}</div><div style="font-size:10px;color:var(--t3)">${d} dias · ${nomeEmp(c.empId)}</div></div><span class="b ${d>60?'b-r':'b-o'}">${d===999?'Nunca':d+'d'}</span></div>`;
   }).join(''):'<div style="color:var(--grn);font-size:12px">Nenhum cliente em risco!</div>';
   // eventos
-  document.getElementById('cal-evts').innerHTML=DB.eventos.slice(0,3).map(ev=>`
+  if(document.getElementById('cal-evts')) document.getElementById('cal-evts').innerHTML=DB.eventos.slice(0,3).map(ev=>`
     <div style="display:flex;align-items:center;gap:8px;padding:7px;border-radius:7px;border-left:3px solid ${ev.cor||'var(--acc)'};background:${(ev.cor||'#3b82f6')}11;margin-bottom:5px">
       <div style="font-size:11px;font-weight:600;color:var(--t1)">${ev.titulo}</div><div style="font-size:10px;color:var(--t3)">${fmtD(ev.dt)}</div>
     </div>`).join('')||'<div style="color:var(--t3);font-size:12px">Nenhum evento</div>';
@@ -1429,6 +1468,50 @@ function buildDash() {
   renderTarefasPendentes();
   // Agenda no dashboard
   renderAgendaDash();
+  // Tabela Vendas por Empresa
+  renderVendasEmpresaDash();
+}
+
+function renderVendasEmpresaDash(){
+  const tbEmp=document.getElementById('tb-dash-empresas'); if(!tbEmp) return;
+  const hj=new Date(); const mes=hj.getMonth(); const ano=hj.getFullYear();
+  const lblMes=document.getElementById('dash-mes-lbl');
+  if(lblMes) lblMes.textContent=hj.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  const corPct=function(p){ return p>=100?'var(--grn)':p>=70?'var(--org)':'var(--red)'; };
+  let htmlRows=DB.empresas.map(function(e,idx){
+    const venda=DB.pedidos.filter(function(p){return p.empId===e.id&&!p.cancelado&&p.dt;}).filter(function(p){var d=new Date(p.dt+'T12:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).reduce(function(a,p){return a+(p.val||0);},0);
+    const fat=DB.pedidos.filter(function(p){return p.empId===e.id&&!p.cancelado&&p.dtFat;}).filter(function(p){var d=new Date(p.dtFat+'T12:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).reduce(function(a,p){return a+(p.valfat||p.val||0);},0);
+    const metaV=getMetaMensal(e.id,ano,mes,'meta');
+    const metaF=getMetaMensal(e.id,ano,mes,'metaFat');
+    const pV=metaV?Math.round(venda/metaV*100):0;
+    const pF=metaF?Math.round(fat/metaF*100):0;
+    const bg=idx%2?'background:var(--s2)':'';
+    return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'
+      +'<td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:'+e.cor+'"></div><span style="font-weight:600;color:var(--t1)">'+e.nome+'</span></div></td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--t1)">'+fmt(venda)+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--t3)">'+(metaV?fmt(metaV):'—')+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;font-weight:600;color:'+corPct(pV)+'">'+(metaV?pV+'%':'—')+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--grn)">'+fmt(fat)+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--t3)">'+(metaF?fmt(metaF):'—')+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;font-weight:600;color:'+corPct(pF)+'">'+(metaF?pF+'%':'—')+'</td>'
+      +'</tr>';
+  }).join('');
+  const totV=DB.empresas.reduce(function(s,e){return s+DB.pedidos.filter(function(p){return p.empId===e.id&&!p.cancelado&&p.dt;}).filter(function(p){var d=new Date(p.dt+'T12:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).reduce(function(a,p){return a+(p.val||0);},0);},0);
+  const totF=DB.empresas.reduce(function(s,e){return s+DB.pedidos.filter(function(p){return p.empId===e.id&&!p.cancelado&&p.dtFat;}).filter(function(p){var d=new Date(p.dtFat+'T12:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).reduce(function(a,p){return a+(p.valfat||p.val||0);},0);},0);
+  const totMV=DB.empresas.reduce(function(s,e){return s+getMetaMensal(e.id,ano,mes,'meta');},0);
+  const totMF=DB.empresas.reduce(function(s,e){return s+getMetaMensal(e.id,ano,mes,'metaFat');},0);
+  const tpV=totMV?Math.round(totV/totMV*100):0;
+  const tpF=totMF?Math.round(totF/totMF*100):0;
+  htmlRows+='<tr style="background:var(--s2);font-weight:700;border-top:2px solid var(--bdr)">'
+    +'<td style="padding:6px 10px;color:var(--t1)">Total</td>'
+    +'<td style="padding:6px 10px;text-align:right">'+fmt(totV)+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:var(--t3)">'+fmt(totMV)+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:'+corPct(tpV)+'">'+(totMV?tpV+'%':'—')+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:var(--grn)">'+fmt(totF)+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:var(--t3)">'+fmt(totMF)+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:'+corPct(tpF)+'">'+(totMF?tpF+'%':'—')+'</td>'
+    +'</tr>';
+  tbEmp.innerHTML=htmlRows;
 }
 
 // ══ TAREFAS PENDENTES ══
@@ -2046,18 +2129,26 @@ function renderEmpDash(){
 
   const corPctDash=function(p){ return p>=100?'var(--grn)':p>=70?'var(--org)':'var(--red)'; };
 
+  const pedMesQtd=ps.filter(p=>{ if(!p.dt) return false; var d=new Date(p.dt+'T12:00'); return d.getMonth()===mesIdx&&d.getFullYear()===anoRefDash; }).length;
+  const pedMedioVal=pedMesQtd?Math.round(vendaMes/pedMesQtd):0;
+
   document.getElementById('mg-emp').innerHTML=`
     <div class="mc bl"><div class="mcl">Venda Mensal</div><div class="mcv">${fmt(vendaMes)}</div><div class="mcs" style="color:${corPctDash(pctVenda)}">${pctVenda}% da meta</div></div>
     <div class="mc gr"><div class="mcl">Faturamento Mensal</div><div class="mcv" style="color:var(--grn)">${fmt(fatMes)}</div><div class="mcs" style="color:${corPctDash(pctFat)}">${pctFat}% da meta</div></div>
     <div class="mc or"><div class="mcl">Pedidos em aberto</div><div class="mcv">${pedAbertos}</div><div class="mcs">aguardando faturamento</div></div>
-    <div class="mc re"><div class="mcl">Jurídico</div><div class="mcv">${ps.filter(p=>(p.pays||[]).includes('jd')).length}</div><div class="mcs ${ps.filter(p=>(p.pays||[]).includes('jd')).length>0?'dn':''}">pedidos em disputa</div></div>`;
+    <div class="mc bl" style="border-color:var(--acc2)"><div class="mcl">Total de Pedidos</div><div class="mcv" style="color:var(--acc2)">${pedMesQtd}</div><div class="mcs">pedidos no mês</div></div>
+    <div class="mc bl" style="border-color:var(--cyn)"><div class="mcl">Pedido Médio</div><div class="mcv" style="color:var(--cyn)">${fmt(pedMedioVal)}</div><div class="mcs">ticket médio do mês</div></div>`;
 
   const cur=fatMes, met=metaFatMes, pct=pctFat;
   const mf=document.getElementById('meta-fill');
   mf.style.width=pct+'%'; mf.style.background=pct>=100?'var(--grn)':pct>=70?'var(--org)':'var(--red)';
-  document.getElementById('meta-lbl').textContent=`${pct}% atingido`;
+  document.getElementById('meta-lbl').textContent=`Fat: ${pct}% · Venda: ${pctVenda}%`;
   document.getElementById('m-cur').textContent=fmt(cur);
-  document.getElementById('m-tot').textContent='Meta: '+fmt(met);
+  document.getElementById('m-tot').textContent='Meta Fat: '+fmt(met);
+  const mfv=document.getElementById('meta-fill-venda');
+  if(mfv){ mfv.style.width=Math.min(100,pctVenda)+'%'; mfv.style.background=pctVenda>=100?'var(--grn)':pctVenda>=70?'var(--org)':'var(--red)'; }
+  const mVendaCur=document.getElementById('m-venda-cur'); if(mVendaCur) mVendaCur.textContent=fmt(vendaMes);
+  const mVendaTot=document.getElementById('m-venda-tot'); if(mVendaTot) mVendaTot.textContent='Meta V: '+fmt(metaVendaMes);
   const cliEmp=clientesDaEmpresa(empAtual);
   const top=cliEmp.map(c=>({...c,tot:DB.pedidos.filter(p=>p.cliId===c.id).reduce((a,p)=>a+(p.valfat||p.val||0),0)})).sort((a,b)=>b.tot-a.tot).slice(0,8);
   const mx=top[0]?.tot||1;
@@ -3036,6 +3127,7 @@ function abrirEditPedido(pedId){
   document.getElementById('edit-transp').value = p.transp||'Correios';
   document.getElementById('edit-cod').value    = p.cod||'';
   document.getElementById('edit-tipo').value   = p.tipo||'';
+  if(document.getElementById('edit-obs')) document.getElementById('edit-obs').value = p.obs||'';
   window._paysDtEditAtual = p.paysDt||[];
   gerarCamposDatasParcEdit();
   calcEditCom();
@@ -3110,6 +3202,7 @@ function salvarEdicaoPedido(){
   p.transp = document.getElementById('edit-transp').value;
   p.cod    = document.getElementById('edit-cod').value||null;
   p.tipo   = document.getElementById('edit-tipo')?.value?.trim()||null;
+  p.obs    = document.getElementById('edit-obs')?.value?.trim()||null;
   // Atualizar ultFat do cliente
   const c=DB.clientes.find(x=>x.id===p.cliId);
   if(c&&p.dtFat) c.ultFat=p.dtFat;
@@ -3416,7 +3509,7 @@ function salvarPedido(){
   const fatSim=fatcom==='sim';
   const pays=fatSim?['',...Array(parc).fill('')]:[...Array(parc).fill('')];
   const paysDt=coletarPaysDt(parc,fatSim);
-  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,pays,paysDt};
+  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,pays,paysDt};
   DB.pedidos.push(novo);
   const c=DB.clientes.find(x=>x.id===cid);
   if(c&&novo.dtFat) c.ultFat=novo.dtFat;
@@ -3882,7 +3975,7 @@ function limparDados(){
 
 // ══ CFG ══
 function setCfgTab(el,id){
-  ['cf-emp','cf-senha','cf-ap','cf-bkp','cf-nuvem','cf-ia'].forEach(t=>{
+  ['cf-emp','cf-senha','cf-ap','cf-bkp','cf-nuvem','cf-ia','cf-seg'].forEach(t=>{
     const x=document.getElementById(t); if(x) x.style.display='none';
   });
   document.getElementById(id).style.display='';
@@ -3891,7 +3984,53 @@ function setCfgTab(el,id){
   if(id==='cf-emp') renderCfgEmpresas();
   if(id==='cf-senha') carregarCfgAcesso();
   if(id==='cf-nuvem') carregarCfgNuvem();
+  if(id==='cf-seg') renderCfgSegmentos();
 }
+
+// ══ SEGMENTOS ══
+function getSegmentos(){
+  const cfg=loadCfg();
+  if(cfg.segmentos&&cfg.segmentos.length) return cfg.segmentos;
+  return [...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))].sort();
+}
+function salvarSegmentos(segs){ const cfg=loadCfg(); cfg.segmentos=segs; saveCfg(cfg); }
+function renderCfgSegmentos(){
+  const el=document.getElementById('cfg-seg-lista'); if(!el) return;
+  const segs=getSegmentos();
+  if(!segs.length){ el.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px">Nenhum segmento cadastrado.</div>'; return; }
+  el.innerHTML=segs.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--s2);border-radius:7px;border:1px solid var(--bdr)">
+      <input class="fi" value="${s}" style="flex:1;padding:4px 8px;font-size:12px" onchange="editarSegmento(${i},this.value)">
+      <button class="btn bs" style="padding:2px 8px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="removerSegmento(${i})" title="Remover"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+function adicionarSegmento(){
+  const inp=document.getElementById('cfg-seg-novo'); if(!inp) return;
+  const val=inp.value.trim(); if(!val){ toast('Digite o nome do segmento'); return; }
+  const segs=getSegmentos();
+  if(segs.includes(val)){ toast('Segmento já existe'); return; }
+  segs.push(val); segs.sort(); salvarSegmentos(segs);
+  inp.value=''; renderCfgSegmentos(); toast('Segmento adicionado!'); atualizarSelectSegmento();
+}
+function editarSegmento(idx,val){
+  val=val.trim(); if(!val) return;
+  const segs=getSegmentos(); const old=segs[idx];
+  segs[idx]=val; segs.sort(); salvarSegmentos(segs);
+  DB.clientes.forEach(c=>{ if(c.seg===old) c.seg=val; }); salvarDB();
+  renderCfgSegmentos(); atualizarSelectSegmento();
+}
+function removerSegmento(idx){
+  const segs=getSegmentos();
+  if(!confirm('Remover segmento "'+segs[idx]+'"?')) return;
+  segs.splice(idx,1); salvarSegmentos(segs);
+  renderCfgSegmentos(); atualizarSelectSegmento(); toast('Segmento removido!');
+}
+function atualizarSelectSegmento(){
+  const sel=document.getElementById('cli-seg'); if(!sel) return;
+  const atual=sel.value; const segs=getSegmentos();
+  sel.innerHTML='<option value="">— Selecione —</option>'+segs.map(s=>`<option value="${s}"${s===atual?' selected':''}>${s}</option>`).join('');
+}
+// ══ FIM SEGMENTOS ══
 
 function renderCfgEmpresas(){
   const el=document.getElementById('cfg-emp-lista'); if(!el) return;
@@ -4934,6 +5073,7 @@ function atualizarCampoRastreio(){
 function abrirModalPed(cliId, empId){
   popularTiposPedido();
   var tipoEl=document.getElementById('ped-tipo'); if(tipoEl) tipoEl.value='';
+  var obsEl=document.getElementById('ped-obs'); if(obsEl) obsEl.value='';
   // Limpar campos
   const campos = ['ped-dt','ped-num','ped-val','ped-desc','ped-dtfat','ped-nf','ped-valfat','ped-cod'];
   campos.forEach(function(id){ const el=document.getElementById(id); if(el) el.value=''; });
@@ -5767,6 +5907,18 @@ function limparFiltroDataCom(){
 }
 
 // ══ DETALHAMENTO POR MÊS (Dashboard da Empresa) ══
+var _detSortCol = 'dt';
+var _detSortDir = 1;
+
+function sortDetalheMes(col){
+  if(_detSortCol===col){ _detSortDir*=-1; } else { _detSortCol=col; _detSortDir=1; }
+  ['dt','rs','val','ultFat','dias'].forEach(function(k){
+    var el=document.getElementById('sort-det-'+k);
+    if(el) el.className='ti '+(k===col?(_detSortDir===1?'ti-arrow-up':'ti-arrow-down'):'ti-arrows-sort')+' sort-ic';
+  });
+  renderDetalheMes();
+}
+
 function renderDetalheMes(){
   var mesInput = document.getElementById('dash-mes-detalhe')?.value || '';
   var tbody = document.getElementById('tb-detalhe-mes');
@@ -5786,6 +5938,34 @@ function renderDetalheMes(){
   }
 
   doMes.sort(function(a,b){ return (a.dt||'')<(b.dt||'')?-1:1; });
+
+  // Aplica ordenação selecionada
+  doMes.sort(function(a,b){
+    var ca=DB.clientes.find(function(x){return x.id===a.cliId;}); var cb=DB.clientes.find(function(x){return x.id===b.cliId;});
+    var va, vb;
+    if(_detSortCol==='dt'){ va=a.dt||''; vb=b.dt||''; }
+    else if(_detSortCol==='rs'){ va=(ca?.rs||'').toLowerCase(); vb=(cb?.rs||'').toLowerCase(); }
+    else if(_detSortCol==='val'){ va=a.val||0; vb=b.val||0; }
+    else if(_detSortCol==='ultFat'){
+      var psa=DB.pedidos.filter(function(x){return x.cliId===a.cliId&&x.dtFat&&x.empId===empAtual;}).sort(function(x,y){return x.dtFat<y.dtFat?1:-1;});
+      var psb=DB.pedidos.filter(function(x){return x.cliId===b.cliId&&x.dtFat&&x.empId===empAtual;}).sort(function(x,y){return x.dtFat<y.dtFat?1:-1;});
+      va=psa[0]?.dtFat||''; vb=psb[0]?.dtFat||'';
+    }
+    else if(_detSortCol==='dias'){
+      var psa2=DB.pedidos.filter(function(x){return x.cliId===a.cliId&&x.dtFat&&x.empId===empAtual;}).sort(function(x,y){return x.dtFat<y.dtFat?1:-1;});
+      var psb2=DB.pedidos.filter(function(x){return x.cliId===b.cliId&&x.dtFat&&x.empId===empAtual;}).sort(function(x,y){return x.dtFat<y.dtFat?1:-1;});
+      va=psa2[0]?Math.floor((Date.now()-new Date(psa2[0].dtFat+'T12:00'))/86400000):9999;
+      vb=psb2[0]?Math.floor((Date.now()-new Date(psb2[0].dtFat+'T12:00'))/86400000):9999;
+    }
+    if(va<vb) return -1*_detSortDir; if(va>vb) return 1*_detSortDir; return 0;
+  });
+  var totalVenda = doMes.reduce(function(s,p){ return s+(p.val||0); }, 0);
+  var nPedidos = doMes.length;
+  var somaEl = document.getElementById('detalhe-mes-soma');
+  if(somaEl) somaEl.innerHTML =
+    '<div style="display:flex;align-items:center;gap:6px"><i class="ti ti-shopping-cart" style="color:var(--acc)"></i><span style="color:var(--t3)">Pedidos:</span><span style="font-weight:700;color:var(--t1)">'+nPedidos+'</span></div>'+
+    '<div style="display:flex;align-items:center;gap:6px"><i class="ti ti-currency-dollar" style="color:var(--grn)"></i><span style="color:var(--t3)">Total venda:</span><span style="font-weight:700;color:var(--t1)">'+fmt(totalVenda)+'</span></div>'+
+    '<div style="display:flex;align-items:center;gap:6px"><i class="ti ti-cash" style="color:var(--acc2)"></i><span style="color:var(--t3)">Ticket médio:</span><span style="font-weight:700;color:var(--t1)">'+fmt(nPedidos?Math.round(totalVenda/nPedidos):0)+'</span></div>';
 
   tbody.innerHTML = doMes.map(function(p){
     var c = DB.clientes.find(function(x){ return x.id===p.cliId; });
@@ -6570,11 +6750,9 @@ if('serviceWorker' in navigator){
   <div class="g3">
     <div>
       <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-check" style="color:var(--grn)"></i>Tarefas de hoje</div><button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="om('mTar')"><i class="ti ti-plus"></i></button></div><div id="tsk-list"></div></div>
-      <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-calendar" style="color:var(--acc2)"></i>Próximos eventos</div></div><div id="cal-evts"></div></div>
       <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-clock-exclamation" style="color:var(--red)"></i>Tarefas pendentes</div><span id="badge-tarefas-pend" class="b b-r" style="font-size:9px"></span></div><div id="tarefas-pend-list" style="max-height:200px;overflow-y:auto"></div></div>
     </div>
     <div>
-      <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-alert-triangle" style="color:var(--red)"></i>Clientes em risco</div></div><div id="riscos-list"></div></div>
     </div>
   </div>
 
@@ -6681,7 +6859,7 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-emp"></div>
-  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-target" style="color:var(--grn)"></i>Progresso da meta de faturamento</div><span id="meta-lbl" style="font-size:11px;color:var(--t3)"></span></div><div class="mbar"><div class="mfill" id="meta-fill"></div></div><div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--t3)"><span id="m-cur"></span><span id="m-tot"></span></div></div>
+  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-target" style="color:var(--grn)"></i>Progresso da meta</div><span id="meta-lbl" style="font-size:10px;color:var(--t3)"></span></div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Faturamento</div><div class="mbar"><div class="mfill" id="meta-fill"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:6px"><span id="m-cur"></span><span id="m-tot"></span></div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Venda</div><div class="mbar"><div class="mfill" id="meta-fill-venda"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3)"><span id="m-venda-cur"></span><span id="m-venda-tot"></span></div></div>
   <div class="g2">
     <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-chart-line" style="color:var(--acc)"></i>Vendas mensais</div></div><div class="cw tall"><canvas id="cv-men" role="img" aria-label="Vendas mensais">Vendas</canvas></div></div>
     <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-trophy" style="color:var(--org)"></i>Top clientes</div></div><div id="top10"></div></div>
@@ -7161,7 +7339,7 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Comprador</label><input class="fi" id="cli-comp" placeholder="Nome do comprador"></div>
     <div class="fg"><label class="fl">Rede</label><input class="fi" id="cli-rede" placeholder="Ex: Rede Gazin, Grupo Malwee..."></div>
     <div class="fg"><label class="fl">E-mail</label><input class="fi" id="cli-email" placeholder="email@empresa.com"></div>
-    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="cli-seg"><option>Varejo</option><option>Atacado</option><option>Indústria</option><option>Farmácia</option><option>Móveis</option><option>Alimentício</option><option>Tecnologia</option></select></div>
+    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="cli-seg"><option value="">— Selecione —</option></select></div>
     <div class="fg"><label class="fl">Empresa de origem</label><select class="fi" id="cli-emp"></select><div style="font-size:10px;color:var(--t3);margin-top:4px">O cliente fica disponível para todas as empresas — esta é só a empresa do cadastro inicial</div></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Observações</label><textarea class="fi" id="cli-obs2" style="height:55px;resize:vertical"></textarea></div>
   </div>
@@ -7757,8 +7935,8 @@ function buildDash() {
   const nr = DB.clientes.filter(c=>!c.encerrado&&dias(c)>(DB.empresas.find(x=>x.id===c.empId)?.risco||60)).length;
   const pab = DB.pedidos.filter(p=>!p.cancelado&&!p.dtFat).length;
   document.getElementById('mg-dash').innerHTML=`
-    <div class="mc bl"><div class="mcl">Venda Mensal</div><div class="mcv">${fmt(tvVenda)}</div><div class="mcs" style="color:${corPct(pctV)}">${pctV}% da meta</div></div>
-    <div class="mc gr"><div class="mcl">Faturamento Mensal</div><div class="mcv" style="color:var(--grn)">${fmt(tv)}</div><div class="mcs" style="color:${corPct(pctF)}">${pctF}% da meta</div></div>
+    <div class="mc bl"><div class="mcl">Venda Mensal</div><div class="mcv">${fmt(tvVenda)}</div><div class="mcs">${DB.empresas.length} empresa(s)</div></div>
+    <div class="mc gr"><div class="mcl">Faturamento Mensal</div><div class="mcv" style="color:var(--grn)">${fmt(tv)}</div><div class="mcs">mês vigente</div></div>
     <div class="mc or"><div class="mcl">Pedidos em aberto</div><div class="mcv">${pab}</div><div class="mcs">aguardando faturar</div></div>
     <div class="mc re"><div class="mcl">Clientes em risco</div><div class="mcv">${nr}</div><div class="mcs ${nr>0?'dn':''}">acima do prazo</div></div>`;
   // tarefas
@@ -7773,11 +7951,11 @@ function buildDash() {
   }).join('') : '<div style="color:var(--t3);font-size:12px;padding:8px 0">Sem tarefas para hoje!</div>';
   // riscos
   const riscos=DB.clientes.filter(c=>dias(c)>30).sort((a,b)=>dias(b)-dias(a)).slice(0,5);
-  document.getElementById('riscos-list').innerHTML=riscos.length?riscos.map(c=>{
+  if(document.getElementById('riscos-list')) document.getElementById('riscos-list').innerHTML=riscos.length?riscos.map(c=>{
     const d=dias(c);return`<div class="ri"><div class="av">${inic(c.rs)}</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--t1)">${c.rs}</div><div style="font-size:10px;color:var(--t3)">${d} dias · ${nomeEmp(c.empId)}</div></div><span class="b ${d>60?'b-r':'b-o'}">${d===999?'Nunca':d+'d'}</span></div>`;
   }).join(''):'<div style="color:var(--grn);font-size:12px">Nenhum cliente em risco!</div>';
   // eventos
-  document.getElementById('cal-evts').innerHTML=DB.eventos.slice(0,3).map(ev=>`
+  if(document.getElementById('cal-evts')) document.getElementById('cal-evts').innerHTML=DB.eventos.slice(0,3).map(ev=>`
     <div style="display:flex;align-items:center;gap:8px;padding:7px;border-radius:7px;border-left:3px solid ${ev.cor||'var(--acc)'};background:${(ev.cor||'#3b82f6')}11;margin-bottom:5px">
       <div style="font-size:11px;font-weight:600;color:var(--t1)">${ev.titulo}</div><div style="font-size:10px;color:var(--t3)">${fmtD(ev.dt)}</div>
     </div>`).join('')||'<div style="color:var(--t3);font-size:12px">Nenhum evento</div>';
@@ -9394,6 +9572,7 @@ function abrirEditPedido(pedId){
   document.getElementById('edit-transp').value = p.transp||'Correios';
   document.getElementById('edit-cod').value    = p.cod||'';
   document.getElementById('edit-tipo').value   = p.tipo||'';
+  if(document.getElementById('edit-obs')) document.getElementById('edit-obs').value = p.obs||'';
   window._paysDtEditAtual = p.paysDt||[];
   gerarCamposDatasParcEdit();
   calcEditCom();
@@ -9468,6 +9647,7 @@ function salvarEdicaoPedido(){
   p.transp = document.getElementById('edit-transp').value;
   p.cod    = document.getElementById('edit-cod').value||null;
   p.tipo   = document.getElementById('edit-tipo')?.value?.trim()||null;
+  p.obs    = document.getElementById('edit-obs')?.value?.trim()||null;
   // Atualizar ultFat do cliente
   const c=DB.clientes.find(x=>x.id===p.cliId);
   if(c&&p.dtFat) c.ultFat=p.dtFat;
@@ -9774,7 +9954,7 @@ function salvarPedido(){
   const fatSim=fatcom==='sim';
   const pays=fatSim?['',...Array(parc).fill('')]:[...Array(parc).fill('')];
   const paysDt=coletarPaysDt(parc,fatSim);
-  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,pays,paysDt};
+  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,pays,paysDt};
   DB.pedidos.push(novo);
   const c=DB.clientes.find(x=>x.id===cid);
   if(c&&novo.dtFat) c.ultFat=novo.dtFat;
@@ -11292,6 +11472,7 @@ function atualizarCampoRastreio(){
 function abrirModalPed(cliId, empId){
   popularTiposPedido();
   var tipoEl=document.getElementById('ped-tipo'); if(tipoEl) tipoEl.value='';
+  var obsEl=document.getElementById('ped-obs'); if(obsEl) obsEl.value='';
   // Limpar campos
   const campos = ['ped-dt','ped-num','ped-val','ped-desc','ped-dtfat','ped-nf','ped-valfat','ped-cod'];
   campos.forEach(function(id){ const el=document.getElementById(id); if(el) el.value=''; });
