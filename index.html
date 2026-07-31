@@ -195,6 +195,7 @@ if('serviceWorker' in navigator){
     <div class="slbl">Principal</div>
     <div class="ni act" id="n-dash" onclick="sp('dash')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" id="n-cli" onclick="sp('cli')"><i class="ti ti-users"></i>Clientes</div>
+    <div class="ni" id="n-leads" onclick="sp('leads')"><i class="ti ti-target-arrow" style="color:var(--org)"></i>Leads<span id="badge-leads" class="emp-badge-count warn" style="display:none"></span></div>
     <div class="ni" id="n-agenda" onclick="sp('agenda')"><i class="ti ti-calendar-event"></i>Agenda<span id="badge-agenda" class="emp-badge-count warn" style="display:none"></span></div>
     <div class="slbl">Empresas</div>
     <div id="emp-sb"></div>
@@ -282,7 +283,7 @@ if('serviceWorker' in navigator){
       <button class="btn bp" onclick="om('mCli')"><i class="ti ti-plus"></i> Novo</button>
     </div>
     <div id="col-menu-cli" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCli('Cidade',this.checked)"> Cidade</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCli('Contato',this.checked)"> Contato</label>
@@ -333,6 +334,12 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div id="tbl-cliped-wrapper"></div>
+
+  <!-- Compras anuais por empresa -->
+  <div class="card" style="margin-top:14px">
+    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc2)"></i>Compras anuais por empresa</div></div>
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)" id="tb-cli-anual"></table></div>
+  </div>
 </div>
 
 <!-- EMP DASHBOARD -->
@@ -349,25 +356,6 @@ if('serviceWorker' in navigator){
   <div class="mg" id="mg-emp"></div>
   <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-target" style="color:var(--grn)"></i>Progresso da meta</div><span id="meta-lbl" style="font-size:10px;color:var(--t3)"></span></div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Faturamento</div><div class="mbar"><div class="mfill" id="meta-fill"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:6px"><span id="m-cur"></span><span id="m-tot"></span></div><div style="font-size:9px;color:var(--t3);margin-bottom:2px">Venda</div><div class="mbar"><div class="mfill" id="meta-fill-venda"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3)"><span id="m-venda-cur"></span><span id="m-venda-tot"></span></div></div>
 
-  <div class="card" style="margin-bottom:14px">
-    <div class="ct">
-      <div class="ctl"><i class="ti ti-robot" style="color:var(--acc2)"></i>Assistente IA — <span id="ia-emp-nome" style="color:var(--t2)"></span></div>
-      <button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="iaLimparChat()" title="Limpar conversa"><i class="ti ti-trash"></i></button>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('resumo')">📋 Resumo do dia</button>
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('email')">✉️ E-mail reativação</button>
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('previsao')">📈 Previsão faturamento</button>
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('sugestao')">💡 O que oferecer</button>
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('anomalia')">🔍 Detectar anomalias</button>
-    </div>
-    <div id="ia-emp-msgs" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;font-size:11px"></div>
-    <div style="display:flex;gap:8px">
-      <input class="fi" id="ia-emp-inp" placeholder="Pergunte sobre seus clientes ou vendas..." style="flex:1"
-        onkeydown="if(event.key==='Enter')iaEmpresaChat(this.value)">
-      <button class="btn bp" style="padding:5px 12px" onclick="iaEmpresaChat(document.getElementById('ia-emp-inp').value)"><i class="ti ti-send"></i></button>
-    </div>
-  </div>
   <div class="g2">
     <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-chart-line" style="color:var(--acc)"></i>Vendas mensais</div></div><div class="cw tall"><canvas id="cv-men" role="img" aria-label="Vendas mensais">Vendas</canvas></div></div>
     <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-trophy" style="color:var(--org)"></i>Top clientes</div></div><div id="top10"></div></div>
@@ -475,7 +463,7 @@ if('serviceWorker' in navigator){
       <button class="btn bp" onclick="om('mPed')"><i class="ti ti-plus"></i> Novo</button>
     </div>
     <div id="col-menu-ped" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
@@ -539,7 +527,7 @@ if('serviceWorker' in navigator){
       <button class="btn bs" onclick="toggleColMenu('col-menu-com')" title="Escolher colunas"><i class="ti ti-columns"></i></button>
     </div>
     <div id="col-menu-com" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCom('Vl. Faturado',this.checked)"> Vl. Faturado</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCom('Com%',this.checked)"> Com%</label>
@@ -638,6 +626,15 @@ if('serviceWorker' in navigator){
       <div style="margin-top:14px;height:220px"><canvas id="cv-cresc-anual"></canvas></div>
     </div>
 
+    <!-- COMPARATIVO POR TIPO DE PEDIDO -->
+    <div class="card">
+      <div class="ct">
+        <div class="ctl"><i class="ti ti-building-store" style="color:var(--cyn)"></i>Comparativo por Tipo de Pedido</div>
+        <button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="renderComparativoTipo()"><i class="ti ti-refresh"></i> Atualizar</button>
+      </div>
+      <div id="tb-comparativo-tipo"></div>
+    </div>
+
   </div>
 </div>
 
@@ -661,6 +658,7 @@ if('serviceWorker' in navigator){
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
     <button class="btn bs" style="color:var(--red);border-color:var(--red)" onclick="excluirPedidoEdit()"><i class="ti ti-trash"></i> Excluir</button>
+    <button class="btn bs" style="color:var(--acc2);border-color:var(--acc2)" onclick="duplicarPedidoEdit()" title="Duplicar pedido para nova NF"><i class="ti ti-copy-plus"></i> + Nova NF</button>
     <button class="btn bs" onclick="cm('mEditPed')">Cancelar</button>
     <button class="btn bp" onclick="salvarEdicaoPedido()"><i class="ti ti-check"></i> Salvar</button>
   </div>
@@ -694,6 +692,72 @@ if('serviceWorker' in navigator){
 </div>
 
 <!-- AGENDA -->
+<!-- LEADS -->
+<div id="p-leads" style="display:none">
+  <div class="ph">
+    <div><div class="pt"><i class="ti ti-target-arrow" style="color:var(--org)"></i>Leads</div><div class="ps">Prospects e oportunidades de novos clientes</div></div>
+    <div class="pa" style="flex-wrap:wrap;gap:6px">
+      <input class="fi" id="busca-lead" style="width:160px;padding:5px 10px;font-size:12px" placeholder="Buscar nome, empresa..." oninput="renderLeads()">
+      <select class="fi" id="fil-lead-estagio" style="width:140px;padding:5px 9px;font-size:12px" onchange="renderLeads()">
+        <option value="">Todos os estágios</option>
+        <option>Novo</option><option>Contato feito</option><option>Proposta enviada</option>
+        <option>Negociação</option><option>Convertido</option><option>Perdido</option>
+      </select>
+      <select class="fi" id="fil-lead-origem" style="width:130px;padding:5px 9px;font-size:12px" onchange="renderLeads()">
+        <option value="">Todas as origens</option>
+        <option>Indicação</option><option>Feira</option><option>Redes Sociais</option>
+        <option>Cold Call</option><option>Visita</option><option>Site</option><option>WhatsApp</option><option>Outro</option>
+      </select>
+      <button class="btn bp" onclick="abrirModalLead()"><i class="ti ti-plus"></i> Novo Lead</button>
+    </div>
+  </div>
+  <div id="lead-resumo" style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"></div>
+  <div class="card" style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:7px 10px;text-align:left">Nome / Empresa</th>
+        <th style="padding:7px 10px;text-align:left">Telefone</th>
+        <th style="padding:7px 10px;text-align:left">Cidade</th>
+        <th style="padding:7px 10px;text-align:left">Segmento</th>
+        <th style="padding:7px 10px;text-align:left">Origem</th>
+        <th style="padding:7px 10px;text-align:center">Estágio</th>
+        <th style="padding:7px 10px;text-align:center">Visita</th>
+        <th style="padding:7px 10px;text-align:left">Obs</th>
+        <th style="padding:7px 10px;text-align:center">Ações</th>
+      </tr></thead>
+      <tbody id="tb-leads"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL LEAD -->
+<div class="mbg" id="mLead"><div class="modal" style="max-width:520px">
+  <div class="mtt"><i class="ti ti-target-arrow" style="color:var(--org)"></i> <span id="lead-modal-titulo">Novo Lead</span> <button class="xb" onclick="cm('mLead')"><i class="ti ti-x"></i></button></div>
+  <div class="fg2">
+    <div class="fg"><label class="fl">Nome *</label><input class="fi" id="lead-nome" placeholder="Nome do contato"></div>
+    <div class="fg"><label class="fl">Empresa</label><input class="fi" id="lead-empresa" placeholder="Razão social / nome da loja"></div>
+    <div class="fg"><label class="fl">Telefone / WhatsApp</label><input class="fi" id="lead-tel" placeholder="(51) 99999-9999"></div>
+    <div class="fg"><label class="fl">Cidade</label><input class="fi" id="lead-cidade" placeholder="Cidade"></div>
+    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="lead-seg"><option value="">—</option></select></div>
+    <div class="fg"><label class="fl">Origem</label><select class="fi" id="lead-origem">
+      <option value="">—</option>
+      <option>Indicação</option><option>Feira</option><option>Redes Sociais</option>
+      <option>Cold Call</option><option>Visita</option><option>Site</option>
+      <option>WhatsApp</option><option>Outro</option>
+    </select></div>
+    <div class="fg"><label class="fl">Estágio</label><select class="fi" id="lead-estagio">
+      <option>Novo</option><option>Contato feito</option><option>Proposta enviada</option>
+      <option>Negociação</option><option>Convertido</option><option>Perdido</option>
+    </select></div>
+    <div class="fg"><label class="fl">Data da visita</label><input class="fi" type="date" id="lead-visita"></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Observações</label><textarea class="fi" id="lead-obs" style="height:70px;resize:vertical"></textarea></div>
+  </div>
+  <div class="btn-row" style="margin-top:14px">
+    <button class="btn bs" onclick="cm('mLead')">Cancelar</button>
+    <button class="btn bp" onclick="salvarLead()"><i class="ti ti-check"></i> Salvar</button>
+  </div>
+</div></div>
+
 <div id="p-agenda" style="display:none">
   <div class="ph">
     <div><div class="pt"><i class="ti ti-calendar-event"></i>Agenda</div><div class="ps">Telefonemas, reuniões e verificações</div></div>
@@ -853,7 +917,7 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Comprador</label><input class="fi" id="edit-cli-comp" placeholder="Nome do comprador"></div>
     <div class="fg"><label class="fl">Rede</label><input class="fi" id="edit-cli-rede" placeholder="Ex: Rede Gazin, Grupo Malwee..."></div>
     <div class="fg"><label class="fl">E-mail</label><input class="fi" id="edit-cli-email" placeholder="email@empresa.com"></div>
-    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="edit-cli-seg"><option>Varejo</option><option>Atacado</option><option>Indústria</option><option>Farmácia</option><option>Móveis</option><option>Alimentício</option><option>Tecnologia</option><option>Papelaria</option><option>Presente</option><option>Gamer</option><option>Tabacaria</option><option>Brinquedos</option><option>Pet</option><option>Esporte</option><option>Cosméticos</option></select></div>
+    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="edit-cli-seg"><option value="">— Selecione —</option></select></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Observações</label><textarea class="fi" id="edit-cli-obs" style="height:55px;resize:vertical"></textarea></div>
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
@@ -1387,7 +1451,7 @@ function buildSidebar() {
 // ══ NAVEGAÇÃO ══
 function sp(p) {
   // Esconder apenas as páginas de conteúdo (evitar esconder modais etc)
-  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas'];
+  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads'];
   pgs.forEach(function(pid){ var el=document.getElementById(pid); if(el) el.style.display='none'; });
   const el = document.getElementById('p-'+p);
   if(el) el.style.display='block';
@@ -1902,11 +1966,51 @@ function abrirCli(id, from) {
   paginas.forEach(function(pid){ var el=document.getElementById(pid); if(el) el.style.display='none'; });
   var pgDet = document.getElementById('p-clidet');
   if(pgDet) pgDet.style.display = 'block';
-
+  renderCliAnual(id);
   // Limpar seleção do menu
   document.querySelectorAll('.ni').forEach(function(n){ n.classList.remove('act'); });
 }
 function voltarCli(){sp(voltarPara);}
+
+// ══ COMPRAS ANUAIS POR EMPRESA ══
+function renderCliAnual(cliId){
+  var tb=document.getElementById('tb-cli-anual'); if(!tb) return;
+  var peds=DB.pedidos.filter(function(p){return p.cliId===cliId&&!p.cancelado&&p.dt;});
+  if(!peds.length){ tb.innerHTML='<tr><td colspan="10" style="color:var(--t3);padding:12px;text-align:center">Nenhum pedido encontrado.</td></tr>'; return; }
+  var empresas=[...new Set(peds.map(function(p){return p.empId;}))];
+  var anos=[...new Set(peds.map(function(p){return p.dt.slice(0,4);}))].sort();
+  var thead='<thead><tr style="background:var(--s2)"><th style="padding:6px 10px;color:var(--t3);font-weight:600;text-align:left;border-bottom:2px solid var(--bdr)">Empresa</th>';
+  anos.forEach(function(a){ thead+='<th colspan="2" style="padding:6px 10px;color:var(--acc);font-weight:600;text-align:center;border-bottom:2px solid var(--bdr);border-left:1px solid var(--bdr)">'+a+'</th>'; });
+  thead+='<th colspan="2" style="padding:6px 10px;color:var(--acc2);font-weight:600;text-align:center;border-bottom:2px solid var(--bdr);border-left:2px solid var(--bdr)">Total</th></tr>';
+  thead+='<tr style="background:var(--s2)"><th style="padding:4px 10px;border-bottom:1px solid var(--bdr)"></th>';
+  anos.forEach(function(){ thead+='<th style="padding:4px 8px;color:var(--t3);font-size:9px;text-align:right;border-left:1px solid var(--bdr)">VENDA</th><th style="padding:4px 8px;color:var(--grn);font-size:9px;text-align:right">FAT.</th>'; });
+  thead+='<th style="padding:4px 8px;color:var(--t3);font-size:9px;text-align:right;border-left:2px solid var(--bdr)">VENDA</th><th style="padding:4px 8px;color:var(--grn);font-size:9px;text-align:right">FAT.</th></tr></thead>';
+  var totalGeralV=0; var totalGeralF=0; var totaisAno={};
+  anos.forEach(function(a){ totaisAno[a]={v:0,f:0}; });
+  var tbody='<tbody>';
+  empresas.forEach(function(eid,idx){
+    var emp=DB.empresas.find(function(x){return x.id===eid;})||{nome:'—',cor:'#ccc'};
+    var pedsEmp=peds.filter(function(p){return p.empId===eid;});
+    var totalV=0; var totalF=0;
+    var bg=idx%2?'background:var(--s2)':'';
+    tbody+='<tr style="border-bottom:1px solid var(--s3);'+bg+'"><td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:6px"><div style="width:7px;height:7px;border-radius:50%;background:'+emp.cor+'"></div><span style="font-weight:600;color:var(--t1)">'+emp.nome+'</span></div></td>';
+    anos.forEach(function(ano){
+      var pa=pedsEmp.filter(function(p){return p.dt.slice(0,4)===ano;});
+      var v=pa.reduce(function(s,p){return s+(p.val||0);},0);
+      var f=pa.filter(function(p){return p.dtFat;}).reduce(function(s,p){return s+(p.valfat||p.val||0);},0);
+      totalV+=v; totalF+=f; totaisAno[ano].v+=v; totaisAno[ano].f+=f;
+      tbody+='<td style="padding:6px 8px;text-align:right;border-left:1px solid var(--s3);color:var(--t1)">'+(v?fmt(v):'—')+'</td><td style="padding:6px 8px;text-align:right;color:var(--grn)">'+(f?fmt(f):'—')+'</td>';
+    });
+    totalGeralV+=totalV; totalGeralF+=totalF;
+    tbody+='<td style="padding:6px 8px;text-align:right;border-left:2px solid var(--bdr);font-weight:700;color:var(--t1)">'+fmt(totalV)+'</td><td style="padding:6px 8px;text-align:right;font-weight:700;color:var(--grn)">'+fmt(totalF)+'</td></tr>';
+  });
+  tbody+='<tr style="background:var(--s2);font-weight:700;border-top:2px solid var(--bdr)"><td style="padding:6px 10px;color:var(--t1)">Total</td>';
+  anos.forEach(function(ano){ tbody+='<td style="padding:6px 8px;text-align:right;border-left:1px solid var(--bdr);color:var(--t1)">'+fmt(totaisAno[ano].v)+'</td><td style="padding:6px 8px;text-align:right;color:var(--grn)">'+fmt(totaisAno[ano].f)+'</td>'; });
+  tbody+='<td style="padding:6px 8px;text-align:right;border-left:2px solid var(--bdr);color:var(--t1)">'+fmt(totalGeralV)+'</td><td style="padding:6px 8px;text-align:right;color:var(--grn)">'+fmt(totalGeralF)+'</td></tr></tbody>';
+  tb.innerHTML=thead+tbody;
+}
+// ══ FIM COMPRAS ANUAIS ══
+
 function setCTab(el,id){
   document.querySelectorAll('#p-clidet [id^="ct-"]').forEach(t=>t.style.display='none');
   document.getElementById(id).style.display='block';
@@ -1940,6 +2044,8 @@ function abrirEditarCliente(id){
     }
     [...segSel.options].forEach(o=>{ o.selected=o.value===c.seg; });
   }
+  atualizarSelectSegmento();
+  if(segSel) segSel.value=c.seg||'';
   om('mEditCli');
 }
 
@@ -2557,7 +2663,7 @@ function buildPedTabela(ps,mini){
       ${mini?'':`<td>${p.tipo?`<span class="b b-p" style="font-size:9px" title="${p.tipo}">${p.tipo.length>12?p.tipo.substring(0,12)+'...':p.tipo}</span>`:'<span style="color:var(--t3)">—</span>'}</td>`}
       ${mini?pCells.join(''):''}
       ${mini?'':`<td style="text-align:center"><input type="checkbox" ${p.naTransp?"checked":""} onchange="toggleTransp('${p.id}',this)" title="${p.naTransp?'Na transportadora desde '+p.naTranspData:'Marcar como enviado para transportadora'}" style="width:16px;height:16px;cursor:pointer;accent-color:var(--cyn)"></td>`}
-      ${mini?'':`<td style="white-space:nowrap"><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc);border-color:var(--acc)" onclick="enviarSAC('${p.id}')" title="Enviar e-mail para o SAC"><i class="ti ti-headset"></i> SAC</button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirPedido('${p.id}')" title="Excluir pedido"><i class="ti ti-trash"></i></button></td>`}
+      ${mini?'':`<td style="white-space:nowrap"><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc2);border-color:var(--acc2)" onclick="novaNFDireta('${p.id}')" title="Nova NF para este pedido"><i class="ti ti-copy-plus"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc);border-color:var(--acc)" onclick="enviarSAC('${p.id}')" title="Enviar e-mail para o SAC"><i class="ti ti-headset"></i> SAC</button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirPedido('${p.id}')" title="Excluir pedido"><i class="ti ti-trash"></i></button></td>`}
       ${mini?`<td><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i> Editar</button></td>`:''}
     </tr>`;
   }).join('');
@@ -3216,6 +3322,70 @@ function salvarEdicaoPedido(){
     abrirCli(p.cliId, voltarPara);
   }
   pedidoEditId=null;
+}
+
+function novaNFDireta(pedId){
+  const orig=DB.pedidos.find(x=>x.id===pedId);
+  if(!orig){ toast('Pedido não encontrado'); return; }
+  const cli=DB.clientes.find(x=>x.id===orig.cliId);
+  if(!cli){ toast('Cliente não encontrado'); return; }
+
+  om('mPed');
+
+  setTimeout(function(){
+    const el=function(id){ return document.getElementById(id); };
+
+    // 1. Define empresa
+    if(el('ped-emp')){
+      el('ped-emp').value=orig.empId||'';
+      if(typeof carregarClisPed==='function') carregarClisPed();
+    }
+
+    // 2. Define cliente usando a função correta do sistema
+    if(typeof selecionarCliPed==='function'){
+      selecionarCliPed(cli.id, cli.rs);
+    }
+
+    // 3. Preenche demais campos
+    if(el('ped-dt'))   el('ped-dt').value=orig.dt||'';
+    if(el('ped-num'))  el('ped-num').value=orig.num||'';
+    if(el('ped-tipo')) el('ped-tipo').value=orig.tipo||'';
+    if(el('ped-desc')) el('ped-desc').value=orig.desc||0;
+    if(el('ped-parc')) el('ped-parc').value=orig.parc||1;
+    if(el('ped-com'))  el('ped-com').value=orig.com||0;
+    if(el('ped-fatcom')) el('ped-fatcom').value=orig.fatcom||'nao';
+    if(el('ped-transp')) el('ped-transp').value=orig.transp||'';
+
+    // 4. Campos limpos para nova NF
+    if(el('ped-val'))    el('ped-val').value='';
+    if(el('ped-dtfat'))  el('ped-dtfat').value='';
+    if(el('ped-nf'))     el('ped-nf').value='';
+    if(el('ped-valfat')) el('ped-valfat').value='';
+    if(el('ped-obs'))    el('ped-obs').value='';
+
+    if(typeof calcCom==='function') calcCom();
+    toast('Campos preenchidos! Adicione o valor e NF da nova entrada.');
+  }, 200);
+}
+
+function duplicarPedidoEdit(){
+  const orig=DB.pedidos.find(x=>x.id===pedidoEditId);
+  if(!orig){ toast('Pedido não encontrado'); return; }
+  if(!confirm('Criar cópia deste pedido para nova NF?\n\nSerão copiados: Data, Nº Pedido, Cliente e Origem.\nValor, NF e Faturamento ficarão em branco.')) return;
+  const nova={
+    id:uid(), empId:orig.empId, cliId:orig.cliId,
+    dt:orig.dt, num:orig.num, tipo:orig.tipo,
+    desc:orig.desc||0, parc:orig.parc||1, com:orig.com||0,
+    fatcom:orig.fatcom||'nao', transp:orig.transp||'',
+    val:0, valfat:0, dtFat:null, nf:null,
+    obs:orig.obs||null, cancelado:false,
+    pays:[], paysDt:[], nfRef:orig.id
+  };
+  DB.pedidos.push(nova);
+  salvarDB();
+  cm('mEditPed');
+  toast('Nova NF criada! Edite para preencher valor e faturamento.');
+  setTimeout(function(){ abrirEditPed(nova.id); }, 400);
 }
 
 function excluirPedidoEdit(){
@@ -3987,13 +4157,179 @@ function setCfgTab(el,id){
   if(id==='cf-seg') renderCfgSegmentos();
 }
 
-// ══ SEGMENTOS ══
+// ══ LEADS ══
+if(!DB.leads) DB.leads=[];
+
+var leadEditId=null;
+const ESTAGIOS={
+  'Novo':           {cor:'var(--t3)',  bg:'var(--s2)'},
+  'Contato feito':  {cor:'var(--acc)', bg:'rgba(37,99,235,.1)'},
+  'Proposta enviada':{cor:'var(--cyn)',bg:'rgba(8,145,178,.1)'},
+  'Negociação':     {cor:'var(--org)', bg:'rgba(217,119,6,.1)'},
+  'Convertido':     {cor:'var(--grn)', bg:'rgba(5,150,105,.1)'},
+  'Perdido':        {cor:'var(--red)', bg:'rgba(220,38,38,.1)'}
+};
+
+function abrirModalLead(id){
+  leadEditId=id||null;
+  document.getElementById('lead-modal-titulo').textContent=id?'Editar Lead':'Novo Lead';
+  // Popular segmentos
+  const segSel=document.getElementById('lead-seg');
+  if(segSel){ segSel.innerHTML='<option value="">—</option>'+getSegmentos().map(s=>`<option value="${s}">${s}</option>`).join(''); }
+  if(id){
+    const l=DB.leads.find(x=>x.id===id); if(!l) return;
+    document.getElementById('lead-nome').value=l.nome||'';
+    document.getElementById('lead-empresa').value=l.empresa||'';
+    document.getElementById('lead-tel').value=l.tel||'';
+    document.getElementById('lead-cidade').value=l.cidade||'';
+    document.getElementById('lead-seg').value=l.seg||'';
+    document.getElementById('lead-origem').value=l.origem||'';
+    document.getElementById('lead-estagio').value=l.estagio||'Novo';
+    document.getElementById('lead-visita').value=l.visita||'';
+    document.getElementById('lead-obs').value=l.obs||'';
+  } else {
+    ['lead-nome','lead-empresa','lead-tel','lead-cidade','lead-obs'].forEach(id=>{ document.getElementById(id).value=''; });
+    document.getElementById('lead-seg').value='';
+    document.getElementById('lead-origem').value='';
+    document.getElementById('lead-estagio').value='Novo';
+    document.getElementById('lead-visita').value='';
+  }
+  om('mLead');
+}
+
+function salvarLead(){
+  const nome=document.getElementById('lead-nome').value.trim();
+  if(!nome){ toast('Informe o nome do lead'); return; }
+  if(!DB.leads) DB.leads=[];
+  const dados={
+    nome, empresa:document.getElementById('lead-empresa').value.trim(),
+    tel:document.getElementById('lead-tel').value.trim(),
+    cidade:document.getElementById('lead-cidade').value.trim(),
+    seg:document.getElementById('lead-seg').value,
+    origem:document.getElementById('lead-origem').value,
+    estagio:document.getElementById('lead-estagio').value,
+    visita:document.getElementById('lead-visita').value||null,
+    obs:document.getElementById('lead-obs').value.trim(),
+    dtCriacao:new Date().toISOString().split('T')[0]
+  };
+  if(leadEditId){
+    const l=DB.leads.find(x=>x.id===leadEditId); if(l) Object.assign(l,dados);
+  } else {
+    dados.id=uid(); DB.leads.push(dados);
+    // Badge
+    const b=document.getElementById('badge-leads'); if(b){ b.textContent=DB.leads.filter(x=>x.estagio!=='Convertido'&&x.estagio!=='Perdido').length; b.style.display='block'; }
+  }
+  salvarDB(); cm('mLead'); renderLeads(); toast(leadEditId?'Lead atualizado!':'Lead adicionado!');
+}
+
+function renderLeads(){
+  if(!DB.leads) DB.leads=[];
+  const busca=(document.getElementById('busca-lead')?.value||'').toLowerCase();
+  const filEst=document.getElementById('fil-lead-estagio')?.value||'';
+  const filOri=document.getElementById('fil-lead-origem')?.value||'';
+
+  let list=[...DB.leads];
+  if(busca) list=list.filter(l=>(l.nome||'').toLowerCase().includes(busca)||(l.empresa||'').toLowerCase().includes(busca));
+  if(filEst) list=list.filter(l=>l.estagio===filEst);
+  if(filOri) list=list.filter(l=>l.origem===filOri);
+  list.sort((a,b)=>(b.dtCriacao||'')>(a.dtCriacao||'')?1:-1);
+
+  // Resumo por estágio
+  const resumoEl=document.getElementById('lead-resumo');
+  if(resumoEl){
+    const ests=['Novo','Contato feito','Proposta enviada','Negociação','Convertido','Perdido'];
+    resumoEl.innerHTML=ests.map(e=>{
+      const n=DB.leads.filter(l=>l.estagio===e).length;
+      const est=ESTAGIOS[e];
+      return `<div style="background:${est.bg};border:1px solid ${est.cor}44;border-radius:8px;padding:6px 12px;font-size:11px;display:flex;flex-direction:column;align-items:center;min-width:80px;cursor:pointer" onclick="document.getElementById('fil-lead-estagio').value='${e}';renderLeads()">
+        <div style="font-weight:700;font-size:16px;color:${est.cor}">${n}</div>
+        <div style="color:var(--t3);font-size:9px;text-align:center">${e}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Badge sidebar
+  const b=document.getElementById('badge-leads');
+  if(b){ const ativos=DB.leads.filter(x=>x.estagio!=='Convertido'&&x.estagio!=='Perdido').length; b.textContent=ativos; b.style.display=ativos?'block':'none'; }
+
+  const tb=document.getElementById('tb-leads');
+  if(!tb) return;
+  if(!list.length){ tb.innerHTML='<tr><td colspan="9" style="color:var(--t3);padding:16px;text-align:center">Nenhum lead encontrado.</td></tr>'; return; }
+
+  tb.innerHTML=list.map((l,idx)=>{
+    const est=ESTAGIOS[l.estagio]||ESTAGIOS['Novo'];
+    const tel=(l.tel||'').replace(/\D/g,'');
+    const wppUrl=tel?`https://wa.me/55${tel}`:'';
+    const bg=idx%2?'background:var(--s2)':'';
+    return `<tr style="border-bottom:1px solid var(--s3);${bg}">
+      <td style="padding:7px 10px">
+        <div style="font-weight:600;color:var(--t1)">${l.nome}</div>
+        ${l.empresa?`<div style="font-size:10px;color:var(--t3)">${l.empresa}</div>`:''}
+      </td>
+      <td style="padding:7px 10px;color:var(--t2)">${l.tel||'—'}</td>
+      <td style="padding:7px 10px;color:var(--t2)">${l.cidade||'—'}</td>
+      <td style="padding:7px 10px"><span class="b b-b">${l.seg||'—'}</span></td>
+      <td style="padding:7px 10px;color:var(--t2)">${l.origem||'—'}</td>
+      <td style="padding:7px 10px;text-align:center">
+        <span style="background:${est.bg};color:${est.cor};border:1px solid ${est.cor}44;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:600;white-space:nowrap">${l.estagio}</span>
+      </td>
+      <td style="padding:7px 10px;text-align:center;font-size:11px;color:var(--t3)">${l.visita?fmtD(l.visita):'—'}</td>
+      <td style="padding:7px 10px;max-width:150px"><div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${l.obs||''}">${l.obs||'—'}</div></td>
+      <td style="padding:7px 10px;white-space:nowrap">
+        <div style="display:flex;gap:4px;justify-content:center">
+          ${wppUrl?`<a href="${wppUrl}" target="_blank" class="btn bs" style="padding:2px 7px;font-size:10px;color:#25d366;border-color:#25d366" title="WhatsApp"><i class="ti ti-brand-whatsapp"></i></a>`:''}
+          ${tel?`<a href="tel:${l.tel}" class="btn bs" style="padding:2px 7px;font-size:10px" title="Ligar"><i class="ti ti-phone"></i></a>`:''}
+          <button class="btn bs" style="padding:2px 7px;font-size:10px" onclick="abrirModalLead('${l.id}')" title="Editar"><i class="ti ti-pencil"></i></button>
+          ${l.estagio!=='Convertido'?`<button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--grn);border-color:var(--grn)" onclick="converterLeadCliente('${l.id}')" title="Converter em cliente"><i class="ti ti-user-check"></i></button>`:''}
+          <button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirLead('${l.id}')" title="Excluir"><i class="ti ti-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function excluirLead(id){
+  if(!confirm('Excluir este lead?')) return;
+  DB.leads=DB.leads.filter(x=>x.id!==id);
+  salvarDB(); renderLeads(); toast('Lead removido!');
+}
+
+function converterLeadCliente(id){
+  const l=DB.leads.find(x=>x.id===id); if(!l) return;
+  if(!confirm(`Converter "${l.nome}" em cliente?\n\nEle será adicionado ao cadastro de clientes e marcado como Convertido.`)) return;
+  // Cria cliente com os dados do lead
+  const novoCli={
+    id:uid(), rs:l.empresa||l.nome, comp:l.nome,
+    fone:l.tel, cel:l.tel, cid:l.cidade, uf:'',
+    seg:l.seg, end:'', obs:l.obs||'', email:'',
+    cnpj:'', empId:DB.empresas[0]?.id||'', rede:'',
+    ultFat:null, hist:[], leadId:id
+  };
+  if(!DB.clientes) DB.clientes=[];
+  DB.clientes.push(novoCli);
+  // Marca lead como convertido
+  l.estagio='Convertido';
+  salvarDB();
+  renderLeads();
+  toast(`✅ ${l.nome} convertido em cliente!`);
+  // Abre edição do cliente para completar dados
+  setTimeout(function(){ abrirCli(novoCli.id,'leads'); }, 500);
+}
+// ══ FIM LEADS ══
 function getSegmentos(){
+  // Primeiro tenta DB.segmentos (sincroniza com Firebase)
+  if(DB.segmentos&&DB.segmentos.length) return [...DB.segmentos].sort();
+  // Fallback: cfg local
   const cfg=loadCfg();
   if(cfg.segmentos&&cfg.segmentos.length) return cfg.segmentos;
+  // Último recurso: extrai dos clientes
   return [...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))].sort();
 }
-function salvarSegmentos(segs){ const cfg=loadCfg(); cfg.segmentos=segs; saveCfg(cfg); }
+function salvarSegmentos(segs){
+  DB.segmentos=segs;
+  salvarDB();
+  const cfg=loadCfg(); cfg.segmentos=segs; saveCfg(cfg);
+}
 function renderCfgSegmentos(){
   const el=document.getElementById('cfg-seg-lista'); if(!el) return;
   const segs=getSegmentos();
@@ -4026,9 +4362,14 @@ function removerSegmento(idx){
   renderCfgSegmentos(); atualizarSelectSegmento(); toast('Segmento removido!');
 }
 function atualizarSelectSegmento(){
-  const sel=document.getElementById('cli-seg'); if(!sel) return;
-  const atual=sel.value; const segs=getSegmentos();
-  sel.innerHTML='<option value="">— Selecione —</option>'+segs.map(s=>`<option value="${s}"${s===atual?' selected':''}>${s}</option>`).join('');
+  const segs=getSegmentos();
+  const opts='<option value="">— Selecione —</option>'+segs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  // Atualiza select do modal de novo cliente
+  const sel=document.getElementById('cli-seg');
+  if(sel){ const v=sel.value; sel.innerHTML=opts; sel.value=v; }
+  // Atualiza select do modal de edição
+  const sel2=document.getElementById('edit-cli-seg');
+  if(sel2){ const v=sel2.value; sel2.innerHTML=opts; sel2.value=v; }
 }
 // ══ FIM SEGMENTOS ══
 
@@ -4170,22 +4511,23 @@ async function chamarGemini(prompt){
   const cfg=loadCfg();
   if(!cfg.iakey){ return '⚠️ Configure sua API Key do Gemini em Configurações.'; }
   const key=cfg.iakey.trim();
-  const isGemini=key.startsWith('AIza')||key.startsWith('AQ');
+  const isGemini=key.startsWith('AIza')||key.startsWith('AQ')||key.length>20;
   if(!isGemini){ return '⚠️ Esta função requer a API Key do Gemini (AIza... ou AQ...).'; }
-  // Tenta modelos em ordem de preferência
-  const url='https://generativelanguage.googleapis.com/v1beta/interactions';
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
-    body:JSON.stringify({model:'gemini-3.1-flash-lite',contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:800,temperature:0.7},store:false})});
+  // Usa v1 com gemini-1.5-flash (modelo mais estável e gratuito)
+  // Chamada direta - gemini-2.0-flash-lite (mais econômico)
+  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:800,temperature:0.7}})});
   const d=await r.json();
   if(d.error){
-    const msg=d.error.message||'Erro Gemini';
-    if(msg.includes('prepayment')||msg.includes('credits')||msg.includes('billing'))
-      throw new Error('Créditos esgotados. Crie nova chave gratuita em aistudio.google.com → Get API key → "Create API key in new project"');
+    const msg=d.error.message||'Erro';
+    if(msg.includes('blocked')||msg.includes('not authorized'))
+      throw new Error('⚠️ API Key bloqueada. Crie nova chave em aistudio.google.com/apikey');
     if(msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED'))
-      throw new Error('Limite gratuito atingido. Aguarde alguns minutos e tente novamente.');
+      throw new Error('Limite diário atingido. Crie uma nova chave em aistudio.google.com/apikey ou aguarde amanhã.');
     throw new Error(msg);
   }
-  return d.candidates?.[0]?.content?.parts?.[0]?.text||d.steps?.find(s=>s.model_output)?.model_output?.parts?.[0]?.text||'Sem resposta.';
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||'Sem resposta.';
 }
 
 function iaContextoEmpresa(){
@@ -5674,12 +6016,117 @@ function renderEmpVendas(){
 
   atualizarIconesOrdenacao('vendas');
   renderComparativosAnuais();
+  setTimeout(renderComparativoTipo, 150);
 }
 
 // ══ COMPARATIVOS ANUAIS ══
 var chFatAnual = null, chComAnual = null, chCrescAnual = null;
 var overridesFat = {}, overridesCom = {};
 var anosExtras = []; // anos adicionados manualmente pelo botão +
+
+// ══ COMPARATIVO POR TIPO DE PEDIDO ══
+var _tipoChartData=[];
+function renderComparativoTipo(){
+  _tipoChartData=[];
+  var el=document.getElementById('tb-comparativo-tipo'); if(!el) return;
+  var e=DB.empresas.find(function(x){return x.id===empAtual;});
+  if(!e){ el.innerHTML='<div style="color:var(--t3);padding:12px">Selecione uma empresa.</div>'; return; }
+  var peds=DB.pedidos.filter(function(p){return p.empId===empAtual&&!p.cancelado&&p.dt&&p.tipo;});
+  if(!peds.length){ el.innerHTML='<div style="color:var(--t3);padding:12px;text-align:center">Nenhum pedido com Tipo/Origem cadastrado.</div>'; return; }
+  var tipos=[...new Set(peds.map(function(p){return p.tipo;}))].sort();
+  var anos=[...new Set(peds.map(function(p){return p.dt.slice(0,4);}))].sort();
+  var html='';
+  tipos.forEach(function(tipo){
+    var pedsTipo=peds.filter(function(p){return p.tipo===tipo;});
+    if(!pedsTipo.length) return;
+    var chartId='ct_'+tipo.replace(/[^a-z0-9]/gi,'_');
+    var anosData=[]; var vendasData=[]; var fatsData=[];
+    var tableRows='';
+    var vendaAnt=0;
+    anos.forEach(function(ano,idx){
+      var pedAno=pedsTipo.filter(function(p){return p.dt.slice(0,4)===ano;});
+      if(!pedAno.length){ vendaAnt=0; return; }
+      var venda=pedAno.reduce(function(s,p){return s+(p.val||0);},0);
+      var nPed=pedAno.filter(function(p){return (p.val||0)>0;}).length;
+      var ticket=nPed?Math.round(venda/nPed):0;
+      var pctAnt=vendaAnt?Math.round((venda/vendaAnt-1)*100):null;
+      var corPct=pctAnt===null?'#999':pctAnt>=0?'#059669':'#dc2626';
+      var txtPct=pctAnt===null?'—':(pctAnt>=0?'+':'')+pctAnt+'%';
+      var fatAno=DB.pedidos.filter(function(p){return p.empId===empAtual&&!p.cancelado&&p.tipo===tipo&&p.dtFat&&p.dtFat.slice(0,4)===ano;});
+      var faturado=fatAno.reduce(function(s,p){return s+(p.valfat||p.val||0);},0);
+      var nNF=[...new Set(fatAno.filter(function(p){return p.nf;}).map(function(p){return p.nf;}))].length||fatAno.length;
+      var pctVF=venda?Math.round(faturado/venda*100):0;
+      var corVF=pctVF>=90?'#059669':pctVF>=70?'#d97706':'#dc2626';
+      var bg=idx%2?'background:#f9f9f9':'background:#fff';
+      anosData.push(ano); vendasData.push(venda); fatsData.push(faturado);
+      tableRows+='<tr style="'+bg+'">'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:center;font-weight:700;color:#475569">'+ano+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+fmt(venda)+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#475569">'+nPed+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#475569">'+fmt(ticket)+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:600;color:'+corPct+'">'+txtPct+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#059669">'+fmt(faturado)+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#475569">'+nNF+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:600;color:'+corVF+'">'+pctVF+'%</td>'+
+      '</tr>';
+      vendaAnt=venda;
+    });
+    var totV=pedsTipo.reduce(function(s,p){return s+(p.val||0);},0);
+    var totN=pedsTipo.filter(function(p){return (p.val||0)>0;}).length;
+    var totT=totN?Math.round(totV/totN):0;
+    var fatTot=DB.pedidos.filter(function(p){return p.empId===empAtual&&!p.cancelado&&p.tipo===tipo&&p.dtFat;}).reduce(function(s,p){return s+(p.valfat||p.val||0);},0);
+    var nNFTot=[...new Set(DB.pedidos.filter(function(p){return p.empId===empAtual&&!p.cancelado&&p.tipo===tipo&&p.dtFat&&p.nf;}).map(function(p){return p.nf;}))].length;
+    var pctVFTot=totV?Math.round(fatTot/totV*100):0;
+    tableRows+='<tr style="background:#ececec;font-weight:700;border-top:2px solid #aaa">'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:center">TOTAL</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+fmt(totV)+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+totN+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+fmt(totT)+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">—</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#059669">'+fmt(fatTot)+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+nNFTot+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:'+(pctVFTot>=90?'#059669':pctVFTot>=70?'#d97706':'#dc2626')+'">'+pctVFTot+'%</td>'+
+    '</tr>';
+
+    html+='<div style="margin-bottom:24px">'+
+      '<div style="background:#f4b8a0;color:#333;font-weight:700;font-size:12px;padding:6px 12px;text-align:center;border-radius:4px 4px 0 0">'+tipo+'</div>'+
+      '<div style="display:flex;gap:12px;align-items:flex-start">'+
+      '<div style="width:40%;min-width:0;overflow-x:auto">'+
+      '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+        '<thead><tr>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#fff;text-align:center" rowspan="2">ANO</th>'+
+          '<th colspan="4" style="padding:5px 8px;border:1px solid #ccc;background:#4a7c59;color:#fff;text-align:center">VENDA</th>'+
+          '<th colspan="3" style="padding:5px 8px;border:1px solid #ccc;background:#2a5fa8;color:#fff;text-align:center">FATURAMENTO</th>'+
+        '</tr><tr>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d8ead2;color:#1a5c30;text-align:right">VENDA</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d8ead2;color:#1a5c30;text-align:right">N PED</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d8ead2;color:#1a5c30;text-align:right">TICKET</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d8ead2;color:#1a5c30;text-align:right">%</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d5e3f5;color:#1a3f80;text-align:right">FATURADO</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d5e3f5;color:#1a3f80;text-align:right">N NF</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d5e3f5;color:#1a3f80;text-align:right">%V/F</th>'+
+        '</tr></thead>'+
+        '<tbody>'+tableRows+'</tbody>'+
+      '</table></div>'+
+      '<div style="flex:1;min-width:0;padding:4px 0"><canvas id="'+chartId+'" style="max-height:100%;width:100%" height="'+Math.max(120, anosData.length*36+60)+'" ></canvas></div>'+
+      '</div>'+
+    '</div>';
+    _tipoChartData.push({id:chartId,anos:anosData,vendas:vendasData,fats:fatsData});
+  });
+  el.innerHTML=html||'<div style="color:var(--t3);padding:12px">Nenhum dado encontrado.</div>';
+  // Renderiza gráficos
+  setTimeout(function(){
+    _tipoChartData.forEach(function(d){
+      var ctx=document.getElementById(d.id); if(!ctx) return;
+      if(ctx._chart) ctx._chart.destroy();
+      ctx._chart=new Chart(ctx,{type:'bar',data:{labels:d.anos,datasets:[
+        {label:'Venda',data:d.vendas,backgroundColor:'rgba(74,124,89,.7)',borderRadius:2,barPercentage:0.25,categoryPercentage:0.5},
+        {label:'Faturado',data:d.fats,backgroundColor:'rgba(42,95,168,.6)',borderRadius:2,barPercentage:0.25,categoryPercentage:0.5}
+      ]},options:{responsive:true,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:9},boxWidth:10}},tooltip:{callbacks:{label:function(t){return t.dataset.label+': R$ '+t.raw.toLocaleString('pt-BR');}}}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9},callback:function(v){return v>=1000?(v/1000).toFixed(0)+'k':v;}}}}}});
+    });
+  },100);
+}
+// ══ FIM COMPARATIVO POR TIPO ══
 
 function adicionarAnoComparativo(){
   var sugestao = new Date().getFullYear() + 1;
@@ -6470,8 +6917,19 @@ function bulkAtualizarBarra(){
   if(sel.length > 0){
     bar.style.display = 'flex';
     if(cnt) cnt.textContent = sel.length + ' selecionado' + (sel.length>1?'s':'');
+    var ids=[]; sel.forEach(function(c){ ids.push(c.dataset.pedid); });
+    var pedsSel=DB.pedidos.filter(function(p){ return ids.includes(p.id); });
+    var somaVal=pedsSel.reduce(function(a,p){ return a+(p.val||0); },0);
+    var somaFat=pedsSel.reduce(function(a,p){ return a+(p.valfat||0); },0);
+    var totCard=document.getElementById('ped-totais-card');
+    if(totCard) totCard.innerHTML=
+      '<span style="color:var(--t3)">Venda:</span> <b style="color:var(--t1)">'+fmt(somaVal)+'</b>'+
+      ' &nbsp;|&nbsp; <span style="color:var(--t3)">Faturado:</span> <b style="color:var(--grn)">'+fmt(somaFat)+'</b>'+
+      ' &nbsp;|&nbsp; <span style="color:var(--t3)">Pedidos:</span> <b style="color:var(--acc)">'+sel.length+'</b>';
   } else {
     bar.style.display = 'none';
+    var totCard=document.getElementById('ped-totais-card');
+    if(totCard) totCard.innerHTML='';
   }
 }
 
@@ -6794,7 +7252,7 @@ if('serviceWorker' in navigator){
       <button class="btn bp" onclick="om('mCli')"><i class="ti ti-plus"></i> Novo</button>
     </div>
     <div id="col-menu-cli" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCli('Cidade',this.checked)"> Cidade</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCli('Contato',this.checked)"> Contato</label>
@@ -6871,25 +7329,6 @@ if('serviceWorker' in navigator){
   <div class="card" style="margin-bottom:14px">
     <div class="ct"><div class="ctl"><i class="ti ti-heart-handshake" style="color:var(--cyn)"></i>Pós-Vendas <span style="font-size:10px;color:var(--t3);font-weight:400">— pedidos faturados há 7–15 dias</span></div><button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="renderPosVendas()" title="Atualizar"><i class="ti ti-refresh"></i></button></div>
     <div id="pos-vendas-list" style="max-height:220px;overflow-y:auto"></div>
-  </div>
-  <div class="card" style="margin-bottom:14px">
-    <div class="ct">
-      <div class="ctl"><i class="ti ti-robot" style="color:var(--acc2)"></i>Assistente IA — <span id="ia-emp-nome" style="color:var(--t2)"></span></div>
-      <button class="btn bs" style="padding:2px 8px;font-size:10px" onclick="iaLimparChat()" title="Limpar conversa"><i class="ti ti-trash"></i></button>
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('resumo')">📋 Resumo do dia</button>
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('email')">✉️ E-mail reativação</button>
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('previsao')">📈 Previsão faturamento</button>
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('sugestao')">💡 O que oferecer</button>
-      <button class="btn bs" style="font-size:10px;padding:4px 10px" onclick="iaEmpresa('anomalia')">🔍 Detectar anomalias</button>
-    </div>
-    <div id="ia-emp-msgs" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;font-size:11px"></div>
-    <div style="display:flex;gap:8px">
-      <input class="fi" id="ia-emp-inp" placeholder="Pergunte sobre seus clientes ou vendas..." style="flex:1"
-        onkeydown="if(event.key==='Enter')iaEmpresaChat(this.value)">
-      <button class="btn bp" style="padding:5px 12px" onclick="iaEmpresaChat(document.getElementById('ia-emp-inp').value)"><i class="ti ti-send"></i></button>
-    </div>
   </div>
 
   <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-building-store" style="color:var(--cyn)"></i>Comparativo por Origem/Feira</div><span id="tipo-lbl" style="font-size:11px;color:var(--t3)"></span></div><div class="cw tall"><canvas id="cv-tipo" role="img" aria-label="Vendas por origem">Vendas por origem</canvas></div></div>
@@ -6985,7 +7424,7 @@ if('serviceWorker' in navigator){
       <button class="btn bp" onclick="om('mPed')"><i class="ti ti-plus"></i> Novo</button>
     </div>
     <div id="col-menu-ped" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
@@ -7049,7 +7488,7 @@ if('serviceWorker' in navigator){
       <button class="btn bs" onclick="toggleColMenu('col-menu-com')" title="Escolher colunas"><i class="ti ti-columns"></i></button>
     </div>
     <div id="col-menu-com" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:8px">Colunas visíveis</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCom('Vl. Faturado',this.checked)"> Vl. Faturado</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColCom('Com%',this.checked)"> Com%</label>
@@ -7171,6 +7610,7 @@ if('serviceWorker' in navigator){
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
     <button class="btn bs" style="color:var(--red);border-color:var(--red)" onclick="excluirPedidoEdit()"><i class="ti ti-trash"></i> Excluir</button>
+    <button class="btn bs" style="color:var(--acc2);border-color:var(--acc2)" onclick="duplicarPedidoEdit()" title="Duplicar pedido para nova NF"><i class="ti ti-copy-plus"></i> + Nova NF</button>
     <button class="btn bs" onclick="cm('mEditPed')">Cancelar</button>
     <button class="btn bp" onclick="salvarEdicaoPedido()"><i class="ti ti-check"></i> Salvar</button>
   </div>
@@ -7363,7 +7803,7 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Comprador</label><input class="fi" id="edit-cli-comp" placeholder="Nome do comprador"></div>
     <div class="fg"><label class="fl">Rede</label><input class="fi" id="edit-cli-rede" placeholder="Ex: Rede Gazin, Grupo Malwee..."></div>
     <div class="fg"><label class="fl">E-mail</label><input class="fi" id="edit-cli-email" placeholder="email@empresa.com"></div>
-    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="edit-cli-seg"><option>Varejo</option><option>Atacado</option><option>Indústria</option><option>Farmácia</option><option>Móveis</option><option>Alimentício</option><option>Tecnologia</option><option>Papelaria</option><option>Presente</option><option>Gamer</option><option>Tabacaria</option><option>Brinquedos</option><option>Pet</option><option>Esporte</option><option>Cosméticos</option></select></div>
+    <div class="fg"><label class="fl">Segmento</label><select class="fi" id="edit-cli-seg"><option value="">— Selecione —</option></select></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Observações</label><textarea class="fi" id="edit-cli-obs" style="height:55px;resize:vertical"></textarea></div>
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
@@ -10569,22 +11009,23 @@ async function chamarGemini(prompt){
   const cfg=loadCfg();
   if(!cfg.iakey){ return '⚠️ Configure sua API Key do Gemini em Configurações.'; }
   const key=cfg.iakey.trim();
-  const isGemini=key.startsWith('AIza')||key.startsWith('AQ');
+  const isGemini=key.startsWith('AIza')||key.startsWith('AQ')||key.length>20;
   if(!isGemini){ return '⚠️ Esta função requer a API Key do Gemini (AIza... ou AQ...).'; }
-  // Tenta modelos em ordem de preferência
-  const url='https://generativelanguage.googleapis.com/v1beta/interactions';
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
-    body:JSON.stringify({model:'gemini-3.1-flash-lite',contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:800,temperature:0.7},store:false})});
+  // Usa v1 com gemini-1.5-flash (modelo mais estável e gratuito)
+  // Chamada direta - gemini-2.0-flash-lite (mais econômico)
+  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
+    body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:800,temperature:0.7}})});
   const d=await r.json();
   if(d.error){
-    const msg=d.error.message||'Erro Gemini';
-    if(msg.includes('prepayment')||msg.includes('credits')||msg.includes('billing'))
-      throw new Error('Créditos esgotados. Crie nova chave gratuita em aistudio.google.com → Get API key → "Create API key in new project"');
+    const msg=d.error.message||'Erro';
+    if(msg.includes('blocked')||msg.includes('not authorized'))
+      throw new Error('⚠️ API Key bloqueada. Crie nova chave em aistudio.google.com/apikey');
     if(msg.includes('quota')||msg.includes('RESOURCE_EXHAUSTED'))
-      throw new Error('Limite gratuito atingido. Aguarde alguns minutos e tente novamente.');
+      throw new Error('Limite diário atingido. Crie uma nova chave em aistudio.google.com/apikey ou aguarde amanhã.');
     throw new Error(msg);
   }
-  return d.candidates?.[0]?.content?.parts?.[0]?.text||d.steps?.find(s=>s.model_output)?.model_output?.parts?.[0]?.text||'Sem resposta.';
+  return d.candidates?.[0]?.content?.parts?.[0]?.text||'Sem resposta.';
 }
 
 function iaContextoEmpresa(){
