@@ -3235,6 +3235,7 @@ function abrirEditPedido(pedId){
   document.getElementById('edit-tipo').value   = p.tipo||'';
   if(document.getElementById('edit-obs')) document.getElementById('edit-obs').value = p.obs||'';
   window._paysDtEditAtual = p.paysDt||[];
+  window._paysValEditAtual = p.paysVal||[];
   gerarCamposDatasParcEdit();
   calcEditCom();
   om('mEditPed');
@@ -3245,13 +3246,22 @@ function gerarCamposDatasParcEdit(){
   const box=document.getElementById('edit-datas-parc-box');
   if(!box) return;
   const existentes=window._paysDtEditAtual||[];
-  let html='<label class="fl">Datas de pagamento das parcelas (duplicatas)</label><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  const valsExist=window._paysValEditAtual||[];
+  const valfatAtual=parseFloat(document.getElementById('edit-valfat')?.value)||0;
   const idxIni=fatSim?1:0;
   const idxFim=fatSim?parc:parc-1;
+  const nParcs=idxFim-idxIni+1;
+  const vlParcSugerido=nParcs&&valfatAtual?Math.round(valfatAtual/nParcs*100)/100:0;
+  let html='<label class="fl">Datas e valores das parcelas</label><div style="display:flex;gap:8px;flex-wrap:wrap">';
   let n=1;
   for(let i=idxIni;i<=idxFim;i++){
-    const val=existentes[i]||'';
-    html+=`<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--t3);text-align:center">Parc. ${n}</span><input type="date" class="fi" id="edit-data-parc-${i}" value="${val}" style="width:128px;padding:5px 6px;font-size:11px"></div>`;
+    const dtVal=existentes[i]||'';
+    const vlVal=valsExist[i]||vlParcSugerido||'';
+    html+=`<div style="display:flex;flex-direction:column;gap:2px;background:var(--s2);border-radius:7px;padding:6px 8px">
+      <span style="font-size:9px;color:var(--t3);text-align:center;font-weight:600">Parc. ${n}</span>
+      <input type="date" class="fi" id="edit-data-parc-${i}" value="${dtVal}" style="width:128px;padding:4px 6px;font-size:11px">
+      <input type="number" class="fi" id="edit-val-parc-${i}" value="${vlVal}" placeholder="Valor" step="0.01" min="0" style="width:128px;padding:4px 6px;font-size:11px">
+    </div>`;
     n++;
   }
   html+='</div>';
@@ -3264,6 +3274,16 @@ function coletarPaysDtEdit(parc,fatSim){
   for(let i=idxIni;i<=idxFim;i++){
     const el=document.getElementById('edit-data-parc-'+i);
     arr[i]=el?el.value||'':'';
+  }
+  return arr;
+}
+function coletarPaysValEdit(parc,fatSim){
+  const arr=[];
+  const idxIni=fatSim?1:0;
+  const idxFim=fatSim?parc:parc-1;
+  for(let i=idxIni;i<=idxFim;i++){
+    const el=document.getElementById('edit-val-parc-'+i);
+    arr[i]=el?parseFloat(el.value)||0:0;
   }
   return arr;
 }
@@ -3623,17 +3643,29 @@ function gerarCamposDatasParc(paysDtExistente){
   const box=document.getElementById('ped-datas-parc-box');
   if(!box) return;
   const existentes=paysDtExistente||(window._paysDtAtual||[]);
-  let html='<label class="fl">Datas de pagamento das parcelas (duplicatas)</label><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  let html='<label class="fl">Datas e valores das parcelas</label><div style="display:flex;gap:8px;flex-wrap:wrap">';
   const idxIni=fatSim?1:0;
   const idxFim=fatSim?parc:parc-1; // inclusive
+  const valfatAtual=parseFloat(document.getElementById('ped-valfat')?.value)||0;
+  const nParcs=idxFim-idxIni+1;
+  const vlParcSugerido=nParcs&&valfatAtual?Math.round(valfatAtual/nParcs*100)/100:0;
+  const valsExist=window._paysValAtual||[];
   let n=1;
   for(let i=idxIni;i<=idxFim;i++){
-    const val=existentes[i]||'';
-    html+=`<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--t3);text-align:center">Parc. ${n}</span><input type="date" class="fi" id="ped-data-parc-${i}" value="${val}" style="width:128px;padding:5px 6px;font-size:11px"></div>`;
+    const dtVal=existentes[i]||'';
+    const vlVal=valsExist[i]||vlParcSugerido||'';
+    html+=`<div style="display:flex;flex-direction:column;gap:2px;background:var(--s2);border-radius:7px;padding:6px 8px">
+      <span style="font-size:9px;color:var(--t3);text-align:center;font-weight:600">Parc. ${n}</span>
+      <input type="date" class="fi" id="ped-data-parc-${i}" value="${dtVal}" style="width:128px;padding:4px 6px;font-size:11px">
+      <input type="number" class="fi" id="ped-val-parc-${i}" value="${vlVal}" placeholder="Valor" step="0.01" min="0" style="width:128px;padding:4px 6px;font-size:11px" oninput="sincronizarValoresParcNovo(${i},${idxIni},${idxFim},${valfatAtual})">
+    </div>`;
     n++;
   }
   html+='</div>';
   box.innerHTML=html;
+}
+function sincronizarValoresParcNovo(idxAlterado,idxIni,idxFim,total){
+  // Opcional: nada por hora, apenas coleta manual
 }
 function calcCom(){
   gerarCamposDatasParc();
@@ -3663,6 +3695,16 @@ function coletarPaysDt(parc,fatSim){
   }
   return arr;
 }
+function coletarPaysVal(parc,fatSim){
+  const arr=[];
+  const idxIni=fatSim?1:0;
+  const idxFim=fatSim?parc:parc-1;
+  for(let i=idxIni;i<=idxFim;i++){
+    const el=document.getElementById('ped-val-parc-'+i);
+    arr[i]=el?parseFloat(el.value)||0:0;
+  }
+  return arr;
+}
 function salvarPedido(){
   const eid=document.getElementById('ped-emp').value;
   const cid=document.getElementById('ped-cli').value;
@@ -3679,7 +3721,8 @@ function salvarPedido(){
   const fatSim=fatcom==='sim';
   const pays=fatSim?['',...Array(parc).fill('')]:[...Array(parc).fill('')];
   const paysDt=coletarPaysDt(parc,fatSim);
-  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,pays,paysDt};
+  const paysVal=coletarPaysVal(parc,fatSim);
+  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,pays,paysDt,paysVal};
   DB.pedidos.push(novo);
   const c=DB.clientes.find(x=>x.id===cid);
   if(c&&novo.dtFat) c.ultFat=novo.dtFat;
