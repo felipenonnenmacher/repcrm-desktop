@@ -4114,40 +4114,62 @@ function onFilePed(input){
 }
 
 function baixarModeloPed(){
-  // Cabeçalho: A-L colunas básicas + M = Tipo/Origem + N em diante = FAT (se aplicável) + parcelas 1 a 15
-  var cab = ['Data Pedido','Nº Pedido','Razão Social','Valor','Desconto%','Parcelamento','Comissão%','Data Fat','NF','Valor Fat','Pago (S/N)','CNPJ','Tipo/Origem'];
-  var maxParc = 15;
-  cab.push('FAT (50%)'); // Coluna N - comissão no faturamento
-  for(var i=1;i<=maxParc;i++) cab.push('Parc.'+i);
+  // Colunas: A=Data B=Nº C=Razão Social D=Valor E=Desc% F=Parc G=Com% H=Data Fat I=NF J=Vl.Fat K=Pago L=CNPJ M=Tipo/Origem N=Prazo Pgto O=OBS P=FAT Q+ parcelas
+  var cab = ['Data Pedido','Nº Pedido','Razão Social','Valor','Desconto%','Parcelamento','Comissão%','Data Fat','NF','Valor Fat','Pago (S/N)','CNPJ','Tipo/Origem','Prazo Pgto','OBS'];
+  var maxParc = 12;
+  cab.push('FAT (50%)'); // Coluna P
+  for(var i=1;i<=maxParc;i++){
+    cab.push('Parc.'+i);
+    cab.push('Dt.Parc.'+i);
+    cab.push('Vl.Parc.'+i);
+  }
 
-  var ex = ['2026-05-05','4521','Empresa ABC Ltda','4200','5','3','3','2026-05-15','NF-1234','3990','S','12.345.678/0001-90','Feira ABC'];
+  var ex = ['2026-05-05','4521','Empresa ABC Ltda','4200','5','3','3','2026-05-15','NF-1234','3990','S','12.345.678/0001-90','Feira ABC','30/60/90','Desconto 5% autorizado'];
   ex.push(1); // FAT pago no exemplo
-  for(var i=1;i<=maxParc;i++) ex.push(i<=2 ? 1 : ''); // exemplo: parc 1 e 2 pagas
+  for(var i=1;i<=maxParc;i++){
+    ex.push(i<=3 ? 1 : '');
+    ex.push(i===1?'2026-06-15':i===2?'2026-07-15':i===3?'2026-08-15':'');
+    ex.push(i<=3 ? Math.round(3990/3) : '');
+  }
 
-  var info = ['','','','','','','','','','','','',''];
-  info.push('← FAT = comissão no faturamento (50%). Pinte de VERDE as células PAGAS. Deixe em BRANCO as não pagas.');
+  var info = ['','','','','','','','','','','','','','Dias a partir do fat. Ex: 30/60/90','Observações'];
+  info.push('Pinte de VERDE (C6EFCE) as parcelas PAGAS');
+  for(var i=1;i<=maxParc;i++){
+    info.push('');
+    info.push('AAAA-MM-DD');
+    info.push('Valor R$');
+  }
 
   var ws = XLSX.utils.aoa_to_sheet([cab, ex, info]);
 
-  // Pintar a coluna FAT (N2) + parcelas 1 e 2 (O2, P2) de verde, como exemplo
   var corVerde = { fgColor: { rgb: 'C6EFCE' } };
-  ['N2','O2','P2'].forEach(function(addr){
-    if(ws[addr]) ws[addr].s = { fill: corVerde };
-  });
+  var corAzul  = { fgColor: { rgb: 'DDEEFF' } };
+  var corAmar  = { fgColor: { rgb: 'FFFACD' } };
+  // FAT + 3 parcelas de exemplo em verde
+  ['P2','Q2','T2','W2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corVerde }; });
+  // Datas e valores em azul claro
+  ['R2','S2','U2','V2','X2','Y2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corAzul }; });
+  // Prazo e OBS em amarelo
+  ['N2','O2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corAmar }; });
 
   ws['!cols'] = cab.map(function(_,i){
-    if(i===2) return {wch:28}; // Razão Social
-    if(i===11) return {wch:20}; // CNPJ
-    if(i===12) return {wch:16}; // Tipo/Origem
-    if(i===13) return {wch:9}; // FAT
-    if(i>=14) return {wch:7}; // parcelas
-    return {wch:12};
+    if(i===2) return {wch:28};   // Razão Social
+    if(i===11) return {wch:20};  // CNPJ
+    if(i===12) return {wch:16};  // Tipo/Origem
+    if(i===13) return {wch:14};  // Prazo Pgto
+    if(i===14) return {wch:22};  // OBS
+    if(i===15) return {wch:9};   // FAT
+    var rel=(i-16)%3;
+    if(rel===0) return {wch:7};  // Parc S/N
+    if(rel===1) return {wch:12}; // Data
+    if(rel===2) return {wch:10}; // Valor
+    return {wch:10};
   });
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Pedidos');
   XLSX.writeFile(wb,'modelo_pedidos.xlsx');
-  toast('Modelo baixado! Coluna M = Tipo/Origem (ex: Feira ABC). Coluna N = FAT, O em diante = parcelas. Pinte de verde (C6EFCE) o que já foi pago.');
+  toast('Modelo atualizado! Col N=Prazo Pgto (ex: 30/60/90) | Col O=OBS | Col P=FAT | Q em diante: Parc./Data/Valor por parcela. Pinte de VERDE as pagas.');
 }
 
 // ══ EXPORTAÇÃO ══
@@ -10864,40 +10886,62 @@ function onFilePed(input){
 }
 
 function baixarModeloPed(){
-  // Cabeçalho: A-L colunas básicas + M = Tipo/Origem + N em diante = FAT (se aplicável) + parcelas 1 a 15
-  var cab = ['Data Pedido','Nº Pedido','Razão Social','Valor','Desconto%','Parcelamento','Comissão%','Data Fat','NF','Valor Fat','Pago (S/N)','CNPJ','Tipo/Origem'];
-  var maxParc = 15;
-  cab.push('FAT (50%)'); // Coluna N - comissão no faturamento
-  for(var i=1;i<=maxParc;i++) cab.push('Parc.'+i);
+  // Colunas: A=Data B=Nº C=Razão Social D=Valor E=Desc% F=Parc G=Com% H=Data Fat I=NF J=Vl.Fat K=Pago L=CNPJ M=Tipo/Origem N=Prazo Pgto O=OBS P=FAT Q+ parcelas
+  var cab = ['Data Pedido','Nº Pedido','Razão Social','Valor','Desconto%','Parcelamento','Comissão%','Data Fat','NF','Valor Fat','Pago (S/N)','CNPJ','Tipo/Origem','Prazo Pgto','OBS'];
+  var maxParc = 12;
+  cab.push('FAT (50%)'); // Coluna P
+  for(var i=1;i<=maxParc;i++){
+    cab.push('Parc.'+i);
+    cab.push('Dt.Parc.'+i);
+    cab.push('Vl.Parc.'+i);
+  }
 
-  var ex = ['2026-05-05','4521','Empresa ABC Ltda','4200','5','3','3','2026-05-15','NF-1234','3990','S','12.345.678/0001-90','Feira ABC'];
+  var ex = ['2026-05-05','4521','Empresa ABC Ltda','4200','5','3','3','2026-05-15','NF-1234','3990','S','12.345.678/0001-90','Feira ABC','30/60/90','Desconto 5% autorizado'];
   ex.push(1); // FAT pago no exemplo
-  for(var i=1;i<=maxParc;i++) ex.push(i<=2 ? 1 : ''); // exemplo: parc 1 e 2 pagas
+  for(var i=1;i<=maxParc;i++){
+    ex.push(i<=3 ? 1 : '');
+    ex.push(i===1?'2026-06-15':i===2?'2026-07-15':i===3?'2026-08-15':'');
+    ex.push(i<=3 ? Math.round(3990/3) : '');
+  }
 
-  var info = ['','','','','','','','','','','','',''];
-  info.push('← FAT = comissão no faturamento (50%). Pinte de VERDE as células PAGAS. Deixe em BRANCO as não pagas.');
+  var info = ['','','','','','','','','','','','','','Dias a partir do fat. Ex: 30/60/90','Observações'];
+  info.push('Pinte de VERDE (C6EFCE) as parcelas PAGAS');
+  for(var i=1;i<=maxParc;i++){
+    info.push('');
+    info.push('AAAA-MM-DD');
+    info.push('Valor R$');
+  }
 
   var ws = XLSX.utils.aoa_to_sheet([cab, ex, info]);
 
-  // Pintar a coluna FAT (N2) + parcelas 1 e 2 (O2, P2) de verde, como exemplo
   var corVerde = { fgColor: { rgb: 'C6EFCE' } };
-  ['N2','O2','P2'].forEach(function(addr){
-    if(ws[addr]) ws[addr].s = { fill: corVerde };
-  });
+  var corAzul  = { fgColor: { rgb: 'DDEEFF' } };
+  var corAmar  = { fgColor: { rgb: 'FFFACD' } };
+  // FAT + 3 parcelas de exemplo em verde
+  ['P2','Q2','T2','W2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corVerde }; });
+  // Datas e valores em azul claro
+  ['R2','S2','U2','V2','X2','Y2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corAzul }; });
+  // Prazo e OBS em amarelo
+  ['N2','O2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corAmar }; });
 
   ws['!cols'] = cab.map(function(_,i){
-    if(i===2) return {wch:28}; // Razão Social
-    if(i===11) return {wch:20}; // CNPJ
-    if(i===12) return {wch:16}; // Tipo/Origem
-    if(i===13) return {wch:9}; // FAT
-    if(i>=14) return {wch:7}; // parcelas
-    return {wch:12};
+    if(i===2) return {wch:28};   // Razão Social
+    if(i===11) return {wch:20};  // CNPJ
+    if(i===12) return {wch:16};  // Tipo/Origem
+    if(i===13) return {wch:14};  // Prazo Pgto
+    if(i===14) return {wch:22};  // OBS
+    if(i===15) return {wch:9};   // FAT
+    var rel=(i-16)%3;
+    if(rel===0) return {wch:7};  // Parc S/N
+    if(rel===1) return {wch:12}; // Data
+    if(rel===2) return {wch:10}; // Valor
+    return {wch:10};
   });
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Pedidos');
   XLSX.writeFile(wb,'modelo_pedidos.xlsx');
-  toast('Modelo baixado! Coluna M = Tipo/Origem (ex: Feira ABC). Coluna N = FAT, O em diante = parcelas. Pinte de verde (C6EFCE) o que já foi pago.');
+  toast('Modelo atualizado! Col N=Prazo Pgto (ex: 30/60/90) | Col O=OBS | Col P=FAT | Q em diante: Parc./Data/Valor por parcela. Pinte de VERDE as pagas.');
 }
 
 // ══ EXPORTAÇÃO ══
