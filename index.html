@@ -491,7 +491,7 @@ if('serviceWorker' in navigator){
       <div style="flex:3;background:rgba(16,185,129,.08);padding:3px 0;text-align:center;font-size:10px;font-weight:700;color:var(--grn)">FATURAMENTO</div>
       <div style="flex:6;background:rgba(139,92,246,.08);border-radius:0 6px 6px 0;padding:3px 0;text-align:center;font-size:10px;font-weight:700;color:var(--acc2)">PAGAMENTOS</div>
     </div>
-    <table><thead><tr><th><input type="checkbox" id="ped-cb-all" onchange="bulkSelTodos(this)"></th><th class="th-sort" onclick="ordenar('eped','dt')">Data <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','num')">Nº <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','cliente')">Cliente <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','val')">Valor <i class="ti ti-arrows-sort sort-ic"></i></th><th>Desc%</th><th>Parc</th><th>Com%</th><th class="th-sort" onclick="ordenar('eped','dtFat')">Dt.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','nf')">NF <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','valfat')">Vl.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th>Fat?</th><th class="th-sort" onclick="ordenar('eped','tipo')">Tipo <i class="ti ti-arrows-sort sort-ic"></i></th><th style="text-align:center">Transp.</th><th></th></tr></thead><tbody id="tb-eped"></tbody></table>
+    <table><thead><tr><th><input type="checkbox" id="ped-cb-all" onchange="bulkSelTodos(this)"></th><th class="th-sort" onclick="ordenar('eped','dt')">Data <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','num')">Nº <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','cliente')">Cliente <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','val')">Valor <i class="ti ti-arrows-sort sort-ic"></i></th><th>Desc%</th><th>Parc</th><th>Com%</th><th class="th-sort" onclick="ordenar('eped','dtFat')">Dt.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','nf')">NF <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','valfat')">Vl.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th>Fat?</th><th class="th-sort" onclick="ordenar('eped','tipo')">Tipo <i class="ti ti-arrows-sort sort-ic"></i></th><th style="max-width:130px">OBS</th><th style="text-align:center">Transp.</th><th></th></tr></thead><tbody id="tb-eped"></tbody></table>
     <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--bdr);display:flex;gap:14px;font-size:11px;flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:rgba(16,185,129,.2);border:1px solid var(--grn);display:inline-block"></span>Pago</span>
       <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:rgba(245,158,11,.2);border:1px solid var(--org);display:inline-block"></span>Atenção</span>
@@ -644,7 +644,8 @@ if('serviceWorker' in navigator){
   <div class="fg2">
     <div class="fg"><label class="fl">Nº Pedido</label><input class="fi" id="edit-num" placeholder="0000"></div>
     <div class="fg"><label class="fl">Data pedido</label><input class="fi" id="edit-dt" type="date"></div>
-    <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="edit-dtfat" type="date"></div>
+    <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="edit-dtfat" type="date" onchange="calcVencimentosEdit()"></div>
+    <div class="fg"><label class="fl">Condição de Pgto</label><input class="fi" id="edit-cond-pgto" placeholder="Ex: 30/60/90 ou 90" oninput="calcVencimentosEdit()"></div>
     <div class="fg"><label class="fl">Nota Fiscal</label><input class="fi" id="edit-nf" placeholder="NF-0000"></div>
     <div class="fg"><label class="fl">Valor faturado (R$)</label><input class="fi" id="edit-valfat" type="number" min="0" oninput="calcEditCom()"></div>
     <div class="fg"><label class="fl">Comissão %</label><input class="fi" id="edit-com" type="number" min="0" max="30" step="0.1" oninput="calcEditCom()"></div>
@@ -653,6 +654,7 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Transportadora</label><select class="fi" id="edit-transp"></select></div>
     <div class="fg"><label class="fl">Código / NF rastreio</label><input class="fi" id="edit-cod" placeholder="Ex: BR123456789BR"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Origem / Tipo do pedido</label><input class="fi" id="edit-tipo" list="lista-tipos-pedido" placeholder="Ex: Feira ABC, Visita, WhatsApp, Indicação..."></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Observação</label><textarea class="fi" id="edit-obs" placeholder="Observações sobre o pedido..." style="resize:vertical;min-height:55px;font-size:var(--fs-sm)"></textarea></div>
     <div class="fg" style="grid-column:span 2" id="edit-datas-parc-box"></div>
     <div class="fg" style="grid-column:span 2"><div class="com-prev" id="edit-com-prev"></div></div>
   </div>
@@ -963,7 +965,8 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Parcelamento</label><select class="fi" id="ped-parc" onchange="calcCom()"><option value="1">À vista</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option></select></div>
     <div class="fg"><label class="fl">Comissão %</label><input class="fi" id="ped-com" type="number" min="0" max="30" step="0.1" placeholder="3" oninput="calcCom()"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">50% comissão no faturamento?</label><select class="fi" id="ped-fatcom" onchange="calcCom()"><option value="sim">Sim</option><option value="nao">Não</option></select></div>
-    <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="ped-dtfat" type="date"></div>
+    <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="ped-dtfat" type="date" onchange="calcVencimentosNovo()"></div>
+    <div class="fg"><label class="fl">Condição de Pgto</label><input class="fi" id="ped-cond-pgto" placeholder="Ex: 30/60/90 ou 90" oninput="calcVencimentosNovo()" style="font-size:var(--fs-sm)"></div>
     <div class="fg"><label class="fl">Nota Fiscal</label><input class="fi" id="ped-nf" placeholder="NF-0000"></div>
     <div class="fg"><label class="fl">Valor faturado</label><input class="fi" id="ped-valfat" type="number" min="0" placeholder="0,00" oninput="calcCom()"></div>
     <div class="fg"><label class="fl">Transportadora</label><select class="fi" id="ped-transp" onchange="atualizarCampoRastreio()"></select></div>
@@ -2661,6 +2664,7 @@ function buildPedTabela(ps,mini){
       <td>${fmtD(p.dtFat)}</td><td style="font-size:11px">${p.nf||'—'}</td><td>${fmt(p.valfat)}</td>
       ${mini?'':`<td><span class="b ${fatSim?'b-g':'b-o'}" style="font-size:9px">${fatSim?'Sim':'Não'}</span></td>`}
       ${mini?'':`<td>${p.tipo?`<span class="b b-p" style="font-size:9px" title="${p.tipo}">${p.tipo.length>12?p.tipo.substring(0,12)+'...':p.tipo}</span>`:'<span style="color:var(--t3)">—</span>'}</td>`}
+      ${mini?'':`<td style="max-width:130px">${p.obs?`<span style="font-size:9px;color:var(--org);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.obs}"><i class="ti ti-note" style="font-size:10px"></i> ${p.obs}</span>`:'<span style="color:var(--t3);font-size:10px">—</span>'}</td>`}
       ${mini?pCells.join(''):''}
       ${mini?'':`<td style="text-align:center"><input type="checkbox" ${p.naTransp?"checked":""} onchange="toggleTransp('${p.id}',this)" title="${p.naTransp?'Na transportadora desde '+p.naTranspData:'Marcar como enviado para transportadora'}" style="width:16px;height:16px;cursor:pointer;accent-color:var(--cyn)"></td>`}
       ${mini?'':`<td style="white-space:nowrap"><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc2);border-color:var(--acc2)" onclick="novaNFDireta('${p.id}')" title="Nova NF para este pedido"><i class="ti ti-copy-plus"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc);border-color:var(--acc)" onclick="enviarSAC('${p.id}')" title="Enviar e-mail para o SAC"><i class="ti ti-headset"></i> SAC</button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirPedido('${p.id}')" title="Excluir pedido"><i class="ti ti-trash"></i></button></td>`}
@@ -3234,6 +3238,7 @@ function abrirEditPedido(pedId){
   document.getElementById('edit-cod').value    = p.cod||'';
   document.getElementById('edit-tipo').value   = p.tipo||'';
   if(document.getElementById('edit-obs')) document.getElementById('edit-obs').value = p.obs||'';
+  if(document.getElementById('edit-cond-pgto')) document.getElementById('edit-cond-pgto').value = p.condPgto||'';
   window._paysDtEditAtual = p.paysDt||[];
   window._paysValEditAtual = p.paysVal||[];
   gerarCamposDatasParcEdit();
@@ -3722,7 +3727,7 @@ function salvarPedido(){
   const pays=fatSim?['',...Array(parc).fill('')]:[...Array(parc).fill('')];
   const paysDt=coletarPaysDt(parc,fatSim);
   const paysVal=coletarPaysVal(parc,fatSim);
-  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,pays,paysDt,paysVal};
+  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,condPgto:document.getElementById('ped-cond-pgto')?.value?.trim()||null,pays,paysDt,paysVal};
   DB.pedidos.push(novo);
   const c=DB.clientes.find(x=>x.id===cid);
   if(c&&novo.dtFat) c.ultFat=novo.dtFat;
@@ -4051,7 +4056,17 @@ function onFilePed(input){
 
       var dtPedido = parseDataExcel(r[0]);
       var dtFatPed = parseDataExcel(r[7]);
-
+      var condPgto = String(r[13]||'').trim()||null;
+      var obsImp   = String(r[14]||'').trim()||null;
+      var paysDt = [];
+      if(condPgto && dtFatPed){
+        var prazos = condPgto.split(/[\/,\-\s]+/).map(function(x){ return parseInt(x); }).filter(function(n){ return n>0; });
+        var base = new Date(dtFatPed+'T12:00');
+        prazos.forEach(function(dias, i){
+          var venc = new Date(base); venc.setDate(venc.getDate()+dias);
+          paysDt[i+1] = venc.toISOString().split('T')[0];
+        });
+      }
       DB.pedidos.push({
         id:uid(), empId:empAtual, cliId:c.id,
         dt:     dtPedido || new Date().toISOString().split('T')[0],
@@ -4066,7 +4081,8 @@ function onFilePed(input){
         valfat: parseFloat(r[9])||0,
         transp:'', cod:'',
         tipo:   String(r[12]||'').trim()||null,
-        pays,
+        condPgto, obs: obsImp,
+        pays, paysDt,
         naTransp: false
       });
       if(!dtPedido) datasInvalidas.push('Pedido '+(r[1]||'linha '+(ri+2))+' (data: "'+r[0]+'")');
@@ -4359,6 +4375,41 @@ function converterLeadCliente(id){
   setTimeout(function(){ abrirCli(novoCli.id,'leads'); }, 500);
 }
 // ══ FIM LEADS ══
+// ══ CÁLCULO AUTOMÁTICO DE VENCIMENTOS ══
+function parsePrazos(cond){
+  if(!cond) return [];
+  return cond.split(/[\/,\-\s]+/).map(function(x){ return parseInt(x.trim()); }).filter(function(n){ return n>0; });
+}
+function calcVencimentosEdit(){
+  var dtFat=document.getElementById('edit-dtfat')?.value;
+  var cond=document.getElementById('edit-cond-pgto')?.value?.trim();
+  if(!dtFat||!cond) return;
+  var prazos=parsePrazos(cond);
+  if(!prazos.length) return;
+  var base=new Date(dtFat+'T12:00');
+  prazos.forEach(function(dias,i){
+    var venc=new Date(base); venc.setDate(venc.getDate()+dias);
+    var dtStr=venc.toISOString().split('T')[0];
+    var el=document.getElementById('edit-data-parc-'+(i+1))||document.getElementById('edit-data-parc-'+i);
+    if(el) el.value=dtStr;
+  });
+}
+function calcVencimentosNovo(){
+  var dtFat=document.getElementById('ped-dtfat')?.value;
+  var cond=document.getElementById('ped-cond-pgto')?.value?.trim();
+  if(!dtFat||!cond) return;
+  var prazos=parsePrazos(cond);
+  if(!prazos.length) return;
+  var base=new Date(dtFat+'T12:00');
+  prazos.forEach(function(dias,i){
+    var venc=new Date(base); venc.setDate(venc.getDate()+dias);
+    var dtStr=venc.toISOString().split('T')[0];
+    var el=document.getElementById('ped-data-parc-'+(i+1))||document.getElementById('ped-data-parc-'+i);
+    if(el) el.value=dtStr;
+  });
+}
+// ══ FIM VENCIMENTOS ══
+
 function getSegmentos(){
   // Primeiro tenta DB.segmentos (sincroniza com Firebase)
   if(DB.segmentos&&DB.segmentos.length) return [...DB.segmentos].sort();
