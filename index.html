@@ -175,6 +175,8 @@ if('serviceWorker' in navigator){
   navigator.serviceWorker.register(URL.createObjectURL(swBlob),{scope:'./'}).catch(function(){});
 }
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(typeof pdfjsLib!=="undefined") pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 </head>
 <body>
 <div class="app">
@@ -211,6 +213,15 @@ if('serviceWorker' in navigator){
     <div class="pa"><button class="btn bs" onclick="exportarTudo()"><i class="ti ti-file-export"></i> Exportar</button><button class="btn bp" onclick="om('mTar')"><i class="ti ti-plus"></i> Tarefa</button></div>
   </div>
   <div class="mg" id="mg-dash"></div>
+
+  <!-- Alertas de Ciclo de Compra -->
+  <div class="card" style="margin-bottom:14px" id="card-alertas-ciclo">
+    <div class="ct">
+      <div class="ctl"><i class="ti ti-refresh" style="color:var(--cyn)"></i>Alertas de Ciclo de Compra</div>
+      <span id="badge-ciclo" style="display:none;background:var(--red);color:#fff;border-radius:10px;padding:1px 9px;font-size:11px;font-weight:700"></span>
+    </div>
+    <div id="dash-ciclo-body"><div style="color:var(--t3);font-size:12px;padding:6px">Carregando...</div></div>
+  </div>
 
   <!-- Card Vendas por Empresa -->
   <div class="card" style="margin-bottom:14px">
@@ -340,6 +351,18 @@ if('serviceWorker' in navigator){
     <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc2)"></i>Compras anuais por empresa</div></div>
     <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)" id="tb-cli-anual"></table></div>
   </div>
+
+  <!-- Perfil de Compras por Categorias -->
+  <div class="card" style="margin-top:14px">
+    <div class="ct"><div class="ctl"><i class="ti ti-chart-bar" style="color:var(--org)"></i>Perfil de Compras por Categorias</div></div>
+    <div id="perfil-compras-cli" style="padding:4px 0"><div style="color:var(--t3);font-size:12px;padding:8px">Carregando...</div></div>
+  </div>
+
+  <!-- Análise de Ciclo de Compra -->
+  <div class="card" style="margin-top:14px">
+    <div class="ct"><div class="ctl"><i class="ti ti-refresh" style="color:var(--cyn)"></i>Ciclo de Compra</div></div>
+    <div id="ciclo-compra-cli" style="padding:4px 0"><div style="color:var(--t3);font-size:12px;padding:8px">Carregando...</div></div>
+  </div>
 </div>
 
 <!-- EMP DASHBOARD -->
@@ -350,6 +373,7 @@ if('serviceWorker' in navigator){
       <button class="btn bs" onclick="abrirModalEditEmpresa()"><i class="ti ti-edit"></i> Editar empresa</button>
       <button class="trbtn" onclick="om('mTransp')"><i class="ti ti-truck"></i> Transportadoras</button>
       <button class="btn bs" onclick="abrirModalMeta()"><i class="ti ti-target"></i> Meta</button>
+      <button class="btn bs" style="color:var(--grn);border-color:var(--grn)" onclick="exportarEmpresaExcel(empAtual)"><i class="ti ti-file-spreadsheet"></i> Backup Excel</button>
       <button class="btn bp" onclick="abrirModalPed(null,empAtual)"><i class="ti ti-plus"></i> Novo pedido</button>
     </div>
   </div>
@@ -538,6 +562,16 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-com"></div>
+
+  <!-- COMISSÕES FUTURAS A RECEBER -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">
+      <div class="ctl"><i class="ti ti-clock-dollar" style="color:var(--grn)"></i>Comissões a Receber por Mês</div>
+      <span id="com-fut-total-badge" style="font-size:12px;font-weight:700;color:var(--grn)"></span>
+    </div>
+    <div id="com-futuras-body"></div>
+  </div>
+
   <div class="card" style="overflow-x:auto">
     <div class="ct"><div class="ctl"><i class="ti ti-coin" style="color:var(--org)"></i>Extrato detalhado de comissões</div></div>
     <table id="tbl-com-main" class="tbl-compact">
@@ -639,18 +673,30 @@ if('serviceWorker' in navigator){
 </div>
 
 <!-- MODAL EDITAR PEDIDO/NF -->
+<!-- MODAL VISUALIZAR PEDIDO -->
+<div class="mbg" id="mVerPed"><div class="modal" style="max-width:580px">
+  <div class="mtt"><i class="ti ti-file-invoice" style="color:var(--acc)"></i> Pedido <span id="vped-num" style="color:var(--acc)"></span>
+    <button class="xb" onclick="cm('mVerPed')"><i class="ti ti-x"></i></button>
+  </div>
+  <div id="mVerPed-body" style="display:flex;flex-direction:column;gap:12px"></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+    <button class="btn bs" onclick="cm('mVerPed')">Fechar</button>
+    <button class="btn bp" id="vped-btn-edit"><i class="ti ti-pencil"></i> Editar</button>
+  </div>
+</div></div>
+
 <div class="mbg" id="mEditPed"><div class="modal">
   <div class="mtt"><span id="edit-titulo">Editar Pedido</span> <button class="xb" onclick="cm('mEditPed')"><i class="ti ti-x"></i></button></div>
   <div class="fg2">
     <div class="fg"><label class="fl">Nº Pedido</label><input class="fi" id="edit-num" placeholder="0000"></div>
     <div class="fg"><label class="fl">Data pedido</label><input class="fi" id="edit-dt" type="date"></div>
-    <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="edit-dtfat" type="date" onchange="calcVencimentosEdit()"></div>
-    <div class="fg"><label class="fl">Condição de Pgto</label><input class="fi" id="edit-cond-pgto" placeholder="Ex: 30/60/90 ou 90" oninput="calcVencimentosEdit()"></div>
+    <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="edit-dtfat" type="date" onchange="calcEditCom()"></div>
     <div class="fg"><label class="fl">Nota Fiscal</label><input class="fi" id="edit-nf" placeholder="NF-0000"></div>
     <div class="fg"><label class="fl">Valor faturado (R$)</label><input class="fi" id="edit-valfat" type="number" min="0" oninput="calcEditCom()"></div>
     <div class="fg"><label class="fl">Comissão %</label><input class="fi" id="edit-com" type="number" min="0" max="30" step="0.1" oninput="calcEditCom()"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">50% no faturamento?</label><select class="fi" id="edit-fatcom" onchange="calcEditCom()"><option value="sim">Sim</option><option value="nao">Não</option></select></div>
     <div class="fg"><label class="fl">Parcelamento</label><select class="fi" id="edit-parc" onchange="calcEditCom()"><option value="1">À vista</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option></select></div>
+    <div class="fg"><label class="fl">Condição de Pgto</label><input class="fi" id="edit-cond-pgto" placeholder="Ex: 30/60/90 ou 90" style="font-size:var(--fs-sm)"></div>
     <div class="fg"><label class="fl">Transportadora</label><select class="fi" id="edit-transp"></select></div>
     <div class="fg"><label class="fl">Código / NF rastreio</label><input class="fi" id="edit-cod" placeholder="Ex: BR123456789BR"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Origem / Tipo do pedido</label><input class="fi" id="edit-tipo" list="lista-tipos-pedido" placeholder="Ex: Feira ABC, Visita, WhatsApp, Indicação..."></div>
@@ -965,14 +1011,22 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Parcelamento</label><select class="fi" id="ped-parc" onchange="calcCom()"><option value="1">À vista</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option></select></div>
     <div class="fg"><label class="fl">Comissão %</label><input class="fi" id="ped-com" type="number" min="0" max="30" step="0.1" placeholder="3" oninput="calcCom()"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">50% comissão no faturamento?</label><select class="fi" id="ped-fatcom" onchange="calcCom()"><option value="sim">Sim</option><option value="nao">Não</option></select></div>
-    <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="ped-dtfat" type="date" onchange="calcVencimentosNovo()"></div>
-    <div class="fg"><label class="fl">Condição de Pgto</label><input class="fi" id="ped-cond-pgto" placeholder="Ex: 30/60/90 ou 90" oninput="calcVencimentosNovo()" style="font-size:var(--fs-sm)"></div>
+    <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="ped-dtfat" type="date" onchange="calcCom()"></div>
     <div class="fg"><label class="fl">Nota Fiscal</label><input class="fi" id="ped-nf" placeholder="NF-0000"></div>
     <div class="fg"><label class="fl">Valor faturado</label><input class="fi" id="ped-valfat" type="number" min="0" placeholder="0,00" oninput="calcCom()"></div>
     <div class="fg"><label class="fl">Transportadora</label><select class="fi" id="ped-transp" onchange="atualizarCampoRastreio()"></select></div>
     <div class="fg" id="fg-cod"><label class="fl">Código / NF rastreio</label><input class="fi" id="ped-cod" placeholder="Ex: BR123456789BR"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Origem / Tipo do pedido</label><input class="fi" id="ped-tipo" list="lista-tipos-pedido" placeholder="Ex: Feira ABC, Visita, WhatsApp, Indicação..."><datalist id="lista-tipos-pedido"></datalist></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Observação</label><textarea class="fi" id="ped-obs" placeholder="Observações sobre o pedido..." style="resize:vertical;min-height:60px;font-size:var(--fs-sm)"></textarea></div>
+    <div class="fg" style="grid-column:span 2">
+      <label class="fl">Categorias de produtos <span style="color:var(--t3);font-weight:400">(importe o PDF do pedido para preencher automaticamente)</span></label>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <input type="file" id="ped-pdf" accept=".pdf" style="display:none" onchange="lerPDFPedido('ped-categorias')">
+        <button type="button" class="btn bs" style="padding:5px 12px;font-size:11px" onclick="document.getElementById('ped-pdf').click()"><i class="ti ti-file-upload"></i> Importar PDF</button>
+        <span id="ped-pdf-status" style="font-size:10px;color:var(--t3)">Nenhum PDF carregado</span>
+      </div>
+      <textarea class="fi" id="ped-categorias" placeholder="Ex: CANECA: 15 | COPO: 8 | GARRAFA: 6" style="resize:vertical;min-height:45px;font-size:var(--fs-sm)"></textarea>
+    </div>
     <div class="fg" style="grid-column:span 2" id="ped-datas-parc-box"></div>
     <div class="fg" style="grid-column:span 2"><div class="com-prev" id="com-prev-box"></div></div>
   </div>
@@ -1009,6 +1063,15 @@ if('serviceWorker' in navigator){
   <div style="display:flex;gap:8px;margin-top:10px">
     <button class="btn bs" style="flex:1;justify-content:center" onclick="baixarModeloPed()"><i class="ti ti-download"></i> Baixar modelo</button>
     <button class="btn bs" onclick="cm('mImpPed')">Cancelar</button>
+  </div>
+  <div style="margin-top:16px;border-top:1px solid var(--s3);padding-top:14px">
+    <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px"><i class="ti ti-refresh" style="color:var(--acc2)"></i> Atualizar Condição de Pagamento</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px">Excel com 2 colunas: <b>A = Nº Pedido</b> e <b>B = Condição de Pgto</b> (ex: 30/60/90)</div>
+    <input type="file" id="fi-cond-pgto" style="display:none" accept=".xlsx,.xls" onchange="importarCondPgto(this)">
+    <div style="display:flex;gap:8px">
+      <button class="btn bs" style="flex:1;justify-content:center;color:var(--acc2);border-color:var(--acc2)" onclick="baixarModeloCondPgto()"><i class="ti ti-download"></i> Baixar modelo</button>
+      <button class="btn bp" style="flex:1;justify-content:center" onclick="document.getElementById('fi-cond-pgto').click()"><i class="ti ti-file-import"></i> Importar</button>
+    </div>
   </div>
 </div></div>
 
@@ -1491,6 +1554,7 @@ function setSub(eid, sub) {
 // ══ DASHBOARD ══
 function buildDash() {
   const hj=new Date(); const mes=hj.getMonth(); const ano=hj.getFullYear();
+  setTimeout(renderAlertasCiclo, 300);
   const tvVenda = DB.empresas.reduce((a,e)=>{
     return a+DB.pedidos.filter(p=>p.empId===e.id&&!p.cancelado).filter(p=>{ if(!p.dt) return false; var d=new Date(p.dt+'T12:00'); return d.getMonth()===mes&&d.getFullYear()===ano; }).reduce((s,p)=>s+(p.val||0),0);
   },0);
@@ -1970,6 +2034,8 @@ function abrirCli(id, from) {
   var pgDet = document.getElementById('p-clidet');
   if(pgDet) pgDet.style.display = 'block';
   renderCliAnual(id);
+  setTimeout(function(){ renderPerfilCompras(id); }, 200);
+  setTimeout(function(){ analisarCicloCompra(id); }, 300);
   // Limpar seleção do menu
   document.querySelectorAll('.ni').forEach(function(n){ n.classList.remove('act'); });
 }
@@ -2592,6 +2658,7 @@ function buildPedTabelaEmpresa(ps){
   return '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
     '<thead><tr style="border-bottom:1px solid var(--bdr);color:var(--t2);font-size:10px;text-transform:uppercase">'+
       '<th style="padding:5px 8px;text-align:left;font-weight:600">Data</th>'+
+      '<th style="padding:5px 8px;text-align:left;font-weight:600">Nº Pedido</th>'+
       '<th style="padding:5px 8px;text-align:left;font-weight:600">NF</th>'+
       '<th style="padding:5px 8px;text-align:right;font-weight:600">Valor</th>'+
       '<th style="padding:5px 8px;text-align:left;font-weight:600">Faturamento</th>'+
@@ -2604,7 +2671,8 @@ function buildPedTabelaEmpresa(ps){
       var corFat=p.dtFat?'var(--grn)':'var(--org)';
       return '<tr style="border-bottom:1px solid var(--s3)">'+
         '<td style="padding:6px 8px;color:var(--t1)">'+(fmtD(p.dt)||'—')+'</td>'+
-        '<td style="padding:6px 8px;color:var(--t1);font-weight:700">'+(p.nf||'—')+'</td>'+
+        '<td style="padding:6px 8px"><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido(\''+p.id+'\')" title="Visualizar pedido">'+(p.num||'—')+'</span></td>'+
+        '<td style="padding:6px 8px;font-weight:600"><span class="lnk" style="color:var(--acc)" onclick="verPedido(\''+p.id+'\')" title="Visualizar">'+(p.nf||'—')+'</span></td>'+
         '<td style="padding:6px 8px;color:var(--t1);text-align:right">'+fmt(p.val)+'</td>'+
         '<td style="padding:6px 8px;color:'+corFat+';font-size:11px">'+(p.dtFat?fmtD(p.dtFat):'Em aberto')+'</td>'+
         '<td style="padding:6px 8px;color:var(--t1);text-align:right;font-weight:600">'+(p.valfat?fmt(p.valfat):'—')+'</td>'+
@@ -2634,7 +2702,7 @@ function buildPedTabela(ps,mini){
         const cor=p.dtFat?'var(--grn)':'var(--org)';
         return`<tr style="border-bottom:1px solid var(--s3)">
           <td style="padding:6px 8px;color:var(--t1)">${fmtD(p.dt)||'—'}</td>
-          <td style="padding:6px 8px;color:var(--t1);font-weight:600">${p.nf||'—'}</td>
+          <td style="padding:6px 8px;font-weight:600"><span class="lnk" style="color:var(--acc)" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.nf||p.num||'—'}</span></td>
           <td style="padding:6px 8px;color:var(--t1);text-align:right">${fmt(p.val)}</td>
           <td style="padding:6px 8px;color:${cor};font-size:11px">${p.dtFat?fmtD(p.dtFat):'Em aberto'}</td>
           <td style="padding:6px 8px;color:var(--t1);text-align:right;font-weight:600">${p.valfat?fmt(p.valfat):'—'}</td>
@@ -2657,7 +2725,7 @@ function buildPedTabela(ps,mini){
     const tIcon=p.transp==='Correios'?'📮':'🔵';
     return`<tr>
       ${mini?'':`<td><input type="checkbox" class="ped-cb" data-pedid="${p.id}" onchange="bulkAtualizarBarra()"></td>`}
-      <td>${fmtD(p.dt)}</td><td><b style="color:var(--t1)">${p.num||'—'}</b></td>
+      <td>${fmtD(p.dt)}</td><td><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.num||'—'}</span></td>
       <td><span class="lnk" onclick="abrirCli('${p.cliId}','${mini?'clidet':'eped'}')">${c?.rs||'—'}</span></td>
       <td>${fmt(p.val)}</td><td>${p.desc||0}%</td><td>${p.parc||1}x</td>
       ${mini?'':`<td>${p.com||3}%</td>`}
@@ -2668,7 +2736,7 @@ function buildPedTabela(ps,mini){
       ${mini?pCells.join(''):''}
       ${mini?'':`<td style="text-align:center"><input type="checkbox" ${p.naTransp?"checked":""} onchange="toggleTransp('${p.id}',this)" title="${p.naTransp?'Na transportadora desde '+p.naTranspData:'Marcar como enviado para transportadora'}" style="width:16px;height:16px;cursor:pointer;accent-color:var(--cyn)"></td>`}
       ${mini?'':`<td style="white-space:nowrap"><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc2);border-color:var(--acc2)" onclick="novaNFDireta('${p.id}')" title="Nova NF para este pedido"><i class="ti ti-copy-plus"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc);border-color:var(--acc)" onclick="enviarSAC('${p.id}')" title="Enviar e-mail para o SAC"><i class="ti ti-headset"></i> SAC</button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirPedido('${p.id}')" title="Excluir pedido"><i class="ti ti-trash"></i></button></td>`}
-      ${mini?`<td><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i> Editar</button></td>`:''}
+      ${mini?`<td><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar"><i class="ti ti-pencil"></i></button></td>`:''}
     </tr>`;
   }).join('');
 }
@@ -3234,11 +3302,13 @@ function abrirEditPedido(pedId){
   document.getElementById('edit-com').value    = p.com||3;
   document.getElementById('edit-fatcom').value = p.fatcom||'sim';
   document.getElementById('edit-parc').value   = p.parc||1;
+  if(document.getElementById('edit-cond-pgto')) document.getElementById('edit-cond-pgto').value = p.condPgto||'';
   document.getElementById('edit-transp').value = p.transp||'Correios';
   document.getElementById('edit-cod').value    = p.cod||'';
   document.getElementById('edit-tipo').value   = p.tipo||'';
   if(document.getElementById('edit-obs')) document.getElementById('edit-obs').value = p.obs||'';
-  if(document.getElementById('edit-cond-pgto')) document.getElementById('edit-cond-pgto').value = p.condPgto||'';
+  if(document.getElementById('edit-categorias')) document.getElementById('edit-categorias').value = p.categorias||'';
+  var stEl=document.getElementById('edit-pdf-status'); if(stEl) stEl.textContent=p.categorias?'Categorias carregadas':'Nenhum PDF carregado';
   window._paysDtEditAtual = p.paysDt||[];
   window._paysValEditAtual = p.paysVal||[];
   gerarCamposDatasParcEdit();
@@ -3334,6 +3404,7 @@ function salvarEdicaoPedido(){
   p.cod    = document.getElementById('edit-cod').value||null;
   p.tipo   = document.getElementById('edit-tipo')?.value?.trim()||null;
   p.obs    = document.getElementById('edit-obs')?.value?.trim()||null;
+  p.categorias = document.getElementById('edit-categorias')?.value?.trim()||null;
   // Atualizar ultFat do cliente
   const c=DB.clientes.find(x=>x.id===p.cliId);
   if(c&&p.dtFat) c.ultFat=p.dtFat;
@@ -3727,7 +3798,7 @@ function salvarPedido(){
   const pays=fatSim?['',...Array(parc).fill('')]:[...Array(parc).fill('')];
   const paysDt=coletarPaysDt(parc,fatSim);
   const paysVal=coletarPaysVal(parc,fatSim);
-  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,condPgto:document.getElementById('ped-cond-pgto')?.value?.trim()||null,pays,paysDt,paysVal};
+  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,pays,paysDt,paysVal};
   DB.pedidos.push(novo);
   const c=DB.clientes.find(x=>x.id===cid);
   if(c&&novo.dtFat) c.ultFat=novo.dtFat;
@@ -4397,40 +4468,771 @@ function converterLeadCliente(id){
   setTimeout(function(){ abrirCli(novoCli.id,'leads'); }, 500);
 }
 // ══ FIM LEADS ══
-// ══ CÁLCULO AUTOMÁTICO DE VENCIMENTOS ══
-function parsePrazos(cond){
-  if(!cond) return [];
-  return cond.split(/[\/,\-\s]+/).map(function(x){ return parseInt(x.trim()); }).filter(function(n){ return n>0; });
+
+// ══ IMPORTAR CONDIÇÃO DE PAGAMENTO ══
+function baixarModeloCondPgto(){
+  try{
+    var cab  = ['Nr Pedido','Condicao Pgto'];
+    var ex   = [['3079300','30/60/90'],['3081855','45/75'],['4521','90']];
+    var info = [['Nr exato do pedido','Dias ex: 30/60/90 ou 90']];
+    var ws   = XLSX.utils.aoa_to_sheet([cab].concat(ex).concat(info));
+    ws['!cols'] = [{wch:16},{wch:22}];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Cond Pgto');
+    XLSX.writeFile(wb, 'modelo_cond_pgto.xlsx');
+    toast('Modelo baixado! Preencha A = Nº Pedido e B = Condição (ex: 30/60/90)');
+  }catch(err){
+    toast('Erro ao gerar modelo: '+err.message);
+  }
 }
-function calcVencimentosEdit(){
-  var dtFat=document.getElementById('edit-dtfat')?.value;
-  var cond=document.getElementById('edit-cond-pgto')?.value?.trim();
-  if(!dtFat||!cond) return;
-  var prazos=parsePrazos(cond);
-  if(!prazos.length) return;
-  var base=new Date(dtFat+'T12:00');
-  prazos.forEach(function(dias,i){
-    var venc=new Date(base); venc.setDate(venc.getDate()+dias);
-    var dtStr=venc.toISOString().split('T')[0];
-    var el=document.getElementById('edit-data-parc-'+(i+1))||document.getElementById('edit-data-parc-'+i);
-    if(el) el.value=dtStr;
+
+function importarCondPgto(input){
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb   = XLSX.read(e.target.result,{type:'array'});
+      var ws   = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      var atualizados=0, naoEncontrados=[];
+
+      rows.forEach(function(r,i){
+        if(i===0) return; // pula cabeçalho
+        var numPed = String(r[0]||'').trim();
+        var cond   = String(r[1]||'').trim();
+        if(!numPed||!cond) return;
+
+        var p = DB.pedidos.find(function(x){return x.num===numPed&&x.empId===empAtual;});
+        if(!p){ naoEncontrados.push(numPed); return; }
+
+        p.condPgto = cond;
+
+        // Calcula datas de vencimento se tiver dtFat
+        if(p.dtFat){
+          var prazos = cond.split(/[\/,\-\s]+/).map(function(x){return parseInt(x);}).filter(function(n){return n>0;});
+          var base   = new Date(p.dtFat+'T12:00');
+          if(!p.paysDt) p.paysDt=[];
+          prazos.forEach(function(dias,i){
+            var venc = new Date(base); venc.setDate(venc.getDate()+dias);
+            p.paysDt[i+1] = venc.toISOString().split('T')[0];
+          });
+        }
+        atualizados++;
+      });
+
+      salvarDB();
+      input.value='';
+      var msg = '✅ '+atualizados+' pedido(s) atualizados!';
+      if(naoEncontrados.length) msg += '\n⚠️ Não encontrados: '+naoEncontrados.join(', ');
+      toast(msg);
+      if(atualizados) renderComFuturas();
+
+    }catch(err){
+      toast('Erro ao importar: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+// ══ FIM IMPORTAR CONDIÇÃO ══
+function renderComFuturas(){
+  var body  = document.getElementById('com-futuras-body'); if(!body) return;
+  var badge = document.getElementById('com-fut-total-badge');
+  var hoje  = new Date(); var hojeStr = hoje.toISOString().split('T')[0];
+  var mesMM = hojeStr.slice(0,7); // "AAAA-MM"
+  var nomesMes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  var peds = DB.pedidos.filter(function(p){
+    return p.empId===empAtual && !p.cancelado && p.valfat && p.pays && p.pays.length;
   });
-}
-function calcVencimentosNovo(){
-  var dtFat=document.getElementById('ped-dtfat')?.value;
-  var cond=document.getElementById('ped-cond-pgto')?.value?.trim();
-  if(!dtFat||!cond) return;
-  var prazos=parsePrazos(cond);
-  if(!prazos.length) return;
-  var base=new Date(dtFat+'T12:00');
-  prazos.forEach(function(dias,i){
-    var venc=new Date(base); venc.setDate(venc.getDate()+dias);
-    var dtStr=venc.toISOString().split('T')[0];
-    var el=document.getElementById('ped-data-parc-'+(i+1))||document.getElementById('ped-data-parc-'+i);
-    if(el) el.value=dtStr;
+
+  var totalGeral = 0;
+  var porMes = {};
+  var semData = [];
+
+  peds.forEach(function(p){
+    var cli = DB.clientes.find(function(c){return c.id===p.cliId;});
+    var fatSim = p.fatcom==='sim';
+    var nParcs  = (p.parc||1);
+    var vlParc  = p.valfat / nParcs;
+
+    p.pays.forEach(function(st, i){
+      if(i===0 && !fatSim) return; // índice 0 sem fatSim = não conta
+      if(st==='ok') return; // já pago
+
+      var vlReal = (p.paysVal && p.paysVal[i]) ? p.paysVal[i] : vlParc;
+      var comVal = vlReal * ((p.com||3)/100);
+      var lbl    = (i===0 && fatSim)?'FAT':('Parc.'+i);
+      var dtVenc = (p.paysDt && p.paysDt[i]) || null;
+
+      // Ignora parcelas de meses anteriores ao atual
+      if(dtVenc && dtVenc < mesMM+'-01') return;
+
+      var mes = dtVenc ? dtVenc.slice(0,7) : 'sem-data';
+
+      if(mes==='sem-data'){
+        semData.push({cli,p,lbl,dtVenc:null,vlReal,comVal,st});
+      } else {
+        if(!porMes[mes]) porMes[mes]={
+          label: nomesMes[parseInt(mes.slice(5,7))-1]+'/'+mes.slice(0,4),
+          parcelas:[], total:0
+        };
+        porMes[mes].parcelas.push({cli,p,lbl,dtVenc,vlReal,comVal,st});
+        porMes[mes].total += comVal;
+      }
+      totalGeral += comVal;
+    });
   });
+
+  // Se não há paysDt em nenhum, agrupa tudo como "Sem data definida"
+  if(!Object.keys(porMes).length && semData.length){
+    porMes['sem-data'] = {label:'Sem data definida', parcelas:semData, total:semData.reduce(function(a,x){return a+x.comVal;},0)};
+  } else if(semData.length){
+    if(!porMes['sem-data']) porMes['sem-data']={label:'Sem data definida',parcelas:[],total:0};
+    semData.forEach(function(x){ porMes['sem-data'].parcelas.push(x); porMes['sem-data'].total+=x.comVal; });
+  }
+
+  if(badge) badge.textContent = fmt(totalGeral);
+
+  var meses = Object.keys(porMes).sort(function(a,b){
+    if(a==='sem-data') return 1;
+    if(b==='sem-data') return -1;
+    return a>b?1:-1;
+  });
+
+  if(!meses.length){
+    body.innerHTML='<div style="color:var(--t3);font-size:12px;padding:10px">Nenhuma comissão pendente encontrada.</div>';
+    return;
+  }
+
+  // Cards clicáveis por mês
+  var html = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">';
+  meses.forEach(function(mes){
+    var m = porMes[mes];
+    var isAtual = mes===mesMM;
+    html += '<div style="background:'+(isAtual?'rgba(37,99,235,.08)':'var(--s2)')+';border:1px solid '+(isAtual?'var(--acc)':'var(--bdr)')+';border-radius:10px;padding:8px 14px;cursor:pointer;min-width:100px;text-align:center" onclick="scrollToMesComFut('mes-com-fut-'+mes+'')">'
+      +'<div style="font-size:11px;font-weight:700;color:'+(isAtual?'var(--acc)':'var(--t2)')+'">'+m.label+'</div>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--grn)">'+fmt(m.total)+'</div>'
+      +'<div style="font-size:10px;color:var(--t3)">'+m.parcelas.length+' parc.</div>'
+    +'</div>';
+  });
+  html += '</div>';
+
+  // Tabela por mês
+  meses.forEach(function(mes){
+    var m = porMes[mes];
+    var isAtual = mes===mesMM;
+    html += '<div id="mes-com-fut-'+mes+'" style="margin-bottom:20px">';
+    html += '<div style="background:'+(isAtual?'var(--acc)':'#475569')+';color:#fff;font-weight:700;font-size:13px;padding:8px 14px;border-radius:6px 6px 0 0;display:flex;justify-content:space-between;align-items:center">'
+      +'<span><i class="ti ti-calendar-event"></i> '+m.label+(isAtual?' · Mês atual':'')+'</span>'
+      +'<span>'+fmt(m.total)+'</span></div>';
+
+    html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+    html += '<thead><tr style="background:var(--s2)">'
+      +'<th style="padding:6px 10px;text-align:left;color:var(--t3);font-weight:600">Cliente</th>'
+      +'<th style="padding:6px 10px;text-align:center;color:var(--t3);font-weight:600">NF / Pedido</th>'
+      +'<th style="padding:6px 10px;text-align:center;color:var(--t3);font-weight:600">Parcela</th>'
+      +'<th style="padding:6px 10px;text-align:center;color:var(--t3);font-weight:600">Vencimento</th>'
+      +'<th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">Vl. Parcela</th>'
+      +'<th style="padding:6px 10px;text-align:right;color:var(--grn);font-weight:600">Comissão</th>'
+      +'</tr></thead><tbody>';
+
+    m.parcelas.sort(function(a,b){return (a.dtVenc||'9999')>(b.dtVenc||'9999')?1:-1;}).forEach(function(x,idx){
+      var vencida = x.dtVenc && x.dtVenc < hojeStr;
+      var bg = idx%2?'background:var(--s2)':'';
+      html += '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'
+        +'<td style="padding:6px 10px;color:var(--t1)">'+(x.cli?.rs||'—')+'</td>'
+        +'<td style="padding:6px 10px;text-align:center"><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido(''+x.p.id+'')">'+(x.p.nf||x.p.num||'—')+'</span></td>'
+        +'<td style="padding:6px 10px;text-align:center;color:var(--t2)">'+x.lbl+'</td>'
+        +'<td style="padding:6px 10px;text-align:center;font-weight:600;color:'+(vencida?'var(--red)':x.dtVenc?'var(--t1)':'var(--t3)')+'">'+( x.dtVenc?fmtD(x.dtVenc):'—')+'</td>'
+        +'<td style="padding:6px 10px;text-align:right;color:var(--t2)">'+fmt(x.vlReal)+'</td>'
+        +'<td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--grn)">'+fmt(x.comVal)+'</td>'
+      +'</tr>';
+    });
+
+    var totMes = m.total;
+    var totVl  = m.parcelas.reduce(function(a,x){return a+x.vlReal;},0);
+    html += '<tr style="background:var(--s2);font-weight:700;border-top:2px solid var(--bdr)">'
+      +'<td colspan="4" style="padding:6px 10px;color:var(--t1)">Total '+m.label+'</td>'
+      +'<td style="padding:6px 10px;text-align:right">'+fmt(totVl)+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--grn)">'+fmt(totMes)+'</td>'
+    +'</tr>';
+
+    html += '</tbody></table></div></div>';
+  });
+
+  body.innerHTML = html;
 }
-// ══ FIM VENCIMENTOS ══
+
+function scrollToMesComFut(id){
+  var el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+}
+// ══ FIM COMISSÕES FUTURAS ══
+function exportarEmpresaExcel(empId){
+  const e=DB.empresas.find(function(x){return x.id===empId;});
+  if(!e){ toast('Empresa não encontrada'); return; }
+  toast('⏳ Gerando Excel completo...');
+
+  const wb=XLSX.utils.book_new();
+  const hoje=new Date(); const anoAtual=hoje.getFullYear();
+  const nomesMes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const peds=DB.pedidos.filter(function(p){return p.empId===empId&&!p.cancelado;});
+  const clis=DB.clientes.filter(function(c){return c.empId===empId;});
+  const anos=[...new Set(peds.filter(function(p){return p.dt;}).map(function(p){return parseInt(p.dt.slice(0,4));}))].sort();
+
+  const COR={
+    TITULO:    {fgColor:{rgb:'1E3A5F'}}, TITULO_F: {font:{bold:true,sz:14,color:{rgb:'FFFFFF'}}},
+    CAB:       {fgColor:{rgb:'2563EB'}}, CAB_F:    {font:{bold:true,color:{rgb:'FFFFFF'}}},
+    CAB2:      {fgColor:{rgb:'059669'}}, CAB2_F:   {font:{bold:true,color:{rgb:'FFFFFF'}}},
+    CAB3:      {fgColor:{rgb:'D97706'}}, CAB3_F:   {font:{bold:true,color:{rgb:'FFFFFF'}}},
+    CAB4:      {fgColor:{rgb:'7C3AED'}}, CAB4_F:   {font:{bold:true,color:{rgb:'FFFFFF'}}},
+    LINHA1:    {fgColor:{rgb:'EFF6FF'}}, LINHA2:   {fgColor:{rgb:'FFFFFF'}},
+    VERDE:     {fgColor:{rgb:'D1FAE5'}}, VERDE_F:  {font:{color:{rgb:'065F46'}}},
+    LARANJA:   {fgColor:{rgb:'FEF3C7'}}, LARANJA_F:{font:{color:{rgb:'92400E'}}},
+    VERMELHO:  {fgColor:{rgb:'FEE2E2'}}, VERMELHO_F:{font:{color:{rgb:'991B1B'}}},
+    TOTAL:     {fgColor:{rgb:'1E293B'}}, TOTAL_F:  {font:{bold:true,color:{rgb:'FFFFFF'}}},
+    BOLD:      {font:{bold:true}},
+  };
+
+  function cel(v,fill,font,aln){
+    return {v:v===null||v===undefined?'':v, t:typeof v==='number'?'n':'s',
+      s:{fill:fill||{fgColor:{rgb:'FFFFFF'}},font:font||{sz:10},alignment:aln||{wrapText:false}}};
+  }
+  function celN(v,fill,font,fmt2){
+    return {v:v||0,t:'n',s:{fill:fill||{fgColor:{rgb:'FFFFFF'}},font:font||{sz:10},numFmt:fmt2||'#,##0.00'}};
+  }
+  function titulo(txt){return {v:txt,t:'s',s:{fill:COR.TITULO,font:{...COR.TITULO_F.font,sz:14},alignment:{horizontal:'center'}}};}
+  function cab(txt,cor){return {v:txt,t:'s',s:{fill:cor||COR.CAB,font:(cor===COR.CAB2?COR.CAB2_F:cor===COR.CAB3?COR.CAB3_F:cor===COR.CAB4?COR.CAB4_F:COR.CAB_F).font,alignment:{horizontal:'center',wrapText:true}}};}
+  function addSheet(wb,dados,nome,cols){
+    const ws=XLSX.utils.aoa_to_sheet(dados);
+    if(cols) ws['!cols']=cols;
+    XLSX.utils.book_append_sheet(wb,ws,nome);
+    return ws;
+  }
+
+  // ── ABA 1: RESUMO EXECUTIVO ──────────────────────────────
+  const totalVenda=peds.reduce(function(a,p){return a+(p.val||0);},0);
+  const totalFat=peds.filter(function(p){return p.dtFat;}).reduce(function(a,p){return a+(p.valfat||0);},0);
+  const pedAbertos=peds.filter(function(p){return !p.dtFat;}).length;
+  const vendaAno=peds.filter(function(p){return p.dt&&p.dt.startsWith(anoAtual+'');}).reduce(function(a,p){return a+(p.val||0);},0);
+  const fatAno=peds.filter(function(p){return p.dtFat&&p.dtFat.startsWith(anoAtual+'');}).reduce(function(a,p){return a+(p.valfat||0);},0);
+  const ticketMedio=peds.length?Math.round(totalVenda/peds.length):0;
+
+  const resumo=[
+    [{v:e.nome,t:'s',s:{fill:COR.TITULO,font:{bold:true,sz:16,color:{rgb:'FFFFFF'}},alignment:{horizontal:'center'}}},{v:'',t:'s',s:{fill:COR.TITULO}},{v:'',t:'s',s:{fill:COR.TITULO}},{v:'Exportado em: '+hoje.toLocaleDateString('pt-BR'),t:'s',s:{fill:COR.TITULO,font:{color:{rgb:'AACCFF'}},alignment:{horizontal:'right'}}}],
+    [{v:'',t:'s',s:{fill:{fgColor:{rgb:'FFFFFF'}}}}],
+    [cab('RESUMO GERAL',COR.CAB),cab('',COR.CAB),cab('',COR.CAB),cab('',COR.CAB)],
+    [cel('Total de Clientes',COR.LINHA1,COR.BOLD.font),celN(clis.length,COR.LINHA1,null,'0'),cel('Pedidos Faturados',COR.LINHA1,COR.BOLD.font),celN(peds.filter(function(p){return p.dtFat;}).length,COR.LINHA1,null,'0')],
+    [cel('Total de Pedidos',COR.LINHA2,COR.BOLD.font),celN(peds.length,COR.LINHA2,null,'0'),cel('Pedidos em Aberto',COR.LINHA2,COR.BOLD.font),celN(pedAbertos,COR.LINHA2,null,'0')],
+    [cel('Venda Total (Histórico)',COR.LINHA1,COR.BOLD.font),celN(totalVenda,COR.VERDE,COR.VERDE_F.font),cel('Fat. Total (Histórico)',COR.LINHA1,COR.BOLD.font),celN(totalFat,COR.VERDE,COR.VERDE_F.font)],
+    [cel('Venda '+anoAtual,COR.LINHA2,COR.BOLD.font),celN(vendaAno,COR.VERDE,COR.VERDE_F.font),cel('Faturamento '+anoAtual,COR.LINHA2,COR.BOLD.font),celN(fatAno,COR.VERDE,COR.VERDE_F.font)],
+    [cel('Ticket Médio',COR.LINHA1,COR.BOLD.font),celN(ticketMedio,COR.LINHA1),cel('% Faturado/Vendido',COR.LINHA1,COR.BOLD.font),celN(totalVenda?Math.round(totalFat/totalVenda*100):0,COR.LINHA1,null,'0"%"')],
+    [{v:'',t:'s'}],
+    [cab('EVOLUÇÃO ANUAL',COR.CAB2),cab('',COR.CAB2),cab('',COR.CAB2),cab('',COR.CAB2)],
+    [cab('Ano',COR.CAB2),cab('Venda',COR.CAB2),cab('Faturado',COR.CAB2),cab('% Fat/Venda',COR.CAB2)],
+  ];
+  anos.forEach(function(ano,i){
+    const vA=peds.filter(function(p){return p.dt&&p.dt.startsWith(ano+'');}).reduce(function(a,p){return a+(p.val||0);},0);
+    const fA=peds.filter(function(p){return p.dtFat&&p.dtFat.startsWith(ano+'');}).reduce(function(a,p){return a+(p.valfat||0);},0);
+    const fill=i%2?COR.LINHA2:COR.LINHA1;
+    resumo.push([cel(ano+'',fill,{bold:true}),celN(vA,fill),celN(fA,COR.VERDE),celN(vA?Math.round(fA/vA*100):0,fill,null,'0"%"')]);
+  });
+  addSheet(wb,resumo,'📊 Resumo',[{wch:28},{wch:18},{wch:28},{wch:18}]);
+
+  // ── ABA 2: CLIENTES ──────────────────────────────────────
+  const cabCli=[cab('Razão Social'),cab('Contato'),cab('Telefone'),cab('Celular'),cab('Cidade'),cab('UF'),cab('Segmento'),cab('CNPJ'),cab('Endereço'),cab('E-mail'),cab('Observação')];
+  const dadosCli=[
+    [{v:e.nome+' — Clientes',t:'s',s:{fill:COR.TITULO,font:{bold:true,sz:13,color:{rgb:'FFFFFF'}},alignment:{horizontal:'left'}}}],
+    [{v:'',t:'s'}], cabCli
+  ];
+  clis.forEach(function(c,i){
+    const fill=i%2?COR.LINHA2:COR.LINHA1;
+    const ultPed=DB.pedidos.filter(function(p){return p.cliId===c.id&&!p.cancelado&&p.dt;}).sort(function(a,b){return b.dt>a.dt?1:-1;})[0];
+    dadosCli.push([cel(c.rs||'',fill,i%2?null:{bold:false}),cel(c.comp||'',fill),cel(c.fone||'',fill),cel(c.cel||'',fill),cel(c.cid||'',fill),cel(c.uf||'',fill),cel(c.seg||'',fill),cel(c.cnpj||'',fill),cel(c.end||'',fill),cel(c.email||'',fill),cel(c.obs||'',fill)]);
+  });
+  // Linha total
+  dadosCli.push([{v:'TOTAL: '+clis.length+' clientes',t:'s',s:{fill:COR.TOTAL,font:COR.TOTAL_F.font}}]);
+  addSheet(wb,dadosCli,'👥 Clientes',[{wch:30},{wch:22},{wch:14},{wch:14},{wch:16},{wch:5},{wch:16},{wch:18},{wch:30},{wch:24},{wch:30}]);
+
+  // ── ABA 3: PEDIDOS ───────────────────────────────────────
+  const cabPed=[cab('Data',COR.CAB3),cab('Nº Pedido',COR.CAB3),cab('Cliente',COR.CAB3),cab('Valor',COR.CAB3),cab('Desc%',COR.CAB3),cab('Parc',COR.CAB3),cab('Com%',COR.CAB3),cab('Dt Fat.',COR.CAB3),cab('NF',COR.CAB3),cab('Vl. Fat.',COR.CAB3),cab('Pago',COR.CAB3),cab('Origem',COR.CAB3),cab('OBS',COR.CAB3)];
+  const dadosPed=[
+    [{v:e.nome+' — Pedidos',t:'s',s:{fill:COR.TITULO,font:{bold:true,sz:13,color:{rgb:'FFFFFF'}}}}],
+    [{v:'',t:'s'}], cabPed
+  ];
+  const pedOrdenados=peds.slice().sort(function(a,b){return (b.dt||'')>(a.dt||'')?1:-1;});
+  pedOrdenados.forEach(function(p,i){
+    const cli=DB.clientes.find(function(c){return c.id===p.cliId;});
+    const fill=p.dtFat?COR.VERDE:(i%2?COR.LINHA2:COR.LINHA1);
+    const fillFont=p.dtFat?COR.VERDE_F.font:null;
+    const pago=p.pays&&p.pays.every(function(s,idx){return idx===0&&p.fatcom!=='sim'?true:s==='ok';});
+    dadosPed.push([
+      cel(fmtD(p.dt)||'',fill,fillFont),cel(p.num||'',fill,{bold:true}),cel(cli?.rs||'—',fill,fillFont),
+      celN(p.val||0,fill,fillFont),cel((p.desc||0)+'%',fill),cel((p.parc||1)+'x',fill),cel((p.com||0)+'%',fill),
+      cel(fmtD(p.dtFat)||'',p.dtFat?COR.VERDE:COR.LARANJA,p.dtFat?COR.VERDE_F.font:COR.LARANJA_F.font),
+      cel(p.nf||'—',fill,fillFont),celN(p.valfat||0,fill,fillFont),
+      cel(pago?'✓':'',p.dtFat?COR.VERDE:fill,fillFont),cel(p.tipo||'',fill),cel(p.obs||'',fill)
+    ]);
+  });
+  const totVenda=peds.reduce(function(a,p){return a+(p.val||0);},0);
+  const totFat=peds.reduce(function(a,p){return a+(p.valfat||0);},0);
+  dadosPed.push([cel('TOTAL',COR.TOTAL,COR.TOTAL_F.font),cel('',COR.TOTAL),cel(peds.length+' pedidos',COR.TOTAL,COR.TOTAL_F.font),celN(totVenda,COR.TOTAL,{bold:true,color:{rgb:'FFFFFF'}}),cel('',COR.TOTAL),cel('',COR.TOTAL),cel('',COR.TOTAL),cel('',COR.TOTAL),cel('',COR.TOTAL),celN(totFat,COR.TOTAL,{bold:true,color:{rgb:'FFFFFF'}}),cel('',COR.TOTAL),cel('',COR.TOTAL),cel('',COR.TOTAL)]);
+  addSheet(wb,dadosPed,'📋 Pedidos',[{wch:12},{wch:12},{wch:28},{wch:14},{wch:7},{wch:7},{wch:7},{wch:12},{wch:12},{wch:14},{wch:6},{wch:16},{wch:25}]);
+
+  // ── ABA 4: COMISSÕES ─────────────────────────────────────
+  const pedsFat=peds.filter(function(p){return p.dtFat&&p.valfat;});
+  const cabCom=[cab('Data Fat.',COR.CAB4),cab('Nº Pedido',COR.CAB4),cab('NF',COR.CAB4),cab('Cliente',COR.CAB4),cab('Vl. Fat.',COR.CAB4),cab('Com%',COR.CAB4),cab('Comissão',COR.CAB4),cab('Pago?',COR.CAB4)];
+  const dadosCom=[
+    [{v:e.nome+' — Comissões',t:'s',s:{fill:COR.TITULO,font:{bold:true,sz:13,color:{rgb:'FFFFFF'}}}}],
+    [{v:'',t:'s'}], cabCom
+  ];
+  let totCom=0;
+  pedsFat.slice().sort(function(a,b){return (b.dtFat||'')>(a.dtFat||'')?1:-1;}).forEach(function(p,i){
+    const cli=DB.clientes.find(function(c){return c.id===p.cliId;});
+    const com=Math.round((p.valfat||0)*(p.com||0)/100*100)/100;
+    totCom+=com;
+    const fill=i%2?COR.LINHA2:COR.LINHA1;
+    dadosCom.push([cel(fmtD(p.dtFat)||'',fill),cel(p.num||'',fill,{bold:true}),cel(p.nf||'',fill),cel(cli?.rs||'—',fill),celN(p.valfat||0,fill),cel((p.com||0)+'%',fill),celN(com,COR.VERDE,COR.VERDE_F.font),cel('',fill)]);
+  });
+  dadosCom.push([cel('TOTAL',COR.TOTAL,COR.TOTAL_F.font),cel('',COR.TOTAL),cel('',COR.TOTAL),cel(pedsFat.length+' NFs',COR.TOTAL,COR.TOTAL_F.font),celN(totFat,COR.TOTAL,{bold:true,color:{rgb:'FFFFFF'}}),cel('',COR.TOTAL),celN(totCom,COR.TOTAL,{bold:true,color:{rgb:'FFFFFF'}}),cel('',COR.TOTAL)]);
+  addSheet(wb,dadosCom,'💰 Comissões',[{wch:12},{wch:12},{wch:12},{wch:28},{wch:14},{wch:7},{wch:14},{wch:8}]);
+
+  // ── ABA 5: VENDAS MÊS A MÊS ─────────────────────────────
+  const cabMes=[cab('Ano'),cab('Mês'),cab('Venda'),cab('Nº Pedidos'),cab('Ticket Médio'),cab('Meta Venda'),cab('% Meta V'),cab('Faturado'),cab('Nº NFs'),cab('Meta Fat.'),cab('% Meta F')];
+  const dadosMes=[
+    [{v:e.nome+' — Mês a Mês',t:'s',s:{fill:COR.TITULO,font:{bold:true,sz:13,color:{rgb:'FFFFFF'}}}}],
+    [{v:'',t:'s'}], cabMes
+  ];
+  anos.forEach(function(ano){
+    for(var m=0;m<=11;m++){
+      const pM=peds.filter(function(p){return p.dt&&p.dt.slice(0,7)===(ano+'-'+String(m+1).padStart(2,'0'));});
+      const fM=peds.filter(function(p){return p.dtFat&&p.dtFat.slice(0,7)===(ano+'-'+String(m+1).padStart(2,'0'));});
+      if(!pM.length&&!fM.length) continue;
+      const vM=pM.reduce(function(a,p){return a+(p.val||0);},0);
+      const fMV=fM.reduce(function(a,p){return a+(p.valfat||0);},0);
+      const nPed=pM.filter(function(p){return (p.val||0)>0;}).length;
+      const ticket=nPed?Math.round(vM/nPed):0;
+      const metaV=typeof getMetaMensal==='function'?getMetaMensal(empId,ano,m,'meta'):(e.meta||0);
+      const metaF=typeof getMetaMensal==='function'?getMetaMensal(empId,ano,m,'metaFat'):(e.metaFat||0);
+      const pctV=metaV?Math.round(vM/metaV*100):0;
+      const pctF=metaF?Math.round(fMV/metaF*100):0;
+      const fillV=pctV>=100?COR.VERDE:pctV>=70?COR.LARANJA:COR.LINHA2;
+      const fillF=pctF>=100?COR.VERDE:pctF>=70?COR.LARANJA:COR.LINHA2;
+      dadosMes.push([cel(ano+'',COR.LINHA1,{bold:true}),cel(nomesMes[m],COR.LINHA1),celN(vM,COR.LINHA2),celN(nPed,COR.LINHA2,null,'0'),celN(ticket,COR.LINHA2),celN(metaV||0,COR.LINHA2),celN(pctV,fillV,pctV>=100?COR.VERDE_F.font:null,'0"%"'),celN(fMV,COR.VERDE,COR.VERDE_F.font),celN(fM.length,COR.LINHA2,null,'0'),celN(metaF||0,COR.LINHA2),celN(pctF,fillF,pctF>=100?COR.VERDE_F.font:null,'0"%"')]);
+    }
+    // Sub-total do ano
+    const vAno=peds.filter(function(p){return p.dt&&p.dt.startsWith(ano+'');}).reduce(function(a,p){return a+(p.val||0);},0);
+    const fAno=peds.filter(function(p){return p.dtFat&&p.dtFat.startsWith(ano+'');}).reduce(function(a,p){return a+(p.valfat||0);},0);
+    dadosMes.push([cel('TOTAL '+ano,COR.TOTAL,COR.TOTAL_F.font),cel('',COR.TOTAL),celN(vAno,COR.TOTAL,{bold:true,color:{rgb:'FFFFFF'}}),cel('',COR.TOTAL),cel('',COR.TOTAL),cel('',COR.TOTAL),cel('',COR.TOTAL),celN(fAno,COR.TOTAL,{bold:true,color:{rgb:'FFFFFF'}}),cel('',COR.TOTAL),cel('',COR.TOTAL),cel('',COR.TOTAL)]);
+    dadosMes.push([{v:'',t:'s'}]);
+  });
+  addSheet(wb,dadosMes,'📅 Mês a Mês',[{wch:7},{wch:7},{wch:14},{wch:12},{wch:14},{wch:14},{wch:10},{wch:14},{wch:8},{wch:14},{wch:10}]);
+
+  // ── ABA 6: CICLO DE COMPRA ───────────────────────────────
+  const cabCiclo=[cab('Cliente',COR.CAB2),cab('Cidade',COR.CAB2),cab('Último Pedido',COR.CAB2),cab('Dias sem comprar',COR.CAB2),cab('Intervalo médio',COR.CAB2),cab('Próximo previsto',COR.CAB2),cab('Meses habituais',COR.CAB2),cab('Situação',COR.CAB2)];
+  const dadosCiclo=[
+    [{v:e.nome+' — Ciclo de Compra',t:'s',s:{fill:COR.TITULO,font:{bold:true,sz:13,color:{rgb:'FFFFFF'}}}}],
+    [{v:'',t:'s'}], cabCiclo
+  ];
+  clis.forEach(function(cli,i){
+    const pc=DB.pedidos.filter(function(p){return p.cliId===cli.id&&!p.cancelado&&p.dt;});
+    if(!pc.length){ dadosCiclo.push([cel(cli.rs,COR.LINHA2),cel(cli.cid||'',COR.LINHA2),cel('—',COR.LINHA2),cel('—',COR.LINHA2),cel('—',COR.LINHA2),cel('—',COR.LINHA2),cel('—',COR.LINHA2),cel('Sem histórico',COR.LINHA2)]); return; }
+    const datas=pc.map(function(p){return new Date(p.dt+'T12:00');}).sort(function(a,b){return a-b;});
+    let somaI=0; for(var ii=1;ii<datas.length;ii++) somaI+=(datas[ii]-datas[ii-1])/86400000;
+    const intervM=datas.length>1?Math.round(somaI/(datas.length-1)):0;
+    const ult=datas[datas.length-1];
+    const diasSem=Math.floor((hoje-ult)/86400000);
+    const proxDias=intervM-diasSem;
+    const proxData=new Date(ult); proxData.setDate(proxData.getDate()+intervM);
+    const porAM={}; pc.forEach(function(p){const d=new Date(p.dt+'T12:00');const k=d.getFullYear()+'-'+d.getMonth();if(!porAM[k]) porAM[k]={ano:d.getFullYear(),mes:d.getMonth()};});
+    const mF={}; Object.values(porAM).forEach(function(x){if(!mF[x.mes]) mF[x.mes]=[];if(!mF[x.mes].includes(x.ano)) mF[x.mes].push(x.ano);});
+    const mH=Object.keys(mF).filter(function(m){return mF[m].length>=2;}).map(function(m){return ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][parseInt(m)];}).join('/');
+    const sit=diasSem>intervM*1.3?'⚠️ Atrasado':diasSem>intervM*0.85?'🕐 Próximo':'✅ No ciclo';
+    const fill=diasSem>intervM*1.3?COR.VERMELHO:diasSem>intervM*0.85?COR.LARANJA:(i%2?COR.LINHA2:COR.LINHA1);
+    dadosCiclo.push([cel(cli.rs,fill,{bold:true}),cel(cli.cid||'',fill),cel(fmtD(ult.toISOString().split('T')[0]),fill),celN(diasSem,fill,null,'0" dias"'),celN(intervM||0,fill,null,'0" dias"'),cel(fmtD(proxData.toISOString().split('T')[0]),fill),cel(mH||'—',fill),cel(sit,fill)]);
+  });
+  addSheet(wb,dadosCiclo,'🔄 Ciclo de Compra',[{wch:30},{wch:16},{wch:14},{wch:18},{wch:16},{wch:16},{wch:22},{wch:18}]);
+
+  // ── SALVAR ───────────────────────────────────────────────
+  const nomeArq='backup_'+e.nome.replace(/[^a-z0-9]/gi,'_')+'_'+anoAtual+'.xlsx';
+  XLSX.writeFile(wb,nomeArq,{bookType:'xlsx',type:'binary',cellStyles:true});
+  toast('✅ Backup gerado: '+nomeArq);
+}
+// ══ FIM BACKUP EMPRESA ══
+function renderAlertasCiclo(){
+  const el=document.getElementById('dash-ciclo-body'); if(!el) return;
+  const hoje=new Date();
+  const alertas=[];
+
+  DB.clientes.filter(function(c){return !c.encerrado;}).forEach(function(cli){
+    const peds=DB.pedidos.filter(function(p){return p.cliId===cli.id&&!p.cancelado&&p.dt;});
+    if(peds.length<2) return;
+    const datas=peds.map(function(p){return new Date(p.dt+'T12:00');}).sort(function(a,b){return a-b;});
+    let somaInterv=0;
+    for(let i=1;i<datas.length;i++) somaInterv+=(datas[i]-datas[i-1])/86400000;
+    const intervMedio=Math.round(somaInterv/(datas.length-1));
+    const ultData=datas[datas.length-1];
+    const diasSem=Math.floor((hoje-ultData)/86400000);
+
+    // Meses habituais não comprados no ano atual
+    const porAnoMes={};
+    peds.forEach(function(p){
+      const d=new Date(p.dt+'T12:00'); const key=d.getFullYear()+'-'+d.getMonth();
+      if(!porAnoMes[key]) porAnoMes[key]={ano:d.getFullYear(),mes:d.getMonth()};
+    });
+    const mesesFreq={};
+    Object.values(porAnoMes).forEach(function(e){
+      if(!mesesFreq[e.mes]) mesesFreq[e.mes]=[];
+      if(!mesesFreq[e.mes].includes(e.ano)) mesesFreq[e.mes].push(e.ano);
+    });
+    const mesesHab=Object.keys(mesesFreq).filter(function(m){return mesesFreq[m].length>=2;}).map(Number);
+    const compradosMesAno=Object.values(porAnoMes).filter(function(e){return e.ano===hoje.getFullYear();}).map(function(e){return e.mes;});
+    const mesesAtrasados=mesesHab.filter(function(m){return !compradosMesAno.includes(m)&&m<=hoje.getMonth();});
+
+    const atrasado=diasSem>intervMedio*1.3;
+    const proximo=!atrasado&&diasSem>intervMedio*0.85;
+
+    if(atrasado||proximo||mesesAtrasados.length){
+      const e=DB.empresas.find(function(x){return x.id===cli.empId;});
+      alertas.push({cli,e,diasSem,intervMedio,atrasado,proximo,mesesAtrasados,ultData});
+    }
+  });
+
+  if(!DB.cicloAcoes) DB.cicloAcoes={};
+  const hoje=new Date(); const hojeStr=hoje.toISOString().split('T')[0];
+
+  // Filtra clientes com ação ativa (contatado/seminteresse dentro do prazo)
+  const alertasFiltrados=alertas.filter(function(a){
+    const acao=DB.cicloAcoes[a.cli.id];
+    if(!acao) return true;
+    return acao.ate<hojeStr; // prazo vencido = volta para lista
+  });
+
+  const badge=document.getElementById('badge-ciclo');
+  if(badge){ badge.textContent=alertasFiltrados.length; badge.style.display=alertasFiltrados.length?'inline':'none'; }
+
+  if(!alertasFiltrados.length){
+    el.innerHTML='<div style="color:var(--grn);font-size:12px;padding:8px"><i class="ti ti-circle-check"></i> Todos os clientes dentro do ciclo ou já contatados! 🎉</div>';
+    return;
+  }
+
+  alertasFiltrados.sort(function(a,b){return b.diasSem-a.diasSem;});
+
+  el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'+
+    '<thead><tr style="background:var(--s2)">'+
+    '<th style="padding:7px 10px;text-align:left">Cliente</th>'+
+    '<th style="padding:7px 10px;text-align:left">Empresa</th>'+
+    '<th style="padding:7px 10px;text-align:center">Último pedido</th>'+
+    '<th style="padding:7px 10px;text-align:center">Dias sem comprar</th>'+
+    '<th style="padding:7px 10px;text-align:center">Intervalo médio</th>'+
+    '<th style="padding:7px 10px;text-align:left">Situação</th>'+
+    '<th style="padding:7px 10px;text-align:center">Ação</th>'+
+    '</tr></thead><tbody>'+
+    alertasFiltrados.map(function(a,idx){
+      const cor=a.atrasado?'var(--red)':a.proximo?'var(--org)':'var(--cyn)';
+      const txt=a.atrasado?'⚠️ Atrasado':a.proximo?'🕐 Próximo':'📅 Mês habitual pendente';
+      const mesesTxt=a.mesesAtrasados.length?' · '+a.mesesAtrasados.map(function(m){return MESES_NOME[m];}).join('/'):'';
+      const bg=idx%2?'background:var(--s2)':'';
+      return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'+
+        '<td style="padding:7px 10px"><span class="lnk" onclick="abrirCli(\''+a.cli.id+'\',\'dash\')">'+a.cli.rs+'</span></td>'+
+        '<td style="padding:7px 10px"><span style="color:'+(a.e?.cor||'var(--t3)')+';font-weight:600">'+(a.e?.nome||'—')+'</span></td>'+
+        '<td style="padding:7px 10px;text-align:center;color:var(--t2)">'+fmtD(a.ultData.toISOString().split('T')[0])+'</td>'+
+        '<td style="padding:7px 10px;text-align:center;font-weight:700;color:'+cor+'">'+a.diasSem+'d</td>'+
+        '<td style="padding:7px 10px;text-align:center;color:var(--t3)">'+a.intervMedio+'d</td>'+
+        '<td style="padding:7px 10px"><span style="font-size:11px;color:'+cor+'">'+txt+mesesTxt+'</span></td>'+
+      '<td style="padding:7px 10px;white-space:nowrap">'+
+        '<button class="btn bs" style="padding:2px 8px;font-size:10px;color:var(--grn);border-color:var(--grn)" onclick="cicloAcao(''+a.cli.id+'','contatado')" title="Marcar como contatado — retira da lista por 7 dias"><i class="ti ti-phone-check"></i> Contatado</button> '+
+        '<button class="btn bs" style="padding:2px 8px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="cicloAcao(''+a.cli.id+'','seminteresse')" title="Sem interesse neste ciclo — retira da lista até o próximo ciclo"><i class="ti ti-x"></i> Sem interesse</button>'+
+      '</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+}
+
+function cicloAcao(cliId, tipo){
+  if(!DB.cicloAcoes) DB.cicloAcoes={};
+  const hoje=new Date();
+  if(tipo==='contatado'){
+    // Remove por 7 dias
+    const ate=new Date(hoje); ate.setDate(ate.getDate()+7);
+    DB.cicloAcoes[cliId]={tipo:'contatado', ate:ate.toISOString().split('T')[0], dt:hoje.toISOString().split('T')[0]};
+    toast('✅ Marcado como contatado — retorna em 7 dias.');
+  } else {
+    // Remove até o final do mês seguinte (próximo ciclo)
+    const ate=new Date(hoje); ate.setDate(1); ate.setMonth(ate.getMonth()+2); ate.setDate(0);
+    DB.cicloAcoes[cliId]={tipo:'seminteresse', ate:ate.toISOString().split('T')[0], dt:hoje.toISOString().split('T')[0]};
+    toast('❌ Removido da lista até '+fmtD(ate.toISOString().split('T')[0])+'.');
+  }
+  salvarDB();
+  renderAlertasCiclo();
+}
+// ══ FIM ALERTAS CICLO ══
+const MESES_NOME=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESES_FULL=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function analisarCicloCompra(cliId){
+  const el=document.getElementById('ciclo-compra-cli'); if(!el) return;
+  const peds=DB.pedidos.filter(function(p){return p.cliId===cliId&&!p.cancelado&&p.dt;});
+  if(peds.length<2){ el.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px">Histórico insuficiente (mínimo 2 pedidos).</div>'; return; }
+
+  const hoje=new Date(); const anoAtual=hoje.getFullYear(); const mesAtual=hoje.getMonth();
+
+  const porAnoMes={};
+  peds.forEach(function(p){
+    const d=new Date(p.dt+'T12:00'); const key=d.getFullYear()+'-'+d.getMonth();
+    if(!porAnoMes[key]) porAnoMes[key]={ano:d.getFullYear(),mes:d.getMonth(),total:0,qtd:0};
+    porAnoMes[key].total+=(p.val||0); porAnoMes[key].qtd++;
+  });
+
+  const mesesFreq={};
+  Object.values(porAnoMes).forEach(function(e){
+    if(!mesesFreq[e.mes]) mesesFreq[e.mes]=[];
+    if(!mesesFreq[e.mes].includes(e.ano)) mesesFreq[e.mes].push(e.ano);
+  });
+
+  const datas=peds.map(function(p){return new Date(p.dt+'T12:00');}).sort(function(a,b){return a-b;});
+  let somaInterv=0;
+  for(let i=1;i<datas.length;i++) somaInterv+=(datas[i]-datas[i-1])/86400000;
+  const intervMedio=Math.round(somaInterv/(datas.length-1));
+  const ultData=datas[datas.length-1];
+  const diasSemComprar=Math.floor((hoje-ultData)/86400000);
+  const prevProxDias=intervMedio-diasSemComprar;
+
+  let statusCor,statusTxt,statusIco;
+  if(diasSemComprar>intervMedio*1.3){ statusCor='var(--red)'; statusTxt='Atrasado'; statusIco='ti-alert-triangle'; }
+  else if(diasSemComprar>intervMedio*0.85){ statusCor='var(--org)'; statusTxt='Próximo do vencimento'; statusIco='ti-clock'; }
+  else { statusCor='var(--grn)'; statusTxt='Dentro do ciclo'; statusIco='ti-circle-check'; }
+
+  const mesesHab=Object.entries(mesesFreq).filter(function(e){return e[1].length>=2;}).map(function(e){return parseInt(e[0]);}).sort(function(a,b){return a-b;});
+  const compradosMesAno=Object.values(porAnoMes).filter(function(e){return e.ano===anoAtual;}).map(function(e){return e.mes;});
+  const alertasMeses=mesesHab.filter(function(m){return !compradosMesAno.includes(m)&&m<=mesAtual;});
+
+  let html='';
+  html+=`<div style="background:${statusCor}18;border:1px solid ${statusCor}44;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    <i class="ti ${statusIco}" style="font-size:22px;color:${statusCor}"></i>
+    <div><div style="font-weight:700;color:${statusCor};font-size:13px">${statusTxt}</div>
+    <div style="font-size:11px;color:var(--t2)">${diasSemComprar} dias sem comprar · intervalo médio: ${intervMedio} dias</div></div>
+  </div>`;
+
+  html+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">`;
+  html+=`<div class="mc" style="padding:10px"><div style="font-size:9px;color:var(--t3);text-transform:uppercase">Último pedido</div><div style="font-weight:700;color:var(--t1)">${fmtD(ultData.toISOString().split('T')[0])}</div></div>`;
+  html+=`<div class="mc" style="padding:10px"><div style="font-size:9px;color:var(--t3);text-transform:uppercase">Intervalo médio</div><div style="font-weight:700;color:var(--t1)">${intervMedio} dias</div></div>`;
+  const corPrevi=prevProxDias<0?'var(--red)':prevProxDias<15?'var(--org)':'var(--grn)';
+  const txtPrevi=prevProxDias<0?Math.abs(prevProxDias)+'d atrasado':prevProxDias===0?'Hoje':prevProxDias+'d restantes';
+  html+=`<div class="mc" style="padding:10px;border-color:${corPrevi}44"><div style="font-size:9px;color:var(--t3);text-transform:uppercase">Próximo previsto</div><div style="font-weight:700;color:${corPrevi}">${txtPrevi}</div></div>`;
+  html+='</div>';
+
+  html+='<div style="margin-bottom:12px"><div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Histórico mensal — '+anoAtual+'</div><div style="display:flex;gap:4px;flex-wrap:wrap">';
+  for(let m=0;m<=11;m++){
+    const comprou=compradosMesAno.includes(m); const habitual=mesesHab.includes(m);
+    const futuro=m>mesAtual; const atrasado=habitual&&!comprou&&!futuro;
+    let bg,cor,bdr;
+    if(comprou){bg='var(--grn)';cor='#fff';bdr='var(--grn)';}
+    else if(atrasado){bg='rgba(220,38,38,.1)';cor='var(--red)';bdr='var(--red)';}
+    else if(habitual&&futuro){bg='rgba(37,99,235,.08)';cor='var(--acc)';bdr='var(--acc)';}
+    else{bg='var(--s2)';cor='var(--t3)';bdr='var(--bdr)';}
+    html+=`<div style="background:${bg};border:1px solid ${bdr};border-radius:6px;padding:4px 7px;font-size:10px;font-weight:600;color:${cor};min-width:32px;text-align:center">${MESES_NOME[m]}<br>${comprou?'✓':atrasado?'⚠':habitual&&futuro?'→':'—'}</div>`;
+  }
+  html+='</div></div>';
+
+  if(alertasMeses.length){
+    html+=`<div style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.25);border-radius:8px;padding:10px 14px;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:4px"><i class="ti ti-alert-triangle"></i> Meses habituais sem compra em ${anoAtual}</div>
+      <div style="font-size:11px;color:var(--t2)">${alertasMeses.map(function(m){return MESES_FULL[m];}).join(', ')}</div>
+    </div>`;
+  }
+
+  if(mesesHab.length){
+    html+=`<div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:6px">Meses habituais de compra</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap">${mesesHab.map(function(m){
+      return `<span style="background:var(--acc)18;color:var(--acc);border:1px solid var(--acc)44;border-radius:12px;padding:2px 10px;font-size:10px;font-weight:600">${MESES_FULL[m]}</span>`;
+    }).join('')}</div>`;
+  } else {
+    html+=`<div style="font-size:11px;color:var(--t3)">Padrão sazonal não identificado — mais anos de histórico revelarão os meses habituais.</div>`;
+  }
+  el.innerHTML=html;
+}
+// ══ FIM CICLO ══
+
+// ══ VISUALIZAR PEDIDO ══
+function verPedido(id){
+  const p=DB.pedidos.find(x=>x.id===id); if(!p){ toast('Pedido não encontrado'); return; }
+  const c=DB.clientes.find(x=>x.id===p.cliId);
+  const e=DB.empresas.find(x=>x.id===p.empId);
+  const fatSim=p.fatcom==='sim';
+
+  document.getElementById('vped-num').textContent = p.num||'—';
+  const editBtn=document.getElementById('vped-btn-edit');
+  if(editBtn) editBtn.onclick=function(){ cm('mVerPed'); setTimeout(function(){ abrirEditPedido(id); },200); };
+
+  const cor=p.dtFat?'var(--grn)':'var(--org)';
+  const status=p.dtFat?'Faturado':'Em aberto';
+
+  // Parcelas
+  let parcHtml='';
+  if(p.pays&&p.pays.length){
+    parcHtml='<div style="display:flex;gap:5px;flex-wrap:wrap">';
+    p.pays.forEach(function(st,i){
+      if(i===0&&!fatSim) return;
+      const lbl=i===0&&fatSim?'FAT':letraParc(i);
+      const cor2=st==='ok'?'var(--grn)':st==='atrasado'?'var(--red)':'var(--t3)';
+      const ico=st==='ok'?'✓':st==='atrasado'?'!':'○';
+      const dt=p.paysDt&&p.paysDt[i]?fmtD(p.paysDt[i]):'';
+      const vl=p.paysVal&&p.paysVal[i]?fmt(p.paysVal[i]):'';
+      parcHtml+=`<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px;font-size:10px;text-align:center;min-width:52px">
+        <div style="font-weight:700;color:${cor2}">${lbl} ${ico}</div>
+        ${dt?`<div style="color:var(--t3)">${dt}</div>`:''}
+        ${vl?`<div style="color:var(--t1);font-weight:600">${vl}</div>`:''}
+      </div>`;
+    });
+    parcHtml+='</div>';
+  }
+
+  const row=function(label,val,cor2){
+    return `<div style="display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--s3);padding:6px 0">
+      <div style="width:130px;font-size:11px;color:var(--t3);flex-shrink:0">${label}</div>
+      <div style="font-size:13px;color:${cor2||'var(--t1)'};">${val||'—'}</div>
+    </div>`;
+  };
+
+  document.getElementById('mVerPed-body').innerHTML=`
+    <div style="background:var(--s2);border-radius:10px;padding:12px 16px">
+      ${row('Empresa', e?`<span style="font-weight:700;color:${e.cor}">${e.nome}</span>`:' — ')}
+      ${row('Cliente', c?.rs||'—')}
+      ${row('Data do pedido', fmtD(p.dt))}
+      ${row('Nº Pedido', `<b>${p.num||'—'}</b>`)}
+      ${row('Origem / Tipo', p.tipo||'—')}
+    </div>
+    <div style="background:var(--s2);border-radius:10px;padding:12px 16px">
+      ${row('Valor do pedido', fmt(p.val||0), 'var(--t1)')}
+      ${row('Desconto', (p.desc||0)+'%')}
+      ${row('Parcelamento', (p.parc||1)+'x'+(fatSim?' + FAT':''))}
+      ${row('Comissão', (p.com||0)+'%')}
+      ${row('Condição Pgto', p.condPgto||'—')}
+    </div>
+    <div style="background:var(--s2);border-radius:10px;padding:12px 16px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--t1)">Faturamento</div>
+        <span style="background:${cor}22;color:${cor};border:1px solid ${cor}44;border-radius:12px;padding:1px 10px;font-size:10px;font-weight:700">${status}</span>
+      </div>
+      ${row('Data faturamento', fmtD(p.dtFat))}
+      ${row('Nota Fiscal', p.nf||'—')}
+      ${row('Valor faturado', p.valfat?fmt(p.valfat):'—', 'var(--grn)')}
+    </div>
+    ${parcHtml?`<div><div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">PARCELAS</div>${parcHtml}</div>`:''}
+    ${p.obs?`<div style="background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25);border-radius:8px;padding:10px 14px"><div style="font-size:10px;color:var(--org);font-weight:700;margin-bottom:4px"><i class="ti ti-note"></i> OBSERVAÇÃO</div><div style="font-size:12px;color:var(--t1)">${p.obs}</div></div>`:''}
+    ${p.categorias?`<div style="background:var(--s2);border-radius:10px;padding:10px 14px"><div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:6px"><i class="ti ti-tag"></i> CATEGORIAS DE PRODUTOS</div><div style="font-size:11px;color:var(--t2);line-height:1.8">${p.categorias.split('|').map(function(x){return '<span style="background:var(--s1);border:1px solid var(--bdr);border-radius:12px;padding:2px 10px;margin:2px;display:inline-block">'+x.trim()+'</span>';}).join('')}</div></div>`:''}
+  `;
+  om('mVerPed');
+}
+// ══ FIM VER PEDIDO ══
+async function lerPDFPedido(targetId){
+  const isEdit = targetId==='edit-categorias';
+  const inputId = isEdit?'edit-pdf':'ped-pdf';
+  const statusId = isEdit?'edit-pdf-status':'ped-pdf-status';
+  const file = document.getElementById(inputId)?.files[0];
+  if(!file){ toast('Selecione um arquivo PDF'); return; }
+  const status = document.getElementById(statusId);
+  if(status) status.textContent='⏳ Lendo PDF...';
+  try{
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+    let linhas=[];
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i);
+      const content=await page.getTextContent();
+      const porLinha={};
+      content.items.forEach(function(item){
+        const y=Math.round(item.transform[5]);
+        if(!porLinha[y]) porLinha[y]=[];
+        porLinha[y].push(item.str.trim());
+      });
+      Object.keys(porLinha).sort(function(a,b){return b-a;}).forEach(function(y){
+        const txt=porLinha[y].join(' ').trim();
+        if(txt) linhas.push(txt);
+      });
+    }
+    const ignorar=/^(imagem|código|descrição|ncm|barra|qtde|valor|ipi|st|total|quantidade|sku|subtotal|impostos|desconto|pedido|cliente|email|telefone|endereço|data|forma|tipo|status|transportadora|observação|\d)/i;
+    const contagem={};
+    linhas.forEach(function(linha){
+      if(ignorar.test(linha.trim())) return;
+      const match=linha.trim().match(/^([A-ZÁÉÍÓÚÃÕÂÊÎÔÛÇ]{3,})/);
+      if(match){
+        const cat=match[1];
+        const skip=['UMA','COM','SEM','THE','AND','LTD','LTDA','UNICA','U','AV','DE','DA','DO','E'];
+        if(!skip.includes(cat)) contagem[cat]=(contagem[cat]||0)+1;
+      }
+    });
+    const resumo=Object.entries(contagem).filter(function(e){return e[1]>=1;}).sort(function(a,b){return b[1]-a[1];}).map(function(e){return e[0]+': '+e[1];}).join(' | ');
+    const textarea=document.getElementById(targetId);
+    if(textarea) textarea.value=resumo||'Nenhuma categoria identificada';
+    if(status) status.textContent='✅ '+file.name+' ('+pdf.numPages+' pág.) · '+Object.keys(contagem).length+' categorias';
+    toast('PDF lido! '+Object.keys(contagem).length+' categorias encontradas.');
+  }catch(err){
+    if(status) status.textContent='❌ Erro ao ler PDF';
+    toast('Erro: '+err.message);
+  }
+}
+// ══ FIM LEITOR PDF ══
+
+// ══ PERFIL DE COMPRAS POR CATEGORIAS ══
+function renderPerfilCompras(cliId){
+  const el=document.getElementById('perfil-compras-cli'); if(!el) return;
+  const peds=DB.pedidos.filter(function(p){return p.cliId===cliId&&!p.cancelado&&p.categorias;});
+  if(!peds.length){
+    el.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px">Nenhum pedido com categorias. Importe o PDF dos pedidos para ver o perfil.</div>';
+    return;
+  }
+  // Agrupa todas as categorias de todos os pedidos
+  const totais={};
+  peds.forEach(function(p){
+    p.categorias.split('|').forEach(function(par){
+      const m=par.trim().match(/^([A-ZÁÉÍÓÚ\s]+):\s*(\d+)/);
+      if(m){ const cat=m[1].trim(); const n=parseInt(m[2]); totais[cat]=(totais[cat]||0)+n; }
+    });
+  });
+  if(!Object.keys(totais).length){ el.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px">Categorias não encontradas nos pedidos.</div>'; return; }
+
+  const sorted=Object.entries(totais).sort(function(a,b){return b[1]-a[1];});
+  const max=sorted[0][1];
+
+  // Verifica categorias nunca pedidas (de outros pedidos da mesma empresa)
+  const todasCats=new Set();
+  const empIds=[...new Set(peds.map(function(p){return p.empId;}))];
+  DB.pedidos.filter(function(p){return empIds.includes(p.empId)&&p.categorias;}).forEach(function(p){
+    p.categorias.split('|').forEach(function(par){
+      const m=par.trim().match(/^([A-ZÁÉÍÓÚ\s]+):/);
+      if(m) todasCats.add(m[1].trim());
+    });
+  });
+  const nuncaPediu=[...todasCats].filter(function(c){return !totais[c];});
+
+  let html='<div style="display:flex;flex-direction:column;gap:6px">';
+  sorted.forEach(function(entry){
+    const cat=entry[0]; const n=entry[1];
+    const pct=Math.round(n/max*100);
+    const cor=pct>=70?'var(--grn)':pct>=40?'var(--acc)':'var(--cyn)';
+    html+='<div style="display:flex;align-items:center;gap:8px">';
+    html+='<div style="width:100px;font-size:11px;color:var(--t1);font-weight:600;flex-shrink:0">'+cat+'</div>';
+    html+='<div style="flex:1;background:var(--s2);border-radius:4px;height:14px;overflow:hidden">';
+    html+='<div style="width:'+pct+'%;height:100%;background:'+cor+';border-radius:4px;transition:width .3s"></div></div>';
+    html+='<div style="width:30px;font-size:10px;color:var(--t3);text-align:right">'+n+'</div>';
+    html+='</div>';
+  });
+
+  if(nuncaPediu.length){
+    html+='<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--s3)">';
+    html+='<div style="font-size:10px;color:var(--t3);font-weight:700;text-transform:uppercase;margin-bottom:6px">🆕 Oportunidades — nunca pediu</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
+    nuncaPediu.forEach(function(cat){
+      html+='<span style="background:rgba(217,119,6,.1);color:var(--org);border:1px solid rgba(217,119,6,.3);border-radius:12px;padding:2px 10px;font-size:10px;font-weight:600">'+cat+'</span>';
+    });
+    html+='</div></div>';
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+// ══ FIM PERFIL ══
 
 function getSegmentos(){
   // Primeiro tenta DB.segmentos (sincroniza com Firebase)
@@ -5532,6 +6334,9 @@ function abrirModalPed(cliId, empId){
   popularTiposPedido();
   var tipoEl=document.getElementById('ped-tipo'); if(tipoEl) tipoEl.value='';
   var obsEl=document.getElementById('ped-obs'); if(obsEl) obsEl.value='';
+  var catEl=document.getElementById('ped-categorias'); if(catEl) catEl.value='';
+  var stEl=document.getElementById('ped-pdf-status'); if(stEl) stEl.textContent='Nenhum PDF carregado';
+  window._paysDtAtual=[]; window._paysValAtual=[];
   // Limpar campos
   const campos = ['ped-dt','ped-num','ped-val','ped-desc','ped-dtfat','ped-nf','ped-valfat','ped-cod'];
   campos.forEach(function(id){ const el=document.getElementById(id); if(el) el.value=''; });
@@ -7615,6 +8420,16 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-com"></div>
+
+  <!-- COMISSÕES FUTURAS A RECEBER -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="ct">
+      <div class="ctl"><i class="ti ti-clock-dollar" style="color:var(--grn)"></i>Comissões a Receber por Mês</div>
+      <span id="com-fut-total-badge" style="font-size:12px;font-weight:700;color:var(--grn)"></span>
+    </div>
+    <div id="com-futuras-body"></div>
+  </div>
+
   <div class="card" style="overflow-x:auto">
     <div class="ct"><div class="ctl"><i class="ti ti-coin" style="color:var(--org)"></i>Extrato detalhado de comissões</div></div>
     <table id="tbl-com-main" class="tbl-compact">
@@ -7703,6 +8518,15 @@ if('serviceWorker' in navigator){
       <div style="margin-top:14px;height:220px"><canvas id="cv-cresc-anual"></canvas></div>
     </div>
 
+    <!-- COMPARATIVO POR TIPO DE PEDIDO -->
+    <div class="card">
+      <div class="ct">
+        <div class="ctl"><i class="ti ti-building-store" style="color:var(--cyn)"></i>Comparativo por Tipo de Pedido</div>
+        <button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="renderComparativoTipo()"><i class="ti ti-refresh"></i> Atualizar</button>
+      </div>
+      <div id="tb-comparativo-tipo"></div>
+    </div>
+
   </div>
 </div>
 
@@ -7721,6 +8545,15 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Transportadora</label><select class="fi" id="edit-transp"></select></div>
     <div class="fg"><label class="fl">Código / NF rastreio</label><input class="fi" id="edit-cod" placeholder="Ex: BR123456789BR"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Origem / Tipo do pedido</label><input class="fi" id="edit-tipo" list="lista-tipos-pedido" placeholder="Ex: Feira ABC, Visita, WhatsApp, Indicação..."></div>
+    <div class="fg" style="grid-column:span 2">
+      <label class="fl">Categorias de produtos</label>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <input type="file" id="edit-pdf" accept=".pdf" style="display:none" onchange="lerPDFPedido('edit-categorias')">
+        <button type="button" class="btn bs" style="padding:5px 12px;font-size:11px" onclick="document.getElementById('edit-pdf').click()"><i class="ti ti-file-upload"></i> Importar PDF</button>
+        <span id="edit-pdf-status" style="font-size:10px;color:var(--t3)">Nenhum PDF carregado</span>
+      </div>
+      <textarea class="fi" id="edit-categorias" placeholder="Ex: CANECA: 15 | COPO: 8" style="resize:vertical;min-height:45px;font-size:var(--fs-sm)"></textarea>
+    </div>
     <div class="fg" style="grid-column:span 2" id="edit-datas-parc-box"></div>
     <div class="fg" style="grid-column:span 2"><div class="com-prev" id="edit-com-prev"></div></div>
   </div>
@@ -8007,6 +8840,15 @@ if('serviceWorker' in navigator){
   <div style="display:flex;gap:8px;margin-top:10px">
     <button class="btn bs" style="flex:1;justify-content:center" onclick="baixarModeloPed()"><i class="ti ti-download"></i> Baixar modelo</button>
     <button class="btn bs" onclick="cm('mImpPed')">Cancelar</button>
+  </div>
+  <div style="margin-top:16px;border-top:1px solid var(--s3);padding-top:14px">
+    <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px"><i class="ti ti-refresh" style="color:var(--acc2)"></i> Atualizar Condição de Pagamento</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px">Excel com 2 colunas: <b>A = Nº Pedido</b> e <b>B = Condição de Pgto</b> (ex: 30/60/90)</div>
+    <input type="file" id="fi-cond-pgto" style="display:none" accept=".xlsx,.xls" onchange="importarCondPgto(this)">
+    <div style="display:flex;gap:8px">
+      <button class="btn bs" style="flex:1;justify-content:center;color:var(--acc2);border-color:var(--acc2)" onclick="baixarModeloCondPgto()"><i class="ti ti-download"></i> Baixar modelo</button>
+      <button class="btn bp" style="flex:1;justify-content:center" onclick="document.getElementById('fi-cond-pgto').click()"><i class="ti ti-file-import"></i> Importar</button>
+    </div>
   </div>
 </div></div>
 
@@ -9484,6 +10326,7 @@ function buildPedTabelaEmpresa(ps){
   return '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
     '<thead><tr style="border-bottom:1px solid var(--bdr);color:var(--t2);font-size:10px;text-transform:uppercase">'+
       '<th style="padding:5px 8px;text-align:left;font-weight:600">Data</th>'+
+      '<th style="padding:5px 8px;text-align:left;font-weight:600">Nº Pedido</th>'+
       '<th style="padding:5px 8px;text-align:left;font-weight:600">NF</th>'+
       '<th style="padding:5px 8px;text-align:right;font-weight:600">Valor</th>'+
       '<th style="padding:5px 8px;text-align:left;font-weight:600">Faturamento</th>'+
@@ -9496,7 +10339,8 @@ function buildPedTabelaEmpresa(ps){
       var corFat=p.dtFat?'var(--grn)':'var(--org)';
       return '<tr style="border-bottom:1px solid var(--s3)">'+
         '<td style="padding:6px 8px;color:var(--t1)">'+(fmtD(p.dt)||'—')+'</td>'+
-        '<td style="padding:6px 8px;color:var(--t1);font-weight:700">'+(p.nf||'—')+'</td>'+
+        '<td style="padding:6px 8px"><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido(\''+p.id+'\')" title="Visualizar pedido">'+(p.num||'—')+'</span></td>'+
+        '<td style="padding:6px 8px;font-weight:600"><span class="lnk" style="color:var(--acc)" onclick="verPedido(\''+p.id+'\')" title="Visualizar">'+(p.nf||'—')+'</span></td>'+
         '<td style="padding:6px 8px;color:var(--t1);text-align:right">'+fmt(p.val)+'</td>'+
         '<td style="padding:6px 8px;color:'+corFat+';font-size:11px">'+(p.dtFat?fmtD(p.dtFat):'Em aberto')+'</td>'+
         '<td style="padding:6px 8px;color:var(--t1);text-align:right;font-weight:600">'+(p.valfat?fmt(p.valfat):'—')+'</td>'+
@@ -9526,7 +10370,7 @@ function buildPedTabela(ps,mini){
         const cor=p.dtFat?'var(--grn)':'var(--org)';
         return`<tr style="border-bottom:1px solid var(--s3)">
           <td style="padding:6px 8px;color:var(--t1)">${fmtD(p.dt)||'—'}</td>
-          <td style="padding:6px 8px;color:var(--t1);font-weight:600">${p.nf||'—'}</td>
+          <td style="padding:6px 8px;font-weight:600"><span class="lnk" style="color:var(--acc)" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.nf||p.num||'—'}</span></td>
           <td style="padding:6px 8px;color:var(--t1);text-align:right">${fmt(p.val)}</td>
           <td style="padding:6px 8px;color:${cor};font-size:11px">${p.dtFat?fmtD(p.dtFat):'Em aberto'}</td>
           <td style="padding:6px 8px;color:var(--t1);text-align:right;font-weight:600">${p.valfat?fmt(p.valfat):'—'}</td>
@@ -9549,7 +10393,7 @@ function buildPedTabela(ps,mini){
     const tIcon=p.transp==='Correios'?'📮':'🔵';
     return`<tr>
       ${mini?'':`<td><input type="checkbox" class="ped-cb" data-pedid="${p.id}" onchange="bulkAtualizarBarra()"></td>`}
-      <td>${fmtD(p.dt)}</td><td><b style="color:var(--t1)">${p.num||'—'}</b></td>
+      <td>${fmtD(p.dt)}</td><td><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.num||'—'}</span></td>
       <td><span class="lnk" onclick="abrirCli('${p.cliId}','${mini?'clidet':'eped'}')">${c?.rs||'—'}</span></td>
       <td>${fmt(p.val)}</td><td>${p.desc||0}%</td><td>${p.parc||1}x</td>
       ${mini?'':`<td>${p.com||3}%</td>`}
@@ -9559,7 +10403,7 @@ function buildPedTabela(ps,mini){
       ${mini?pCells.join(''):''}
       ${mini?'':`<td style="text-align:center"><input type="checkbox" ${p.naTransp?"checked":""} onchange="toggleTransp('${p.id}',this)" title="${p.naTransp?'Na transportadora desde '+p.naTranspData:'Marcar como enviado para transportadora'}" style="width:16px;height:16px;cursor:pointer;accent-color:var(--cyn)"></td>`}
       ${mini?'':`<td style="white-space:nowrap"><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc);border-color:var(--acc)" onclick="enviarSAC('${p.id}')" title="Enviar e-mail para o SAC"><i class="ti ti-headset"></i> SAC</button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirPedido('${p.id}')" title="Excluir pedido"><i class="ti ti-trash"></i></button></td>`}
-      ${mini?`<td><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i> Editar</button></td>`:''}
+      ${mini?`<td><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar"><i class="ti ti-pencil"></i></button></td>`:''}
     </tr>`;
   }).join('');
 }
@@ -10140,13 +10984,22 @@ function gerarCamposDatasParcEdit(){
   const box=document.getElementById('edit-datas-parc-box');
   if(!box) return;
   const existentes=window._paysDtEditAtual||[];
-  let html='<label class="fl">Datas de pagamento das parcelas (duplicatas)</label><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  const valsExist=window._paysValEditAtual||[];
+  const valfatAtual=parseFloat(document.getElementById('edit-valfat')?.value)||0;
   const idxIni=fatSim?1:0;
   const idxFim=fatSim?parc:parc-1;
+  const nParcs=idxFim-idxIni+1;
+  const vlParcSugerido=nParcs&&valfatAtual?Math.round(valfatAtual/nParcs*100)/100:0;
+  let html='<label class="fl">Datas e valores das parcelas</label><div style="display:flex;gap:8px;flex-wrap:wrap">';
   let n=1;
   for(let i=idxIni;i<=idxFim;i++){
-    const val=existentes[i]||'';
-    html+=`<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--t3);text-align:center">Parc. ${n}</span><input type="date" class="fi" id="edit-data-parc-${i}" value="${val}" style="width:128px;padding:5px 6px;font-size:11px"></div>`;
+    const dtVal=existentes[i]||'';
+    const vlVal=valsExist[i]||vlParcSugerido||'';
+    html+=`<div style="display:flex;flex-direction:column;gap:2px;background:var(--s2);border-radius:7px;padding:6px 8px">
+      <span style="font-size:9px;color:var(--t3);text-align:center;font-weight:600">Parc. ${n}</span>
+      <input type="date" class="fi" id="edit-data-parc-${i}" value="${dtVal}" style="width:128px;padding:4px 6px;font-size:11px">
+      <input type="number" class="fi" id="edit-val-parc-${i}" value="${vlVal}" placeholder="Valor" step="0.01" min="0" style="width:128px;padding:4px 6px;font-size:11px">
+    </div>`;
     n++;
   }
   html+='</div>';
@@ -10159,6 +11012,16 @@ function coletarPaysDtEdit(parc,fatSim){
   for(let i=idxIni;i<=idxFim;i++){
     const el=document.getElementById('edit-data-parc-'+i);
     arr[i]=el?el.value||'':'';
+  }
+  return arr;
+}
+function coletarPaysValEdit(parc,fatSim){
+  const arr=[];
+  const idxIni=fatSim?1:0;
+  const idxFim=fatSim?parc:parc-1;
+  for(let i=idxIni;i<=idxFim;i++){
+    const el=document.getElementById('edit-val-parc-'+i);
+    arr[i]=el?parseFloat(el.value)||0:0;
   }
   return arr;
 }
@@ -10204,6 +11067,7 @@ function salvarEdicaoPedido(){
   p.cod    = document.getElementById('edit-cod').value||null;
   p.tipo   = document.getElementById('edit-tipo')?.value?.trim()||null;
   p.obs    = document.getElementById('edit-obs')?.value?.trim()||null;
+  p.categorias = document.getElementById('edit-categorias')?.value?.trim()||null;
   // Atualizar ultFat do cliente
   const c=DB.clientes.find(x=>x.id===p.cliId);
   if(c&&p.dtFat) c.ultFat=p.dtFat;
@@ -10454,13 +11318,22 @@ function gerarCamposDatasParc(paysDtExistente){
   const box=document.getElementById('ped-datas-parc-box');
   if(!box) return;
   const existentes=paysDtExistente||(window._paysDtAtual||[]);
-  let html='<label class="fl">Datas de pagamento das parcelas (duplicatas)</label><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  const valsExist=window._paysValAtual||[];
+  const valfatAtual=parseFloat(document.getElementById('ped-valfat')?.value)||0;
   const idxIni=fatSim?1:0;
-  const idxFim=fatSim?parc:parc-1; // inclusive
+  const idxFim=fatSim?parc:parc-1;
+  const nParcs=idxFim-idxIni+1;
+  const vlParcSugerido=nParcs&&valfatAtual?Math.round(valfatAtual/nParcs*100)/100:0;
+  let html='<label class="fl">Datas e valores das parcelas</label><div style="display:flex;gap:8px;flex-wrap:wrap">';
   let n=1;
   for(let i=idxIni;i<=idxFim;i++){
-    const val=existentes[i]||'';
-    html+=`<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:9px;color:var(--t3);text-align:center">Parc. ${n}</span><input type="date" class="fi" id="ped-data-parc-${i}" value="${val}" style="width:128px;padding:5px 6px;font-size:11px"></div>`;
+    const dtVal=existentes[i]||'';
+    const vlVal=valsExist[i]||vlParcSugerido||'';
+    html+=`<div style="display:flex;flex-direction:column;gap:2px;background:var(--s2);border-radius:7px;padding:6px 8px">
+      <span style="font-size:9px;color:var(--t3);text-align:center;font-weight:600">Parc. ${n}</span>
+      <input type="date" class="fi" id="ped-data-parc-${i}" value="${dtVal}" style="width:128px;padding:4px 6px;font-size:11px">
+      <input type="number" class="fi" id="ped-val-parc-${i}" value="${vlVal}" placeholder="Valor" step="0.01" min="0" style="width:128px;padding:4px 6px;font-size:11px">
+    </div>`;
     n++;
   }
   html+='</div>';
@@ -10510,7 +11383,7 @@ function salvarPedido(){
   const fatSim=fatcom==='sim';
   const pays=fatSim?['',...Array(parc).fill('')]:[...Array(parc).fill('')];
   const paysDt=coletarPaysDt(parc,fatSim);
-  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,pays,paysDt};
+  const novo={id:uid(),empId:eid,cliId:cid,dt,num:document.getElementById('ped-num').value||('PED'+Date.now()),val,desc,parc,com,fatcom,dtFat:document.getElementById('ped-dtfat').value||null,nf:document.getElementById('ped-nf').value||null,valfat,transp:document.getElementById('ped-transp').value||'Senior TMS',cod:document.getElementById('ped-cod').value||null,tipo:document.getElementById('ped-tipo')?.value?.trim()||null,obs:document.getElementById('ped-obs')?.value?.trim()||null,categorias:document.getElementById('ped-categorias')?.value?.trim()||null,pays,paysDt};
   DB.pedidos.push(novo);
   const c=DB.clientes.find(x=>x.id===cid);
   if(c&&novo.dtFat) c.ultFat=novo.dtFat;
@@ -12052,6 +12925,9 @@ function abrirModalPed(cliId, empId){
   popularTiposPedido();
   var tipoEl=document.getElementById('ped-tipo'); if(tipoEl) tipoEl.value='';
   var obsEl=document.getElementById('ped-obs'); if(obsEl) obsEl.value='';
+  var catEl=document.getElementById('ped-categorias'); if(catEl) catEl.value='';
+  var stEl=document.getElementById('ped-pdf-status'); if(stEl) stEl.textContent='Nenhum PDF carregado';
+  window._paysDtAtual=[]; window._paysValAtual=[];
   // Limpar campos
   const campos = ['ped-dt','ped-num','ped-val','ped-desc','ped-dtfat','ped-nf','ped-valfat','ped-cod'];
   campos.forEach(function(id){ const el=document.getElementById(id); if(el) el.value=''; });
@@ -12652,6 +13528,7 @@ function renderEmpVendas(){
 
   atualizarIconesOrdenacao('vendas');
   renderComparativosAnuais();
+  setTimeout(renderComparativoTipo, 150);
 }
 
 // ══ COMPARATIVOS ANUAIS ══
