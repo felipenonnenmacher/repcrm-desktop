@@ -562,16 +562,6 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-com"></div>
-
-  <!-- COMISSÕES FUTURAS A RECEBER -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="ct">
-      <div class="ctl"><i class="ti ti-clock-dollar" style="color:var(--grn)"></i>Comissões a Receber por Mês</div>
-      <span id="com-fut-total-badge" style="font-size:12px;font-weight:700;color:var(--grn)"></span>
-    </div>
-    <div id="com-futuras-body"></div>
-  </div>
-
   <div class="card" style="overflow-x:auto">
     <div class="ct"><div class="ctl"><i class="ti ti-coin" style="color:var(--org)"></i>Extrato detalhado de comissões</div></div>
     <table id="tbl-com-main" class="tbl-compact">
@@ -1051,15 +1041,23 @@ if('serviceWorker' in navigator){
   <div id="imp-prev" style="display:none;margin-top:10px;background:var(--s2);border-radius:8px;padding:10px;font-size:11px;color:var(--t2)"></div>
 </div></div>
 
-<div class="mbg" id="mImpPed"><div class="modal">
-  <div class="mtt">Importar pedidos via Excel <button class="xb" onclick="cm('mImpPed')"><i class="ti ti-x"></i></button></div>
-  <div class="dz" onclick="document.getElementById('fi-ped').click()">
+
+
+<!-- MODAL IMPORTAR PEDIDOS -->
+<div class="mbg" id="mImpPed"><div class="modal" style="max-width:560px">
+  <div class="mtt"><i class="ti ti-file-spreadsheet" style="color:var(--grn)"></i> Importar Pedidos via Excel <button class="xb" onclick="cm('mImpPed')"><i class="ti ti-x"></i></button></div>
+  <div class="dz" onclick="document.getElementById('fi-ped').click()" style="cursor:pointer">
     <i class="ti ti-cloud-upload" style="font-size:36px;color:var(--t3)"></i>
-    <div style="font-size:13px;color:var(--t2);margin-top:8px">Arraste a planilha de pedidos</div>
+    <div style="font-size:13px;color:var(--t2);margin-top:8px">Clique para selecionar a planilha</div>
+    <div style="font-size:11px;color:var(--t3);margin-top:4px">.xlsx ou .xls</div>
   </div>
-  <input type="file" id="fi-ped" style="display:none" accept=".xlsx,.xls,.csv" onchange="onFilePed(this)">
-  <div style="margin-top:12px;background:var(--s2);border-radius:8px;padding:10px;font-size:11px;color:var(--t3);line-height:2"><b style="color:var(--t2)">Colunas A-L:</b> Data · Nº Pedido · Razão Social · Valor · Desc% · Parcelamento · Com% · Data Fat · NF · Valor Fat · Pago (S/N) · <b style="color:var(--cyn)">CNPJ</b><br><b style="color:var(--t2)">Coluna M:</b> Tipo/Origem (ex: Feira ABC, Visita, Indicação) · <b style="color:var(--t2)">Coluna N:</b> FAT (50% comissão) · <b style="color:var(--t2)">Colunas O-AC:</b> Parc.1-15 — <b style="color:var(--grn)">pinte de VERDE</b> o que já foi pago</div>
-  <div style="display:flex;gap:8px;margin-top:10px">
+  <input type="file" id="fi-ped" style="display:none" accept=".xlsx,.xls" onchange="onFilePed(this)">
+  <div style="margin-top:12px;background:var(--s2);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--t3);line-height:1.9">
+    <div style="font-weight:700;color:var(--t2);margin-bottom:4px">Colunas da planilha:</div>
+    <b style="color:var(--t2)">A</b>=Data &nbsp;<b style="color:var(--t2)">B</b>=NrPed &nbsp;<b style="color:var(--t2)">C</b>=Razao Social &nbsp;<b style="color:var(--cyn)">D</b>=CNPJ &nbsp;<b style="color:var(--t2)">E</b>=Valor &nbsp;<b style="color:var(--t2)">F</b>=Desc% &nbsp;<b style="color:var(--t2)">G</b>=Parc &nbsp;<b style="color:var(--t2)">H</b>=Com% &nbsp;<b style="color:var(--t2)">I</b>=Fat50% &nbsp;<b style="color:var(--t2)">J</b>=DtFat &nbsp;<b style="color:var(--t2)">K</b>=NF &nbsp;<b style="color:var(--t2)">L</b>=VlFat &nbsp;<b style="color:var(--t2)">M</b>=Pago &nbsp;<b style="color:var(--t2)">N</b>=Tipo &nbsp;<b style="color:var(--t2)">O</b>=OBS &nbsp;<b style="color:var(--grn)">P</b>=FAT &nbsp;<b style="color:var(--grn)">Q/R/S</b>=Parc1/Data/Valor &nbsp;<b style="color:var(--grn)">T/U/V</b>=Parc2/Data/Valor...
+    <br><b style="color:var(--grn)">Pinte VERDE (C6EFCE)</b> nas celulas FAT e parcelas pagas. Datas no formato AAAA-MM-DD.
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px">
     <button class="btn bs" style="flex:1;justify-content:center" onclick="baixarModeloPed()"><i class="ti ti-download"></i> Baixar modelo</button>
     <button class="btn bs" onclick="cm('mImpPed')">Cancelar</button>
   </div>
@@ -1370,29 +1368,31 @@ function clientesDaEmpresa(empId){
 // Converte qualquer formato de data (serial Excel, ISO, DD/MM/AAAA) para YYYY-MM-DD
 function parseDataExcel(valor){
   if(valor==null || valor==='') return null;
-  // Já é número serial do Excel (ex: 45678)
+  // Objeto Date do JavaScript
+  if(valor instanceof Date){
+    if(isNaN(valor.getTime())) return null;
+    var y=valor.getFullYear(); var mo=valor.getMonth()+1; var d=valor.getDate();
+    return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  }
+  // Número serial do Excel
   if(typeof valor === 'number'){
     var d = XLSX.SSF ? XLSX.SSF.parse_date_code(valor) : null;
     if(d) return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0');
   }
   var s = String(valor).trim();
   if(!s) return null;
-  // Número serial como string (ex: "45678")
   if(/^\d+(\.\d+)?$/.test(s) && Number(s) > 10000 && Number(s) < 90000){
     var d2 = XLSX.SSF ? XLSX.SSF.parse_date_code(Number(s)) : null;
     if(d2) return d2.y+'-'+String(d2.m).padStart(2,'0')+'-'+String(d2.d).padStart(2,'0');
   }
-  // Formato ISO já correto (YYYY-MM-DD)
   if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
-  // Formato brasileiro DD/MM/AAAA ou DD-MM-AAAA
   var m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if(m){
-    var dia = m[1].padStart(2,'0');
-    var mes = m[2].padStart(2,'0');
-    var ano = m[3].length===2 ? '20'+m[3] : m[3];
+    var dia=m[1].padStart(2,'0'); var mes=m[2].padStart(2,'0');
+    var ano=m[3].length===2?'20'+m[3]:m[3];
     return ano+'-'+mes+'-'+dia;
   }
-  return null; // Não foi possível interpretar
+  return null;
 }
 
 
@@ -1517,7 +1517,7 @@ function sp(p) {
   if(p==='edash') renderEmpDash();
   if(p==='ecli')  renderEmpCli();
   if(p==='eped')  renderEmpPed();
-  if(p==='ecom'){ renderEmpCom(); setTimeout(renderComFuturas,200); }
+  if(p==='ecom')  renderEmpCom();
   if(p==='evendas') renderEmpVendas();
   if(p==='lembretes') renderLembretes();
   if(p==='agenda') { document.getElementById('n-agenda').classList.add('act'); renderAgenda(); }
@@ -4031,205 +4031,7 @@ function confirmarImport(){
   preencherSelects();buildSidebar();
   if(document.getElementById('p-cli').style.display!=='none')renderCli();
 }
-function onFilePed(input){
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const wb   = XLSX.read(new Uint8Array(e.target.result),{type:'array', cellStyles:true});
-    const ws   = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws,{header:1});
-    const data = rows.slice(1).filter(function(r){ return r[0]; });
-    const fatcom = DB.empresas.find(function(x){ return x.id===empAtual; })?.fatcom||'sim';
 
-    // Colunas das parcelas começam na coluna N (índice 13) - até 15 parcelas (N..AB)
-    const COL_PARC_INICIO = 13; // 0-indexed: N = 13
-    const MAX_PARC = 16; // 15 parcelas + 1 coluna extra (FAT)
-
-    var ok=0, naoEncontrados=[], semCNPJ=[], datasInvalidas=[];
-
-    data.forEach(function(r, ri){
-      // Colunas: A=Data B=Nº C=Razão Social D=Valor E=Desc% F=Parc G=Com% H=DataFat I=NF J=ValorFat K=Pago L=CNPJ
-      var cnpjPlanilha = String(r[11]||'').replace(/\D/g,'');
-      var nomeCliente  = String(r[2]||'').toLowerCase().trim();
-      var c = null;
-
-      // 1º: buscar por CNPJ (mais seguro) — busca na base GERAL de clientes, independente de empresa
-      if(cnpjPlanilha.length >= 11){
-        c = DB.clientes.find(function(x){
-          return !x.encerrado &&
-                 (x.cnpj||'').replace(/\D/g,'') === cnpjPlanilha;
-        });
-      }
-
-      // 2º: fallback por razão social — também na base geral
-      if(!c && nomeCliente){
-        c = DB.clientes.find(function(x){
-          return !x.encerrado &&
-                 (x.rs||'').toLowerCase().trim() === nomeCliente;
-        });
-        if(c && cnpjPlanilha) semCNPJ.push(nomeCliente);
-      }
-
-      if(!c){
-        naoEncontrados.push(nomeCliente||cnpjPlanilha||'linha '+(ri+2));
-        return;
-      }
-
-      const parc = parseInt(r[5])||1;
-      const pagoColK = String(r[10]||'').toUpperCase()==='S';
-
-      // ── Ler cores das células de parcela (colunas N em diante) ──
-      var pays;
-      var temCelulasColoridas = false;
-      var totalCelulasCheck = fatcom==='sim' ? parc+1 : parc; // inclui célula FAT quando aplicável
-
-      for(var pIdx=0; pIdx<Math.min(totalCelulasCheck, MAX_PARC+1); pIdx++){
-        var colIdx = COL_PARC_INICIO + pIdx;
-        var cellAddr = XLSX.utils.encode_cell({r: ri+1, c: colIdx}); // +1 pois pulamos o header
-        var cell = ws[cellAddr];
-        if(cell && cell.s && cell.s.fgColor) { temCelulasColoridas = true; break; }
-        if(cell && cell.s && cell.s.bgColor) { temCelulasColoridas = true; break; }
-      }
-
-      if(temCelulasColoridas){
-        // Ler status pela cor de cada célula de parcela
-        pays = [];
-        var totalCelulas = fatcom==='sim' ? parc+1 : parc; // +1 para coluna FAT se aplicável
-        for(var pIdx=0; pIdx<totalCelulas; pIdx++){
-          var colIdx = COL_PARC_INICIO + pIdx;
-          var cellAddr = XLSX.utils.encode_cell({r: ri+1, c: colIdx});
-          var cell = ws[cellAddr];
-          var corHex = '';
-          if(cell && cell.s){
-            corHex = (cell.s.fgColor&&cell.s.fgColor.rgb) || (cell.s.bgColor&&cell.s.bgColor.rgb) || '';
-          }
-          // Verde = pago | Branco/sem cor = não pago
-          var isVerde = corHex && /^(00)?(00FF00|92D050|00B050|C6EFCE|A9D08E|70AD47|548235|375623)/i.test(corHex);
-          pays.push(isVerde ? 'pg' : '');
-        }
-      } else {
-        // Sem cores - usar coluna K (Pago S/N) como antes
-        pays = fatcom==='sim'
-          ? [pagoColK?'pg':'',...Array(parc).fill(pagoColK?'pg':'')]
-          : [...Array(parc).fill(pagoColK?'pg':'')];
-      }
-
-      var dtPedido = parseDataExcel(r[0]);
-      var dtFatPed = parseDataExcel(r[7]);
-      var obsImp   = String(r[13]||'').trim()||null;
-      var paysDt = [];
-      DB.pedidos.push({
-        id:uid(), empId:empAtual, cliId:c.id,
-        dt:     dtPedido || new Date().toISOString().split('T')[0],
-        num:    String(r[1]||''),
-        val:    parseFloat(r[3])||0,
-        desc:   parseFloat(r[4])||0,
-        parc,
-        com:    parseFloat(r[6])||3,
-        fatcom,
-        dtFat:  dtFatPed,
-        nf:     String(r[8]||'')||null,
-        valfat: parseFloat(r[9])||0,
-        transp:'', cod:'',
-        tipo:   String(r[12]||'').trim()||null,
-        obs: obsImp,
-        pays, paysDt,
-        naTransp: false
-      });
-      if(!dtPedido) datasInvalidas.push('Pedido '+(r[1]||'linha '+(ri+2))+' (data: "'+r[0]+'")');
-
-      if(dtFatPed) c.ultFat = dtFatPed;
-      ok++;
-    });
-
-    salvarDB();
-
-    var msg = ok + ' pedido(s) importado(s) com sucesso!';
-    if(naoEncontrados.length){
-      msg += '\n\n⚠️ ' + naoEncontrados.length + ' não encontrado(s):\n' + naoEncontrados.slice(0,5).join(', ') +
-             (naoEncontrados.length>5?' e mais '+(naoEncontrados.length-5)+'...':'') +
-             '\n\nDica: adicione a coluna CNPJ na planilha (coluna L) para maior precisão.';
-    }
-    if(semCNPJ.length){
-      msg += '\n\nℹ️ ' + semCNPJ.length + ' encontrado(s) pelo nome (sem CNPJ na planilha): ' + semCNPJ.slice(0,3).join(', ');
-    }
-    if(datasInvalidas.length){
-      msg += '\n\n⚠️ ' + datasInvalidas.length + ' pedido(s) com data de pedido não reconhecida (usada data de hoje):\n' + datasInvalidas.slice(0,5).join(', ');
-    }
-
-    alert(msg);
-    cm('mImpPed');
-    if(subAtual==='eped') renderEmpPed();
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function baixarModeloPed(){
-  // Colunas: A=Data B=Nº C=Razão Social D=Valor E=Desc% F=Parc G=Com% H=Data Fat I=NF J=Vl.Fat K=Pago L=CNPJ M=Tipo/Origem N=Prazo Pgto O=OBS P=FAT Q+ parcelas
-  var cab = ['Data Pedido','Nº Pedido','Razão Social','Valor','Desconto%','Parcelamento','Comissão%','Data Fat','NF','Valor Fat','Pago (S/N)','CNPJ','Tipo/Origem','Prazo Pgto','OBS'];
-  var maxParc = 12;
-  cab.push('FAT (50%)'); // Coluna P
-  for(var i=1;i<=maxParc;i++){
-    cab.push('Parc.'+i);
-    cab.push('Dt.Parc.'+i);
-    cab.push('Vl.Parc.'+i);
-  }
-
-  var ex = ['2026-05-05','4521','Empresa ABC Ltda','4200','5','3','3','2026-05-15','NF-1234','3990','S','12.345.678/0001-90','Feira ABC','30/60/90','Desconto 5% autorizado'];
-  ex.push(1); // FAT pago no exemplo
-  for(var i=1;i<=maxParc;i++){
-    ex.push(i<=3 ? 1 : '');
-    ex.push(i===1?'2026-06-15':i===2?'2026-07-15':i===3?'2026-08-15':'');
-    ex.push(i<=3 ? Math.round(3990/3) : '');
-  }
-
-  var info = ['','','','','','','','','','','','','','Dias a partir do fat. Ex: 30/60/90','Observações'];
-  info.push('Pinte de VERDE (C6EFCE) as parcelas PAGAS');
-  for(var i=1;i<=maxParc;i++){
-    info.push('');
-    info.push('AAAA-MM-DD');
-    info.push('Valor R$');
-  }
-
-  var ws = XLSX.utils.aoa_to_sheet([cab, ex, info]);
-
-  var corVerde = { fgColor: { rgb: 'C6EFCE' } };
-  var corAzul  = { fgColor: { rgb: 'DDEEFF' } };
-  var corAmar  = { fgColor: { rgb: 'FFFACD' } };
-  // FAT + 3 parcelas de exemplo em verde
-  ['P2','Q2','T2','W2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corVerde }; });
-  // Datas e valores em azul claro
-  ['R2','S2','U2','V2','X2','Y2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corAzul }; });
-  // Prazo e OBS em amarelo
-  ['N2','O2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corAmar }; });
-
-  ws['!cols'] = cab.map(function(_,i){
-    if(i===2) return {wch:28};   // Razão Social
-    if(i===11) return {wch:20};  // CNPJ
-    if(i===12) return {wch:16};  // Tipo/Origem
-    if(i===13) return {wch:14};  // Prazo Pgto
-    if(i===14) return {wch:22};  // OBS
-    if(i===15) return {wch:9};   // FAT
-    var rel=(i-16)%3;
-    if(rel===0) return {wch:7};  // Parc S/N
-    if(rel===1) return {wch:12}; // Data
-    if(rel===2) return {wch:10}; // Valor
-    return {wch:10};
-  });
-
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Pedidos');
-  XLSX.writeFile(wb,'modelo_pedidos.xlsx');
-  toast('Modelo atualizado! Col N=Prazo Pgto (ex: 30/60/90) | Col O=OBS | Col P=FAT | Q em diante: Parc./Data/Valor por parcela. Pinte de VERDE as pagas.');
-}
-
-// ══ EXPORTAÇÃO ══
-function exportarTudo(){
-  const data=DB.clientes.map(c=>({RazaoSocial:c.rs,Cidade:c.cid,UF:c.uf,Contato:c.comp,Email:c.email,Fone:c.fone,Celular:c.cel,CNPJ:c.cnpj,Segmento:c.seg,Empresa:nomeEmp(c.empId),UltimoFat:c.ultFat||'',DiasSemCompra:dias(c)===999?'Nunca':dias(c)}));
-  const ws=XLSX.utils.json_to_sheet(data);
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Clientes');
-  XLSX.writeFile(wb,'relatorio_clientes.xlsx');toast('Relatório exportado!');
-}
 function exportarPedidos(){
   const ps=DB.pedidos.filter(p=>p.empId===empAtual);
   const data=ps.map(p=>({Pedido:p.num,Data:p.dt,Cliente:DB.clientes.find(c=>c.id===p.cliId)?.rs||'',Valor:p.val,Desconto:p.desc,Parcelas:p.parc,Comissao:p.com,DtFat:p.dtFat||'',NF:p.nf||'',ValorFat:p.valfat,ComissaoTotal:((p.valfat||0)*(p.com||3)/100).toFixed(2)}));
@@ -4472,7 +4274,7 @@ function importarCondPgto(input){
     try{
       var wb   = XLSX.read(e.target.result,{type:'array'});
       var ws   = wb.Sheets[wb.SheetNames[0]];
-      var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
       var atualizados=0, naoEncontrados=[];
 
       rows.forEach(function(r,i){
@@ -4502,7 +4304,6 @@ function importarCondPgto(input){
       var msg = '✅ '+atualizados+' pedido(s) atualizados!';
       if(naoEncontrados.length) msg += '\n⚠️ Não encontrados: '+naoEncontrados.join(', ');
       toast(msg);
-      if(atualizados) renderComFuturas();
 
     }catch(err){
       toast('Erro ao importar: '+err.message);
@@ -4511,74 +4312,6 @@ function importarCondPgto(input){
   reader.readAsArrayBuffer(file);
 }
 // ══ FIM IMPORTAR CONDIÇÃO ══
-function renderComFuturas(){
-  var body  = document.getElementById('com-futuras-body'); if(!body) return;
-  var badge = document.getElementById('com-fut-total-badge');
-  var hoje  = new Date();
-  var mesMM = hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
-  var nomesMes = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-  var peds = DB.pedidos.filter(function(p){
-    return p.empId===empAtual && !p.cancelado && p.dtFat && (p.valfat||0)>0;
-  });
-
-  var porMes = {}; var totalGeral = 0;
-
-  peds.forEach(function(p){
-    var mes = p.dtFat.slice(0,7);
-    if(mes < mesMM) return;
-
-    var temPendente = false;
-    if(p.pays && p.pays.length){
-      var fatSim = p.fatcom==='sim';
-      p.pays.forEach(function(st,i){ if(i===0 && !fatSim) return; if(st!=='ok') temPendente=true; });
-    } else { temPendente = true; }
-    if(!temPendente) return;
-
-    var comVal = (p.valfat||0) * ((p.com||3)/100);
-    if(!porMes[mes]) porMes[mes]={total:0, qtd:0};
-    porMes[mes].total += comVal;
-    porMes[mes].qtd++;
-    totalGeral += comVal;
-  });
-
-  if(badge) badge.textContent = fmt(totalGeral);
-
-  var meses = Object.keys(porMes).sort();
-  if(!meses.length){
-    body.innerHTML='<div style="color:var(--t3);font-size:12px;padding:10px">Nenhuma comissão pendente no mês atual e futuros.</div>';
-    return;
-  }
-
-  var html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
-  html += '<thead><tr style="background:var(--s2)">'
-    +'<th style="padding:8px 14px;text-align:left;color:var(--t3);font-weight:600">Mês / Ano</th>'
-    +'<th style="padding:8px 14px;text-align:center;color:var(--t3);font-weight:600">Pedidos</th>'
-    +'<th style="padding:8px 14px;text-align:right;color:var(--grn);font-weight:600">Comissão a Receber</th>'
-    +'</tr></thead><tbody>';
-
-  meses.forEach(function(mes,idx){
-    var m   = porMes[mes];
-    var mm  = parseInt(mes.slice(5,7))-1;
-    var label = nomesMes[mm]+' / '+mes.slice(0,4);
-    var isAtual = mes===mesMM;
-    var bg = isAtual ? 'background:rgba(37,99,235,.06)' : (idx%2?'background:var(--s2)':'');
-    html += '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'
-      +'<td style="padding:8px 14px;font-weight:'+(isAtual?'700':'500')+';color:'+(isAtual?'var(--acc)':'var(--t1)')+'">'+label+(isAtual?' <span style="font-size:10px;color:var(--acc);background:rgba(37,99,235,.1);border-radius:10px;padding:1px 8px">Atual</span>':'')+'</td>'
-      +'<td style="padding:8px 14px;text-align:center;color:var(--t2)">'+m.qtd+'</td>'
-      +'<td style="padding:8px 14px;text-align:right;font-weight:700;font-size:14px;color:var(--grn)">'+fmt(m.total)+'</td>'
-    +'</tr>';
-  });
-
-  html += '<tr style="background:var(--s2);border-top:2px solid var(--bdr);font-weight:700">'
-    +'<td style="padding:8px 14px;color:var(--t1)">Total</td>'
-    +'<td style="padding:8px 14px;text-align:center;color:var(--t2)">'+meses.reduce(function(a,m){return a+porMes[m].qtd;},0)+'</td>'
-    +'<td style="padding:8px 14px;text-align:right;font-size:15px;color:var(--grn)">'+fmt(totalGeral)+'</td>'
-  +'</tr></tbody></table></div>';
-
-  body.innerHTML = html;
-}
-// ══ FIM COMISSÕES FUTURAS ══
 function exportarEmpresaExcel(empId){
   const e=DB.empresas.find(function(x){return x.id===empId;});
   if(!e){ toast('Empresa não encontrada'); return; }
@@ -8330,16 +8063,6 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-com"></div>
-
-  <!-- COMISSÕES FUTURAS A RECEBER -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="ct">
-      <div class="ctl"><i class="ti ti-clock-dollar" style="color:var(--grn)"></i>Comissões a Receber por Mês</div>
-      <span id="com-fut-total-badge" style="font-size:12px;font-weight:700;color:var(--grn)"></span>
-    </div>
-    <div id="com-futuras-body"></div>
-  </div>
-
   <div class="card" style="overflow-x:auto">
     <div class="ct"><div class="ctl"><i class="ti ti-coin" style="color:var(--org)"></i>Extrato detalhado de comissões</div></div>
     <table id="tbl-com-main" class="tbl-compact">
@@ -8739,19 +8462,7 @@ if('serviceWorker' in navigator){
   <div id="imp-prev" style="display:none;margin-top:10px;background:var(--s2);border-radius:8px;padding:10px;font-size:11px;color:var(--t2)"></div>
 </div></div>
 
-<div class="mbg" id="mImpPed"><div class="modal">
-  <div class="mtt">Importar pedidos via Excel <button class="xb" onclick="cm('mImpPed')"><i class="ti ti-x"></i></button></div>
-  <div class="dz" onclick="document.getElementById('fi-ped').click()">
-    <i class="ti ti-cloud-upload" style="font-size:36px;color:var(--t3)"></i>
-    <div style="font-size:13px;color:var(--t2);margin-top:8px">Arraste a planilha de pedidos</div>
-  </div>
-  <input type="file" id="fi-ped" style="display:none" accept=".xlsx,.xls,.csv" onchange="onFilePed(this)">
-  <div style="margin-top:12px;background:var(--s2);border-radius:8px;padding:10px;font-size:11px;color:var(--t3);line-height:2"><b style="color:var(--t2)">Colunas A-L:</b> Data · Nº Pedido · Razão Social · Valor · Desc% · Parcelamento · Com% · Data Fat · NF · Valor Fat · Pago (S/N) · <b style="color:var(--cyn)">CNPJ</b><br><b style="color:var(--t2)">Coluna M:</b> Tipo/Origem (ex: Feira ABC, Visita, Indicação) · <b style="color:var(--t2)">Coluna N:</b> FAT (50% comissão) · <b style="color:var(--t2)">Colunas O-AC:</b> Parc.1-15 — <b style="color:var(--grn)">pinte de VERDE</b> o que já foi pago</div>
-  <div style="display:flex;gap:8px;margin-top:10px">
-    <button class="btn bs" style="flex:1;justify-content:center" onclick="baixarModeloPed()"><i class="ti ti-download"></i> Baixar modelo</button>
-    <button class="btn bs" onclick="cm('mImpPed')">Cancelar</button>
-  </div>
-</div></div>
+
 
 <!-- MODAL CONFIGURAÇÃO DE SITUAÇÃO -->
 <div class="mbg" id="mSituacao"><div class="modal" style="max-width:420px">
@@ -9049,29 +8760,31 @@ function clientesDaEmpresa(empId){
 // Converte qualquer formato de data (serial Excel, ISO, DD/MM/AAAA) para YYYY-MM-DD
 function parseDataExcel(valor){
   if(valor==null || valor==='') return null;
-  // Já é número serial do Excel (ex: 45678)
+  // Objeto Date do JavaScript
+  if(valor instanceof Date){
+    if(isNaN(valor.getTime())) return null;
+    var y=valor.getFullYear(); var mo=valor.getMonth()+1; var d=valor.getDate();
+    return y+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  }
+  // Número serial do Excel
   if(typeof valor === 'number'){
     var d = XLSX.SSF ? XLSX.SSF.parse_date_code(valor) : null;
     if(d) return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0');
   }
   var s = String(valor).trim();
   if(!s) return null;
-  // Número serial como string (ex: "45678")
   if(/^\d+(\.\d+)?$/.test(s) && Number(s) > 10000 && Number(s) < 90000){
     var d2 = XLSX.SSF ? XLSX.SSF.parse_date_code(Number(s)) : null;
     if(d2) return d2.y+'-'+String(d2.m).padStart(2,'0')+'-'+String(d2.d).padStart(2,'0');
   }
-  // Formato ISO já correto (YYYY-MM-DD)
   if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
-  // Formato brasileiro DD/MM/AAAA ou DD-MM-AAAA
   var m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if(m){
-    var dia = m[1].padStart(2,'0');
-    var mes = m[2].padStart(2,'0');
-    var ano = m[3].length===2 ? '20'+m[3] : m[3];
+    var dia=m[1].padStart(2,'0'); var mes=m[2].padStart(2,'0');
+    var ano=m[3].length===2?'20'+m[3]:m[3];
     return ano+'-'+mes+'-'+dia;
   }
-  return null; // Não foi possível interpretar
+  return null;
 }
 
 
@@ -11528,195 +11241,181 @@ function confirmarImport(){
   preencherSelects();buildSidebar();
   if(document.getElementById('p-cli').style.display!=='none')renderCli();
 }
-function onFilePed(input){
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    const wb   = XLSX.read(new Uint8Array(e.target.result),{type:'array', cellStyles:true});
-    const ws   = wb.Sheets[wb.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(ws,{header:1});
-    const data = rows.slice(1).filter(function(r){ return r[0]; });
-    const fatcom = DB.empresas.find(function(x){ return x.id===empAtual; })?.fatcom||'sim';
 
-    // Colunas das parcelas começam na coluna N (índice 13) - até 15 parcelas (N..AB)
-    const COL_PARC_INICIO = 13; // 0-indexed: N = 13
-    const MAX_PARC = 16; // 15 parcelas + 1 coluna extra (FAT)
 
-    var ok=0, naoEncontrados=[], semCNPJ=[], datasInvalidas=[];
-
-    data.forEach(function(r, ri){
-      // Colunas: A=Data B=Nº C=Razão Social D=Valor E=Desc% F=Parc G=Com% H=DataFat I=NF J=ValorFat K=Pago L=CNPJ
-      var cnpjPlanilha = String(r[11]||'').replace(/\D/g,'');
-      var nomeCliente  = String(r[2]||'').toLowerCase().trim();
-      var c = null;
-
-      // 1º: buscar por CNPJ (mais seguro) — busca na base GERAL de clientes, independente de empresa
-      if(cnpjPlanilha.length >= 11){
-        c = DB.clientes.find(function(x){
-          return !x.encerrado &&
-                 (x.cnpj||'').replace(/\D/g,'') === cnpjPlanilha;
-        });
-      }
-
-      // 2º: fallback por razão social — também na base geral
-      if(!c && nomeCliente){
-        c = DB.clientes.find(function(x){
-          return !x.encerrado &&
-                 (x.rs||'').toLowerCase().trim() === nomeCliente;
-        });
-        if(c && cnpjPlanilha) semCNPJ.push(nomeCliente);
-      }
-
-      if(!c){
-        naoEncontrados.push(nomeCliente||cnpjPlanilha||'linha '+(ri+2));
-        return;
-      }
-
-      const parc = parseInt(r[5])||1;
-      const pagoColK = String(r[10]||'').toUpperCase()==='S';
-
-      // ── Ler cores das células de parcela (colunas N em diante) ──
-      var pays;
-      var temCelulasColoridas = false;
-      var totalCelulasCheck = fatcom==='sim' ? parc+1 : parc; // inclui célula FAT quando aplicável
-
-      for(var pIdx=0; pIdx<Math.min(totalCelulasCheck, MAX_PARC+1); pIdx++){
-        var colIdx = COL_PARC_INICIO + pIdx;
-        var cellAddr = XLSX.utils.encode_cell({r: ri+1, c: colIdx}); // +1 pois pulamos o header
-        var cell = ws[cellAddr];
-        if(cell && cell.s && cell.s.fgColor) { temCelulasColoridas = true; break; }
-        if(cell && cell.s && cell.s.bgColor) { temCelulasColoridas = true; break; }
-      }
-
-      if(temCelulasColoridas){
-        // Ler status pela cor de cada célula de parcela
-        pays = [];
-        var totalCelulas = fatcom==='sim' ? parc+1 : parc; // +1 para coluna FAT se aplicável
-        for(var pIdx=0; pIdx<totalCelulas; pIdx++){
-          var colIdx = COL_PARC_INICIO + pIdx;
-          var cellAddr = XLSX.utils.encode_cell({r: ri+1, c: colIdx});
-          var cell = ws[cellAddr];
-          var corHex = '';
-          if(cell && cell.s){
-            corHex = (cell.s.fgColor&&cell.s.fgColor.rgb) || (cell.s.bgColor&&cell.s.bgColor.rgb) || '';
-          }
-          // Verde = pago | Branco/sem cor = não pago
-          var isVerde = corHex && /^(00)?(00FF00|92D050|00B050|C6EFCE|A9D08E|70AD47|548235|375623)/i.test(corHex);
-          pays.push(isVerde ? 'pg' : '');
-        }
-      } else {
-        // Sem cores - usar coluna K (Pago S/N) como antes
-        pays = fatcom==='sim'
-          ? [pagoColK?'pg':'',...Array(parc).fill(pagoColK?'pg':'')]
-          : [...Array(parc).fill(pagoColK?'pg':'')];
-      }
-
-      var dtPedido = parseDataExcel(r[0]);
-      var dtFatPed = parseDataExcel(r[7]);
-
-      DB.pedidos.push({
-        id:uid(), empId:empAtual, cliId:c.id,
-        dt:     dtPedido || new Date().toISOString().split('T')[0],
-        num:    String(r[1]||''),
-        val:    parseFloat(r[3])||0,
-        desc:   parseFloat(r[4])||0,
-        parc,
-        com:    parseFloat(r[6])||3,
-        fatcom,
-        dtFat:  dtFatPed,
-        nf:     String(r[8]||'')||null,
-        valfat: parseFloat(r[9])||0,
-        transp:'', cod:'',
-        tipo:   String(r[12]||'').trim()||null,
-        pays,
-        naTransp: false
-      });
-      if(!dtPedido) datasInvalidas.push('Pedido '+(r[1]||'linha '+(ri+2))+' (data: "'+r[0]+'")');
-
-      if(dtFatPed) c.ultFat = dtFatPed;
-      ok++;
-    });
-
-    salvarDB();
-
-    var msg = ok + ' pedido(s) importado(s) com sucesso!';
-    if(naoEncontrados.length){
-      msg += '\n\n⚠️ ' + naoEncontrados.length + ' não encontrado(s):\n' + naoEncontrados.slice(0,5).join(', ') +
-             (naoEncontrados.length>5?' e mais '+(naoEncontrados.length-5)+'...':'') +
-             '\n\nDica: adicione a coluna CNPJ na planilha (coluna L) para maior precisão.';
-    }
-    if(semCNPJ.length){
-      msg += '\n\nℹ️ ' + semCNPJ.length + ' encontrado(s) pelo nome (sem CNPJ na planilha): ' + semCNPJ.slice(0,3).join(', ');
-    }
-    if(datasInvalidas.length){
-      msg += '\n\n⚠️ ' + datasInvalidas.length + ' pedido(s) com data de pedido não reconhecida (usada data de hoje):\n' + datasInvalidas.slice(0,5).join(', ');
-    }
-
-    alert(msg);
-    cm('mImpPed');
-    if(subAtual==='eped') renderEmpPed();
-  };
-  reader.readAsArrayBuffer(file);
-}
+// ══ IMPORTAÇÃO DE PEDIDOS ══
+// Colunas: A=0 Data | B=1 NrPed | C=2 RazaoSocial | D=3 CNPJ | E=4 Valor | F=5 Desc%
+//          G=6 Parc | H=7 Com% | I=8 Fat50%(S/N) | J=9 DtFat | K=10 NF | L=11 VlFat
+//          M=12 Pago(S/N) | N=13 Tipo/Origem | O=14 OBS
+//          P=15 FAT (verde=pago) | Q=16 Parc1 R=17 DtParc1 S=18 VlParc1 | T=19 Parc2 U=20 DtParc2 V=21 VlParc2...
 
 function baixarModeloPed(){
-  // Colunas: A=Data B=Nº C=Razão Social D=Valor E=Desc% F=Parc G=Com% H=Data Fat I=NF J=Vl.Fat K=Pago L=CNPJ M=Tipo/Origem N=Prazo Pgto O=OBS P=FAT Q+ parcelas
-  var cab = ['Data Pedido','Nº Pedido','Razão Social','Valor','Desconto%','Parcelamento','Comissão%','Data Fat','NF','Valor Fat','Pago (S/N)','CNPJ','Tipo/Origem','Prazo Pgto','OBS'];
   var maxParc = 12;
-  cab.push('FAT (50%)'); // Coluna P
+  var cab = ['Data Pedido','Nr Pedido','Razao Social','CNPJ','Valor','Desconto%',
+             'Parcelamento','Comissao%','Fat 50% S/N','Data Fat','NF','Valor Fat',
+             'Pago S/N','Tipo Origem','OBS','FAT'];
   for(var i=1;i<=maxParc;i++){
-    cab.push('Parc.'+i);
-    cab.push('Dt.Parc.'+i);
-    cab.push('Vl.Parc.'+i);
+    cab.push('Parc'+i);
+    cab.push('DtParc'+i);
+    cab.push('VlParc'+i);
   }
 
-  var ex = ['2026-05-05','4521','Empresa ABC Ltda','4200','5','3','3','2026-05-15','NF-1234','3990','S','12.345.678/0001-90','Feira ABC','30/60/90','Desconto 5% autorizado'];
-  ex.push(1); // FAT pago no exemplo
+  var vlEx = 3990;
+  var ex = ['2026-05-10','4521','Empresa ABC Ltda','12.345.678/0001-90',
+            '4200','5','3','3','S','2026-06-01','NF-1234',String(vlEx),
+            'N','Feira ABC','Desconto 5% aprovado',''];
   for(var i=1;i<=maxParc;i++){
-    ex.push(i<=3 ? 1 : '');
-    ex.push(i===1?'2026-06-15':i===2?'2026-07-15':i===3?'2026-08-15':'');
-    ex.push(i<=3 ? Math.round(3990/3) : '');
+    ex.push('');                                              // Parc S/N ou cor verde
+    ex.push(i<=3 ? ('2026-0'+(5+i)+'-01') : '');            // Data parcela
+    ex.push(i<=3 ? String(Math.round(vlEx/3)) : '');        // Valor parcela
   }
 
-  var info = ['','','','','','','','','','','','','','Dias a partir do fat. Ex: 30/60/90','Observações'];
-  info.push('Pinte de VERDE (C6EFCE) as parcelas PAGAS');
+  var info = ['AAAA-MM-DD','','Nome exato do cliente','XX.XXX.XXX/XXXX-XX',
+              '','0 a 100','1 a 15','Ex: 3','S ou N','AAAA-MM-DD','','',
+              'S=tudo pago','Ex: Feira ABC','Observacoes','Pinte VERDE se pago'];
   for(var i=1;i<=maxParc;i++){
-    info.push('');
+    info.push('Pinte VERDE se pago');
     info.push('AAAA-MM-DD');
     info.push('Valor R$');
   }
 
   var ws = XLSX.utils.aoa_to_sheet([cab, ex, info]);
-
-  var corVerde = { fgColor: { rgb: 'C6EFCE' } };
-  var corAzul  = { fgColor: { rgb: 'DDEEFF' } };
-  var corAmar  = { fgColor: { rgb: 'FFFACD' } };
-  // FAT + 3 parcelas de exemplo em verde
-  ['P2','Q2','T2','W2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corVerde }; });
-  // Datas e valores em azul claro
-  ['R2','S2','U2','V2','X2','Y2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corAzul }; });
-  // Prazo e OBS em amarelo
-  ['N2','O2'].forEach(function(addr){ if(ws[addr]) ws[addr].s = { fill: corAmar }; });
-
   ws['!cols'] = cab.map(function(_,i){
-    if(i===2) return {wch:28};   // Razão Social
-    if(i===11) return {wch:20};  // CNPJ
-    if(i===12) return {wch:16};  // Tipo/Origem
-    if(i===13) return {wch:14};  // Prazo Pgto
-    if(i===14) return {wch:22};  // OBS
-    if(i===15) return {wch:9};   // FAT
-    var rel=(i-16)%3;
-    if(rel===0) return {wch:7};  // Parc S/N
-    if(rel===1) return {wch:12}; // Data
-    if(rel===2) return {wch:10}; // Valor
+    if(i===2) return {wch:28}; if(i===3) return {wch:20};
+    if(i===13) return {wch:16}; if(i===14) return {wch:22};
+    if(i===15) return {wch:8};
+    var r=(i-16)%3; if(r===0) return {wch:8}; if(r===1) return {wch:12}; return {wch:10};
     return {wch:10};
   });
-
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Pedidos');
-  XLSX.writeFile(wb,'modelo_pedidos.xlsx');
-  toast('Modelo atualizado! Col N=Prazo Pgto (ex: 30/60/90) | Col O=OBS | Col P=FAT | Q em diante: Parc./Data/Valor por parcela. Pinte de VERDE as pagas.');
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
+  XLSX.writeFile(wb, 'modelo_pedidos.xlsx');
+  toast('Modelo baixado! Pinte de VERDE as celulas FAT e parcelas ja pagas.');
 }
+
+function onFilePed(input){
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb   = XLSX.read(new Uint8Array(e.target.result), {type:'array', cellStyles:true});
+      var ws   = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+      var data = rows.slice(1).filter(function(r){ return r[0]||r[1]; });
+
+      var ok=0, naoEnc=[], dtInv=[];
+
+      data.forEach(function(r, ri){
+        // Busca cliente por CNPJ (D=3) ou Razão Social (C=2)
+        var cnpj = String(r[3]||'').replace(/\D/g,'');
+        var nome = String(r[2]||'').toLowerCase().trim();
+        var cli  = null;
+
+        if(cnpj.length >= 11)
+          cli = DB.clientes.find(function(x){ return !x.encerrado && (x.cnpj||'').replace(/\D/g,'')=== cnpj; });
+        if(!cli && nome)
+          cli = DB.clientes.find(function(x){ return !x.encerrado && (x.rs||'').toLowerCase().trim()===nome; });
+        if(!cli){ naoEnc.push(nome||cnpj||'linha '+(ri+2)); return; }
+
+        var parc    = Math.max(1, parseInt(r[6])||1);
+        var fatcomI = String(r[8]||'').toUpperCase().trim()==='S' ? 'sim' : 'nao';
+        var pagoM   = String(r[12]||'').toUpperCase().trim()==='S';
+        var dtPed   = impParseData(r[0]);
+        var dtFat   = impParseData(r[9]);
+
+        // ── Parcelas ──
+        var pays=[]; var paysDt=[]; var paysVal=[];
+        var COL_FAT=15, COL_P1=16; // P=15, Q=16
+
+        // FAT (índice 0 no pays quando fatSim)
+        if(fatcomI==='sim'){
+          var fatCell = ws[XLSX.utils.encode_cell({r:ri+1, c:COL_FAT})];
+          pays[0] = isCelulaVerde(fatCell, r[COL_FAT]) ? 'ok' : '';
+        }
+
+        // Parcelas 1..parc (3 colunas cada: Pago/Verde, Data, Valor)
+        for(var i=1; i<=parc; i++){
+          var bc   = COL_P1 + (i-1)*3;
+          var cell = ws[XLSX.utils.encode_cell({r:ri+1, c:bc})];
+          var idx  = fatcomI==='sim' ? i : i-1;
+          pays[idx]    = isCelulaVerde(cell, r[bc]) ? 'ok' : '';
+          var dt = impParseData(r[bc+1]);
+          var vl = parseFloat(r[bc+2])||0;
+          if(dt) paysDt[idx]  = dt;
+          if(vl) paysVal[idx] = vl;
+        }
+
+        // Fallback: coluna M=Pago S/N marca tudo pago
+        if(pagoM && pays.every(function(s){return s==='';})){
+          for(var i=0;i<pays.length;i++) pays[i]='ok';
+        }
+
+        DB.pedidos.push({
+          id:uid(), empId:empAtual, cliId:cli.id,
+          dt:      dtPed || new Date().toISOString().split('T')[0],
+          num:     String(r[1]||'').trim(),
+          val:     parseFloat(r[4])||0,
+          desc:    parseFloat(r[5])||0,
+          parc:    parc,
+          com:     parseFloat(r[7])||3,
+          fatcom:  fatcomI,
+          dtFat:   dtFat||null,
+          nf:      String(r[10]||'').trim()||null,
+          valfat:  parseFloat(r[11])||0,
+          tipo:    String(r[13]||'').trim()||null,
+          obs:     String(r[14]||'').trim()||null,
+          pays:    pays,
+          paysDt:  paysDt,
+          paysVal: paysVal,
+          transp:'', cod:'', naTransp:false
+        });
+
+        if(!dtPed) dtInv.push(r[1]||'linha '+(ri+2));
+        if(dtFat) cli.ultFat = dtFat;
+        ok++;
+      });
+
+      salvarDB();
+      var msg = ok + ' pedido(s) importado(s)!';
+      if(naoEnc.length)  msg += '\n⚠️ Clientes nao encontrados ('+naoEnc.length+'): '+naoEnc.slice(0,5).join(', ');
+      if(dtInv.length)   msg += '\n⚠️ Data invalida (usada hoje): '+dtInv.slice(0,5).join(', ');
+      alert(msg);
+      cm('mImpPed');
+      if(typeof subAtual!=='undefined' && subAtual==='eped') renderEmpPed();
+    }catch(err){
+      alert('Erro na importacao: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function impParseData(v){
+  if(v==null||v==='') return null;
+  if(v instanceof Date && !isNaN(v)) return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
+  if(typeof v==='number' && v>10000 && v<100000){
+    var d=XLSX.SSF?XLSX.SSF.parse_date_code(v):null;
+    if(d) return d.y+'-'+String(d.m).padStart(2,'0')+'-'+String(d.d).padStart(2,'0');
+  }
+  var s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  var m=s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if(m) return (m[3].length===2?'20'+m[3]:m[3])+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  if(/^\d+$/.test(s)&&Number(s)>10000){
+    var d2=XLSX.SSF?XLSX.SSF.parse_date_code(Number(s)):null;
+    if(d2) return d2.y+'-'+String(d2.m).padStart(2,'0')+'-'+String(d2.d).padStart(2,'0');
+  }
+  return null;
+}
+
+function isCelulaVerde(cell, valor){
+  if(cell&&cell.s){
+    var hex=(cell.s.fgColor&&cell.s.fgColor.rgb)||(cell.s.bgColor&&cell.s.bgColor.rgb)||'';
+    if(hex&&/^(00)?(00FF00|92D050|00B050|C6EFCE|A9D08E|70AD47|548235)/i.test(hex)) return true;
+  }
+  var v=String(valor||'').toUpperCase().trim();
+  return v==='1'||v==='S'||v==='SIM';
+}
+// ══ FIM IMPORTAÇÃO ══
 
 // ══ EXPORTAÇÃO ══
 function exportarTudo(){
