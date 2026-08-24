@@ -795,6 +795,127 @@ if('serviceWorker' in navigator){
   </div>
 </div></div>
 
+<!-- ORÇAMENTOS -->
+<div id="p-eorcam" style="display:none">
+  <div class="ph">
+    <div><div class="pt"><i class="ti ti-file-description" style="color:var(--org)"></i>Orçamentos</div><div class="ps" id="eo-s"></div></div>
+    <div class="pa" style="gap:8px">
+      <button class="btn bs" onclick="om('mImpProd')"><i class="ti ti-package"></i> Produtos</button>
+      <button class="btn bp" onclick="abrirNovoOrcamento()"><i class="ti ti-plus"></i> Novo Orçamento</button>
+    </div>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:7px 10px;text-align:left">Nº</th>
+        <th style="padding:7px 10px;text-align:left">Cliente</th>
+        <th style="padding:7px 10px;text-align:center">Data</th>
+        <th style="padding:7px 10px;text-align:right">Total</th>
+        <th style="padding:7px 10px;text-align:center">Status</th>
+        <th style="padding:7px 10px;text-align:center">Ações</th>
+      </tr></thead>
+      <tbody id="tb-orcamentos"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL PRODUTOS -->
+<div class="mbg" id="mImpProd"><div class="modal" style="max-width:700px">
+  <div class="mtt"><i class="ti ti-package" style="color:var(--acc2)"></i> Banco de Produtos <button class="xb" onclick="cm('mImpProd')"><i class="ti ti-x"></i></button></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn bs" onclick="baixarModeloProdutos()"><i class="ti ti-download"></i> Baixar modelo</button>
+    <label class="btn bs" style="cursor:pointer"><i class="ti ti-file-import"></i> Importar Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarProdutos(this)"></label>
+    <div style="flex:1"></div>
+    <input class="fi" id="busca-prod" placeholder="Buscar código ou descrição..." style="width:200px;padding:5px 10px;font-size:12px" oninput="renderTabelaProdutos()">
+  </div>
+  <div style="overflow-y:auto;max-height:400px">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--s2);position:sticky;top:0">
+        <th style="padding:6px 10px;text-align:left">Código</th>
+        <th style="padding:6px 10px;text-align:left">Descrição</th>
+        <th style="padding:6px 10px;text-align:right">Valor Unit.</th>
+        <th style="padding:6px 10px;text-align:center">Unid.</th>
+        <th style="padding:6px 10px;text-align:center">Ações</th>
+      </tr></thead>
+      <tbody id="tb-produtos"></tbody>
+    </table>
+  </div>
+  <div style="border-top:1px solid var(--s3);margin-top:10px;padding-top:10px">
+    <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:6px">Adicionar produto manualmente</div>
+    <div style="display:flex;gap:8px">
+      <input class="fi" id="np-cod" placeholder="Código" style="width:100px">
+      <input class="fi" id="np-desc" placeholder="Descrição" style="flex:1">
+      <input class="fi" id="np-val" placeholder="Valor" type="number" step="0.01" style="width:100px">
+      <input class="fi" id="np-unid" placeholder="Unid" style="width:70px">
+      <button class="btn bp" onclick="addProdutoManual()"><i class="ti ti-plus"></i> Add</button>
+    </div>
+  </div>
+</div></div>
+
+<!-- MODAL ORÇAMENTO -->
+<div class="mbg" id="mOrcamento"><div class="modal" style="max-width:900px;max-height:95vh;overflow-y:auto">
+  <div class="mtt"><i class="ti ti-file-description" style="color:var(--org)"></i> <span id="orc-titulo">Novo Orçamento</span>
+    <div style="display:flex;gap:6px;margin-left:auto">
+      <button class="btn bs" style="padding:4px 10px;font-size:11px" onclick="imprimirOrcamento()"><i class="ti ti-printer"></i> PDF</button>
+      <button class="xb" onclick="cm('mOrcamento')"><i class="ti ti-x"></i></button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="fg"><label class="fl">Cliente *</label>
+      <div style="position:relative">
+        <input class="fi" id="orc-cli-busca" placeholder="Digite para buscar..." oninput="filtrarCliOrc(this.value)" autocomplete="off">
+        <div id="orc-cli-lista" style="display:none;position:absolute;background:var(--s1);border:1px solid var(--bdr);border-radius:6px;z-index:200;width:100%;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,.15)"></div>
+      </div>
+      <input type="hidden" id="orc-cli-id">
+      <div id="orc-cli-sel" style="font-size:11px;color:var(--grn);margin-top:2px;display:none"></div>
+    </div>
+    <div class="fg"><label class="fl">Nº Orçamento</label><input class="fi" id="orc-num" placeholder="Auto"></div>
+    <div class="fg"><label class="fl">Data</label><input class="fi" id="orc-data" type="date"></div>
+    <div class="fg"><label class="fl">Validade</label><input class="fi" id="orc-validade" type="date"></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Observações</label><textarea class="fi" id="orc-obs" style="height:50px;resize:vertical"></textarea></div>
+  </div>
+  <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px">Itens do Orçamento</div>
+  <div style="overflow-x:auto;margin-bottom:8px">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:6px 8px;text-align:center;width:30px">#</th>
+        <th style="padding:6px 8px;text-align:left;width:110px">Código</th>
+        <th style="padding:6px 8px;text-align:left">Descrição</th>
+        <th style="padding:6px 8px;text-align:left;width:160px">Detalhe</th>
+        <th style="padding:6px 8px;text-align:center;width:70px">Qtde</th>
+        <th style="padding:6px 8px;text-align:right;width:100px">Valor Unit.</th>
+        <th style="padding:6px 8px;text-align:right;width:100px">Total</th>
+        <th style="padding:6px 8px;width:30px"></th>
+      </tr></thead>
+      <tbody id="tb-orc-itens"></tbody>
+    </table>
+  </div>
+  <button class="btn bs" style="font-size:11px;margin-bottom:14px" onclick="addLinhaOrcamento()"><i class="ti ti-plus"></i> Adicionar linha</button>
+  <div style="display:flex;justify-content:flex-end">
+    <div style="width:280px;border:1px solid var(--bdr);border-radius:8px;padding:12px;background:var(--s2)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
+        <span style="color:var(--t3)">Subtotal:</span>
+        <span id="orc-subtotal" style="font-weight:600;color:var(--t1)">R$ 0,00</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="color:var(--t3);font-size:13px;white-space:nowrap">Desconto:</span>
+        <input class="fi" id="orc-desc" type="number" min="0" max="100" step="0.1" value="0" placeholder="%" style="width:70px;padding:4px 8px;font-size:12px" oninput="calcTotaisOrc()">
+        <span style="color:var(--t3);font-size:12px">%</span>
+        <span id="orc-desc-val" style="color:var(--red);font-size:12px;margin-left:auto"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:2px solid var(--bdr)">
+        <span style="font-weight:700;color:var(--t1);font-size:14px">Total:</span>
+        <span id="orc-total" style="font-weight:700;color:var(--grn);font-size:16px">R$ 0,00</span>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+    <button class="btn bs" onclick="cm('mOrcamento')">Fechar</button>
+    <button class="btn bs" style="color:var(--acc2);border-color:var(--acc2)" onclick="salvarOrcamento('orcamento')"><i class="ti ti-device-floppy"></i> Salvar Orçamento</button>
+    <button class="btn bp" onclick="salvarOrcamento('pedido')"><i class="ti ti-shopping-cart"></i> Converter em Pedido</button>
+  </div>
+</div></div>
+
 <div id="p-agenda" style="display:none">
   <div class="ph">
     <div><div class="pt"><i class="ti ti-calendar-event"></i>Agenda</div><div class="ps">Telefonemas, reuniões e verificações</div></div>
@@ -1495,6 +1616,7 @@ function buildSidebar() {
         <div class="si ${open&&subAtual==='ecli'?'act':''}"  onclick="setSub('${e.id}','ecli')"><i class="ti ti-users"></i>Clientes<span id="badge-ecli-${e.id}" class="emp-badge-count" style="display:none"></span></div>
         <div class="si ${open&&subAtual==='eped'?'act':''}"  onclick="setSub('${e.id}','eped')"><i class="ti ti-receipt"></i>Pedidos<span id="badge-eped-${e.id}" class="emp-badge-count warn" style="display:none"></span></div>
 <div class="si ${open&&subAtual==='ecom'?'act':''}"  onclick="setSub('${e.id}','ecom')"><i class="ti ti-coin"></i>Comissões</div>
+        <div class="si ${open&&subAtual==='eorcam'?'act':''}" onclick="setSub('${e.id}','eorcam')"><i class="ti ti-file-description" style="color:var(--org)"></i>Orçamentos</div>
         <div class="si ${open&&subAtual==='evendas'?'act':''}"  onclick="setSub('${e.id}','evendas')"><i class="ti ti-chart-line"></i>Vendas</div>
       </div>
     </div>`;
@@ -1507,7 +1629,7 @@ function buildSidebar() {
 // ══ NAVEGAÇÃO ══
 function sp(p) {
   // Esconder apenas as páginas de conteúdo (evitar esconder modais etc)
-  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads'];
+  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam'];
   pgs.forEach(function(pid){ var el=document.getElementById(pid); if(el) el.style.display='none'; });
   const el = document.getElementById('p-'+p);
   if(el) el.style.display='block';
@@ -1519,6 +1641,7 @@ function sp(p) {
   if(p==='eped')  renderEmpPed();
   if(p==='ecom')  renderEmpCom();
   if(p==='evendas') renderEmpVendas();
+  if(p==='eorcam')  { renderEmpOrcam(); if(typeof renderTabelaProdutos==='function') renderTabelaProdutos(); }
   if(p==='lembretes') renderLembretes();
   if(p==='agenda') { document.getElementById('n-agenda').classList.add('act'); renderAgenda(); }
   if(p==='clidet') { /* already handled by abrirCli */ }
@@ -1537,6 +1660,8 @@ function setSub(eid, sub) {
   empAtual=eid; subAtual=sub;
   document.querySelectorAll('.si').forEach(s=>s.classList.remove('act'));
   if(sub==='eped') { sortState.eped={campo:'dt',dir:'desc'}; const s=document.getElementById('fil-ano-ped'); if(s) delete s.dataset.init; }
+  if(sub==='eorcam'){ renderEmpOrcam(); }
+  if(sub==='eorcam'){ renderEmpOrcam(); }
   if(sub==='ecom') { sortState.com={campo:'nf',dir:'desc'}; const s=document.getElementById('fil-ano-com'); if(s) delete s.dataset.init; }
   sp(sub);
 }
@@ -4543,6 +4668,8 @@ function renderAlertasCiclo(){
   });
 
   if(!DB.cicloAcoes) DB.cicloAcoes={};
+  if(!DB.produtos) DB.produtos=[];
+  if(!DB.orcamentos) DB.orcamentos=[];
   const hoje=new Date(); const hojeStr=hoje.toISOString().split('T')[0];
 
   // Filtra clientes com ação ativa (contatado/seminteresse dentro do prazo)
@@ -8884,6 +9011,7 @@ function buildSidebar() {
         <div class="si ${open&&subAtual==='ecli'?'act':''}"  onclick="setSub('${e.id}','ecli')"><i class="ti ti-users"></i>Clientes<span id="badge-ecli-${e.id}" class="emp-badge-count" style="display:none"></span></div>
         <div class="si ${open&&subAtual==='eped'?'act':''}"  onclick="setSub('${e.id}','eped')"><i class="ti ti-receipt"></i>Pedidos<span id="badge-eped-${e.id}" class="emp-badge-count warn" style="display:none"></span></div>
 <div class="si ${open&&subAtual==='ecom'?'act':''}"  onclick="setSub('${e.id}','ecom')"><i class="ti ti-coin"></i>Comissões</div>
+        <div class="si ${open&&subAtual==='eorcam'?'act':''}" onclick="setSub('${e.id}','eorcam')"><i class="ti ti-file-description" style="color:var(--org)"></i>Orçamentos</div>
         <div class="si ${open&&subAtual==='evendas'?'act':''}"  onclick="setSub('${e.id}','evendas')"><i class="ti ti-chart-line"></i>Vendas</div>
       </div>
     </div>`;
@@ -8896,7 +9024,7 @@ function buildSidebar() {
 // ══ NAVEGAÇÃO ══
 function sp(p) {
   // Esconder apenas as páginas de conteúdo (evitar esconder modais etc)
-  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas'];
+  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam'];
   pgs.forEach(function(pid){ var el=document.getElementById(pid); if(el) el.style.display='none'; });
   const el = document.getElementById('p-'+p);
   if(el) el.style.display='block';
@@ -8926,6 +9054,7 @@ function setSub(eid, sub) {
   empAtual=eid; subAtual=sub;
   document.querySelectorAll('.si').forEach(s=>s.classList.remove('act'));
   if(sub==='eped') { sortState.eped={campo:'dt',dir:'desc'}; const s=document.getElementById('fil-ano-ped'); if(s) delete s.dataset.init; }
+  if(sub==='eorcam'){ renderEmpOrcam(); }
   if(sub==='ecom') { sortState.com={campo:'nf',dir:'desc'}; const s=document.getElementById('fil-ano-com'); if(s) delete s.dataset.init; }
   sp(sub);
 }
@@ -11243,7 +11372,351 @@ function confirmarImport(){
 }
 
 
-// ══ IMPORTAÇÃO DE PEDIDOS ══
+// ══ PRODUTOS ══
+if(!DB.produtos) DB.produtos=[];
+if(!DB.orcamentos) DB.orcamentos=[];
+
+function baixarModeloProdutos(){
+  var ws=XLSX.utils.aoa_to_sheet([
+    ['Codigo','Descricao','Valor','Unidade'],
+    ['10026391','CANECA BOBBY 500ML MICKEY','26.90','UN'],
+    ['10072755','CARTEIRA 19X10CM HOGWARTS','49.90','UN'],
+    ['','Descricao do produto','0.00','UN']
+  ]);
+  ws['!cols']=[{wch:14},{wch:40},{wch:12},{wch:8}];
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Produtos');
+  XLSX.writeFile(wb,'modelo_produtos.xlsx');
+  toast('Modelo baixado! Colunas: A=Código B=Descrição C=Valor D=Unidade');
+}
+
+function importarProdutos(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+    var novos=0, atualizados=0;
+    rows.slice(1).forEach(function(r){
+      if(!r[0]&&!r[1]) return;
+      var cod=String(r[0]||'').trim();
+      var existente=DB.produtos.find(function(p){return p.cod===cod;});
+      var prod={cod:cod, desc:String(r[1]||'').trim(), val:parseFloat(r[2])||0, unid:String(r[3]||'UN').trim()};
+      if(existente){ Object.assign(existente,prod); atualizados++; }
+      else { prod.id=uid(); DB.produtos.push(prod); novos++; }
+    });
+    salvarDB(); input.value='';
+    renderTabelaProdutos();
+    toast('✅ '+novos+' novo(s) · '+atualizados+' atualizado(s)');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function addProdutoManual(){
+  var cod=document.getElementById('np-cod')?.value.trim();
+  var desc=document.getElementById('np-desc')?.value.trim();
+  var val=parseFloat(document.getElementById('np-val')?.value)||0;
+  var unid=document.getElementById('np-unid')?.value.trim()||'UN';
+  if(!desc){ toast('Informe a descrição'); return; }
+  var existente=cod?DB.produtos.find(function(p){return p.cod===cod;}):null;
+  if(existente){ Object.assign(existente,{desc,val,unid}); toast('Produto atualizado!'); }
+  else { DB.produtos.push({id:uid(),cod,desc,val,unid}); toast('Produto adicionado!'); }
+  salvarDB(); renderTabelaProdutos();
+  ['np-cod','np-desc','np-val','np-unid'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+}
+
+function excluirProduto(id){
+  if(!confirm('Excluir este produto?')) return;
+  DB.produtos=DB.produtos.filter(function(p){return p.id!==id;});
+  salvarDB(); renderTabelaProdutos(); toast('Produto removido!');
+}
+
+function renderTabelaProdutos(){
+  var tb=document.getElementById('tb-produtos'); if(!tb) return;
+  var busca=(document.getElementById('busca-prod')?.value||'').toLowerCase();
+  var list=DB.produtos.filter(function(p){
+    return !busca||(p.cod||'').toLowerCase().includes(busca)||(p.desc||'').toLowerCase().includes(busca);
+  });
+  if(!list.length){ tb.innerHTML='<tr><td colspan="5" style="color:var(--t3);padding:12px;text-align:center">Nenhum produto cadastrado.</td></tr>'; return; }
+  tb.innerHTML=list.map(function(p,i){
+    var bg=i%2?'background:var(--s2)':'';
+    return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'+
+      '<td style="padding:5px 10px;font-weight:600;color:var(--acc)">'+( p.cod||'—')+'</td>'+
+      '<td style="padding:5px 10px;color:var(--t1)">'+p.desc+'</td>'+
+      '<td style="padding:5px 10px;text-align:right;color:var(--t1)">'+fmt(p.val)+'</td>'+
+      '<td style="padding:5px 10px;text-align:center;color:var(--t3)">'+( p.unid||'UN')+'</td>'+
+      '<td style="padding:5px 10px;text-align:center"><button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirProduto(\''+p.id+'\')"><i class="ti ti-trash"></i></button></td>'+
+    '</tr>';
+  }).join('');
+}
+// ══ FIM PRODUTOS ══
+
+// ══ ORÇAMENTOS ══
+var orcAtualId = null;
+var orcItens   = []; // [{cod,desc,detalhe,qtde,val}]
+
+function renderEmpOrcam(){
+  var tb=document.getElementById('tb-orcamentos'); if(!tb) return;
+  var orcs=(DB.orcamentos||[]).filter(function(o){return o.empId===empAtual;}).sort(function(a,b){return b.dt>a.dt?1:-1;});
+  if(!orcs.length){ tb.innerHTML='<tr><td colspan="6" style="color:var(--t3);padding:14px;text-align:center">Nenhum orçamento criado.</td></tr>'; return; }
+  tb.innerHTML=orcs.map(function(o,i){
+    var cli=DB.clientes.find(function(c){return c.id===o.cliId;});
+    var cor=o.status==='pedido'?'var(--grn)':o.status==='cancelado'?'var(--red)':'var(--org)';
+    var txt=o.status==='pedido'?'Convertido':o.status==='cancelado'?'Cancelado':'Orçamento';
+    var bg=i%2?'background:var(--s2)':'';
+    return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'+
+      '<td style="padding:7px 10px;font-weight:700;color:var(--acc)"><span class="lnk" onclick="editarOrcamento(\''+o.id+'\')">'+( o.num||o.id.slice(-4))+'</span></td>'+
+      '<td style="padding:7px 10px;color:var(--t1)">'+(cli?.rs||'—')+'</td>'+
+      '<td style="padding:7px 10px;text-align:center;color:var(--t2)">'+(fmtD(o.dt)||'—')+'</td>'+
+      '<td style="padding:7px 10px;text-align:right;font-weight:600;color:var(--t1)">'+fmt(o.total||0)+'</td>'+
+      '<td style="padding:7px 10px;text-align:center"><span style="background:'+cor+'18;color:'+cor+';border:1px solid '+cor+'44;border-radius:12px;padding:2px 10px;font-size:10px;font-weight:600">'+txt+'</span></td>'+
+      '<td style="padding:7px 10px;text-align:center;white-space:nowrap">'+
+        '<button class="btn bs" style="padding:2px 7px;font-size:10px" onclick="editarOrcamento(\''+o.id+'\')" title="Abrir"><i class="ti ti-pencil"></i></button> '+
+        '<button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirOrcamento(\''+o.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function abrirNovoOrcamento(){
+  orcAtualId=null; orcItens=[];
+  document.getElementById('orc-titulo').textContent='Novo Orçamento';
+  document.getElementById('orc-cli-busca').value='';
+  document.getElementById('orc-cli-id').value='';
+  document.getElementById('orc-cli-sel').style.display='none';
+  document.getElementById('orc-num').value='ORC-'+String(Date.now()).slice(-5);
+  document.getElementById('orc-data').value=new Date().toISOString().split('T')[0];
+  var val=new Date(); val.setDate(val.getDate()+30);
+  document.getElementById('orc-validade').value=val.toISOString().split('T')[0];
+  document.getElementById('orc-desc').value='0';
+  document.getElementById('orc-obs').value='';
+  renderItensOrc(); calcTotaisOrc();
+  om('mOrcamento');
+}
+
+function editarOrcamento(id){
+  var o=DB.orcamentos.find(function(x){return x.id===id;}); if(!o) return;
+  orcAtualId=id;
+  orcItens=(o.itens||[]).map(function(i){return Object.assign({},i);});
+  document.getElementById('orc-titulo').textContent='Orçamento '+( o.num||id.slice(-4));
+  var cli=DB.clientes.find(function(c){return c.id===o.cliId;});
+  document.getElementById('orc-cli-busca').value=cli?.rs||'';
+  document.getElementById('orc-cli-id').value=o.cliId||'';
+  var sel=document.getElementById('orc-cli-sel');
+  if(sel&&cli){ sel.textContent='✓ '+cli.rs; sel.style.display='block'; }
+  document.getElementById('orc-num').value=o.num||'';
+  document.getElementById('orc-data').value=o.dt||'';
+  document.getElementById('orc-validade').value=o.validade||'';
+  document.getElementById('orc-desc').value=o.desc||0;
+  document.getElementById('orc-obs').value=o.obs||'';
+  renderItensOrc(); calcTotaisOrc();
+  om('mOrcamento');
+}
+
+function excluirOrcamento(id){
+  if(!confirm('Excluir este orçamento?')) return;
+  DB.orcamentos=DB.orcamentos.filter(function(x){return x.id!==id;});
+  salvarDB(); renderEmpOrcam(); toast('Orçamento excluído!');
+}
+
+// ── Itens ──
+function renderItensOrc(){
+  var tb=document.getElementById('tb-orc-itens'); if(!tb) return;
+  if(!orcItens.length){ tb.innerHTML='<tr><td colspan="8" style="color:var(--t3);padding:10px;text-align:center;font-size:12px">Nenhum item. Clique em "+ Adicionar linha".</td></tr>'; return; }
+  tb.innerHTML=orcItens.map(function(it,i){
+    return '<tr style="border-bottom:1px solid var(--s3)">'+
+      '<td style="padding:4px 8px;text-align:center;color:var(--t3);font-size:11px">'+(i+1)+'</td>'+
+      '<td style="padding:4px 6px"><input class="fi" value="'+(it.cod||'')+'" placeholder="Código" style="width:100%;padding:4px 6px;font-size:11px" onchange="buscarProdutoLinha('+i+',this.value)" oninput="this.dataset.cod=this.value"></td>'+
+      '<td style="padding:4px 6px"><input class="fi" value="'+(it.desc||'')+'" placeholder="Descrição" style="width:100%;padding:4px 6px;font-size:11px" oninput="orcItens['+i+'].desc=this.value"></td>'+
+      '<td style="padding:4px 6px"><input class="fi" value="'+(it.detalhe||'')+'" placeholder="Detalhe" style="width:100%;padding:4px 6px;font-size:11px" oninput="orcItens['+i+'].detalhe=this.value"></td>'+
+      '<td style="padding:4px 6px"><input class="fi" type="number" value="'+(it.qtde||1)+'" min="1" step="1" style="width:100%;padding:4px 6px;font-size:11px;text-align:center" oninput="orcItens['+i+'].qtde=parseFloat(this.value)||1;calcTotaisOrc()"></td>'+
+      '<td style="padding:4px 6px"><input class="fi" type="number" value="'+(it.val||'')+'" placeholder="0,00" step="0.01" style="width:100%;padding:4px 6px;font-size:11px;text-align:right" oninput="orcItens['+i+'].val=parseFloat(this.value)||0;calcTotaisOrc()"></td>'+
+      '<td style="padding:4px 8px;text-align:right;font-weight:600;color:var(--t1);font-size:12px;white-space:nowrap">'+fmt((it.qtde||1)*(it.val||0))+'</td>'+
+      '<td style="padding:4px 6px;text-align:center"><button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px" onclick="removerLinhaOrc('+i+')"><i class="ti ti-x"></i></button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function addLinhaOrcamento(){
+  orcItens.push({cod:'',desc:'',detalhe:'',qtde:1,val:0});
+  renderItensOrc(); calcTotaisOrc();
+  // Foca no campo de código da nova linha
+  setTimeout(function(){
+    var inputs=document.querySelectorAll('#tb-orc-itens input');
+    if(inputs.length) inputs[inputs.length-7].focus();
+  },50);
+}
+
+function removerLinhaOrc(i){
+  orcItens.splice(i,1); renderItensOrc(); calcTotaisOrc();
+}
+
+function buscarProdutoLinha(idx, cod){
+  var cod2=String(cod||'').trim();
+  orcItens[idx].cod=cod2;
+  if(!cod2) return;
+  var prod=DB.produtos.find(function(p){return (p.cod||'').toLowerCase()===cod2.toLowerCase();});
+  if(prod){
+    orcItens[idx].desc=prod.desc;
+    orcItens[idx].val=prod.val;
+    renderItensOrc(); calcTotaisOrc();
+    toast('Produto encontrado: '+prod.desc);
+  }
+}
+
+function calcTotaisOrc(){
+  var sub=orcItens.reduce(function(a,it){return a+(it.qtde||1)*(it.val||0);},0);
+  var desc=parseFloat(document.getElementById('orc-desc')?.value)||0;
+  var descVal=sub*desc/100;
+  var total=sub-descVal;
+  var el=document.getElementById('orc-subtotal'); if(el) el.textContent=fmt(sub);
+  var el2=document.getElementById('orc-desc-val'); if(el2) el2.textContent=desc>0?'— '+fmt(descVal):'';
+  var el3=document.getElementById('orc-total'); if(el3) el3.textContent=fmt(total);
+  return {sub,descVal,total,desc};
+}
+
+function filtrarCliOrc(busca){
+  var lista=document.getElementById('orc-cli-lista'); if(!lista) return;
+  if(!busca){ lista.style.display='none'; return; }
+  var b=busca.toLowerCase();
+  var res=DB.clientes.filter(function(x){
+    return !x.encerrado && x.empId===empAtual &&
+      ((x.rs||'').toLowerCase().includes(b)||(x.cid||'').toLowerCase().includes(b)||(x.cnpj||'').includes(busca));
+  });
+  if(!res.length){
+    res=DB.clientes.filter(function(x){
+      return !x.encerrado &&
+        ((x.rs||'').toLowerCase().includes(b)||(x.cid||'').toLowerCase().includes(b)||(x.cnpj||'').includes(busca));
+    });
+  }
+  res=res.slice(0,10);
+  if(!res.length){ lista.style.display='none'; return; }
+  lista.style.display='block';
+  lista.innerHTML=res.map(function(x){
+    var emp=DB.empresas.find(function(e){return e.id===x.empId;});
+    var nm=x.rs.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    var row='<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--s3);font-size:12px" ';
+    row+='onmousedown="selecionarCliOrc(\''+x.id+'\',\''+nm+'\')" ';
+    row+='onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'\'"><b style="color:var(--t1)">'+x.rs+'</b>';
+    if(x.cid) row+=' <span style="color:var(--t3);font-size:10px">'+x.cid+'</span>';
+    if(emp&&emp.id!==empAtual) row+=' <span style="color:var(--org);font-size:10px">['+emp.nome+']</span>';
+    row+='</div>';
+    return row;
+  }).join('');
+}function selecionarCliOrc(id, nome){
+  document.getElementById('orc-cli-id').value=id;
+  document.getElementById('orc-cli-busca').value=nome;
+  var sel=document.getElementById('orc-cli-sel');
+  if(sel){ sel.textContent='✓ '+nome; sel.style.display='block'; }
+  var lista=document.getElementById('orc-cli-lista');
+  if(lista) lista.style.display='none';
+}
+
+function salvarOrcamento(tipo){
+  var cliId=document.getElementById('orc-cli-id').value;
+  if(!cliId){ toast('Selecione um cliente'); return; }
+  if(!orcItens.length){ toast('Adicione pelo menos um item'); return; }
+  var tot=calcTotaisOrc();
+  var orc={
+    id: orcAtualId||uid(),
+    empId: empAtual,
+    cliId: cliId,
+    num:  document.getElementById('orc-num').value||'',
+    dt:   document.getElementById('orc-data').value||new Date().toISOString().split('T')[0],
+    validade: document.getElementById('orc-validade').value||'',
+    desc: parseFloat(document.getElementById('orc-desc').value)||0,
+    obs:  document.getElementById('orc-obs').value||'',
+    itens: orcItens.map(function(it){return Object.assign({},it);}),
+    subtotal: tot.sub,
+    descVal: tot.descVal,
+    total: tot.total,
+    status: tipo==='pedido'?'pedido':'orcamento',
+    dtCriacao: new Date().toISOString().split('T')[0]
+  };
+
+  if(!DB.orcamentos) DB.orcamentos=[];
+  var idx=DB.orcamentos.findIndex(function(x){return x.id===orc.id;});
+  if(idx>=0) DB.orcamentos[idx]=orc; else DB.orcamentos.push(orc);
+
+  if(tipo==='pedido'){
+    // Cria pedido a partir do orçamento
+    var val=tot.total;
+    var pedObs='Gerado do Orçamento '+orc.num+'\n'+orcItens.map(function(it){return (it.cod?it.cod+' - ':'')+it.desc+(it.detalhe?' | '+it.detalhe:'')+'  Qtde:'+it.qtde+'  Vl:'+fmt(it.val);}).join('\n');
+    DB.pedidos.push({
+      id:uid(), empId:empAtual, cliId:cliId,
+      dt:orc.dt, num:orc.num, val:val, desc:orc.desc,
+      parc:1, com:3, fatcom:'nao', dtFat:null, nf:null, valfat:0,
+      tipo:'Orçamento', obs:pedObs.slice(0,500),
+      pays:[], paysDt:[], paysVal:[],
+      transp:'', cod:'', naTransp:false
+    });
+    toast('✅ Orçamento convertido em pedido!');
+  } else {
+    toast('✅ Orçamento salvo!');
+  }
+
+  salvarDB(); cm('mOrcamento'); renderEmpOrcam();
+}
+
+function imprimirOrcamento(){
+  var cliId=document.getElementById('orc-cli-id').value;
+  var cli=DB.clientes.find(function(c){return c.id===cliId;});
+  var emp=DB.empresas.find(function(e){return e.id===empAtual;});
+  var tot=calcTotaisOrc();
+  var num=document.getElementById('orc-num').value;
+  var data=fmtD(document.getElementById('orc-data').value);
+  var val=fmtD(document.getElementById('orc-validade').value);
+  var obs=document.getElementById('orc-obs').value;
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Orçamento '+num+'</title><style>';
+  html+='body{font-family:Arial,sans-serif;font-size:12px;color:#222;margin:20px}';
+  html+='.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px}';
+  html+='.emp{font-size:18px;font-weight:700;color:#1a3a5c}';
+  html+='.orc-num{font-size:22px;font-weight:700;color:#2563eb;text-align:right}';
+  html+='.cli-box{background:#f5f7fa;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin-bottom:16px}';
+  html+='table{width:100%;border-collapse:collapse;margin-bottom:16px}';
+  html+='thead tr{background:#1a3a5c;color:#fff}th{padding:8px 10px;text-align:left;font-weight:600}';
+  html+='tbody tr:nth-child(even){background:#f5f7fa}td{padding:7px 10px;border-bottom:1px solid #eee}';
+  html+='.totais{float:right;width:280px;border:1px solid #ddd;border-radius:6px;padding:12px}';
+  html+='.total-row{display:flex;justify-content:space-between;padding:4px 0}';
+  html+='.total-final{font-weight:700;font-size:16px;border-top:2px solid #333;padding-top:8px;margin-top:8px}';
+  html+='@media print{button{display:none}}</style></head><body>';
+  html+='<div class="header"><div><div class="emp">'+(emp?.nome||'')+'</div></div>';
+  html+='<div class="orc-num">ORÇAMENTO<br>'+num+'<div style="font-size:12px;font-weight:400;color:#555">Data: '+data+'</div>';
+  html+=(val?'<div style="font-size:11px;color:#888">Válido até: '+val+'</div>':'');
+  html+='</div></div>';
+
+  if(cli){
+    html+='<div class="cli-box"><b>Cliente:</b> '+cli.rs;
+    if(cli.cnpj) html+=' &nbsp;|&nbsp; <b>CNPJ:</b> '+cli.cnpj;
+    if(cli.end)  html+='<br><b>Endereço:</b> '+cli.end;
+    if(cli.cid)  html+=' &nbsp;|&nbsp; <b>Cidade:</b> '+cli.cid+(cli.uf?' - '+cli.uf:'');
+    if(cli.fone||cli.cel) html+='<br><b>Tel:</b> '+(cli.fone||cli.cel||'');
+    html+='</div>';
+  }
+
+  html+='<table><thead><tr><th>#</th><th>Código</th><th>Descrição</th><th>Detalhe</th><th style="text-align:center">Qtde</th><th style="text-align:right">Valor Unit.</th><th style="text-align:right">Total</th></tr></thead><tbody>';
+  orcItens.forEach(function(it,i){
+    html+='<tr><td>'+(i+1)+'</td><td>'+(it.cod||'')+'</td><td>'+it.desc+'</td><td>'+(it.detalhe||'')+'</td><td style="text-align:center">'+(it.qtde||1)+'</td><td style="text-align:right">'+fmt(it.val)+'</td><td style="text-align:right;font-weight:600">'+fmt((it.qtde||1)*(it.val||0))+'</td></tr>';
+  });
+  html+='</tbody></table>';
+
+  html+='<div style="overflow:hidden"><div class="totais">';
+  html+='<div class="total-row"><span>Subtotal:</span><span>'+fmt(tot.sub)+'</span></div>';
+  if(tot.desc>0) html+='<div class="total-row" style="color:#dc2626"><span>Desconto ('+tot.desc+'%):</span><span>— '+fmt(tot.descVal)+'</span></div>';
+  html+='<div class="total-row total-final"><span>Total:</span><span style="color:#059669">'+fmt(tot.total)+'</span></div>';
+  html+='</div></div>';
+
+  if(obs) html+='<div style="margin-top:20px;padding:10px;background:#fef9e7;border:1px solid #f0d080;border-radius:6px"><b>Observações:</b> '+obs+'</div>';
+  html+='<div style="margin-top:30px;border-top:1px solid #ddd;padding-top:10px;color:#888;font-size:11px;text-align:center">RepCRM — Sistema de Representação Comercial</div>';
+  html+='</body></html>';
+
+  var win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(function(){ win.print(); },500);
+}
+// ══ FIM ORÇAMENTOS ══
 // Colunas: A=0 Data | B=1 NrPed | C=2 RazaoSocial | D=3 CNPJ | E=4 Valor | F=5 Desc%
 //          G=6 Parc | H=7 Com% | I=8 Fat50%(S/N) | J=9 DtFat | K=10 NF | L=11 VlFat
 //          M=12 Pago(S/N) | N=13 Tipo/Origem | O=14 OBS
