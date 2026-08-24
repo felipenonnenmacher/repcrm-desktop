@@ -853,14 +853,14 @@ if('serviceWorker' in navigator){
 </div></div>
 
 <!-- MODAL ORÇAMENTO -->
-<div class="mbg" id="mOrcamento"><div class="modal" style="max-width:900px;max-height:95vh;overflow-y:auto">
+<div class="mbg" id="mOrcamento"><div class="modal" style="max-width:1100px;width:96vw;max-height:97vh;overflow-y:auto">
   <div class="mtt"><i class="ti ti-file-description" style="color:var(--org)"></i> <span id="orc-titulo">Novo Orçamento</span>
     <div style="display:flex;gap:6px;margin-left:auto">
       <button class="btn bs" style="padding:4px 10px;font-size:11px" onclick="imprimirOrcamento()"><i class="ti ti-printer"></i> PDF</button>
       <button class="xb" onclick="cm('mOrcamento')"><i class="ti ti-x"></i></button>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:12px">
     <div class="fg"><label class="fl">Cliente *</label>
       <div style="position:relative">
         <input class="fi" id="orc-cli-busca" placeholder="Digite para buscar..." oninput="filtrarCliOrc(this.value)" autocomplete="off">
@@ -874,23 +874,23 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Validade</label><input class="fi" id="orc-validade" type="date"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Observações</label><textarea class="fi" id="orc-obs" style="height:50px;resize:vertical"></textarea></div>
   </div>
-  <div style="font-size:12px;font-weight:700;color:var(--t2);margin-bottom:6px">Itens do Orçamento</div>
-  <div style="overflow-x:auto;margin-bottom:8px">
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
+  <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:4px">Itens do Orçamento</div>
+  <div style="overflow-x:auto;margin-bottom:6px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead><tr style="background:var(--s2)">
-        <th style="padding:6px 8px;text-align:center;width:30px">#</th>
-        <th style="padding:6px 8px;text-align:left;width:110px">Código</th>
-        <th style="padding:6px 8px;text-align:left">Descrição</th>
-        <th style="padding:6px 8px;text-align:left;width:160px">Detalhe</th>
-        <th style="padding:6px 8px;text-align:center;width:70px">Qtde</th>
-        <th style="padding:6px 8px;text-align:right;width:100px">Valor Unit.</th>
-        <th style="padding:6px 8px;text-align:right;width:100px">Total</th>
-        <th style="padding:6px 8px;width:30px"></th>
+        <th style="padding:4px 6px;text-align:center;width:24px;font-size:10px">#</th>
+        <th style="padding:4px 6px;text-align:left;width:100px;font-size:10px">Código</th>
+        <th style="padding:4px 6px;text-align:left;font-size:10px">Descrição</th>
+        <th style="padding:4px 6px;text-align:left;width:180px;font-size:10px">Detalhe</th>
+        <th style="padding:4px 6px;text-align:center;width:55px;font-size:10px">Qtde</th>
+        <th style="padding:4px 6px;text-align:right;width:95px;font-size:10px">Vl. Unit.</th>
+        <th style="padding:4px 6px;text-align:right;width:95px;font-size:10px">Total</th>
+        <th style="padding:4px 6px;width:22px"></th>
       </tr></thead>
       <tbody id="tb-orc-itens"></tbody>
     </table>
   </div>
-  <button class="btn bs" style="font-size:11px;margin-bottom:14px" onclick="addLinhaOrcamento()"><i class="ti ti-plus"></i> Adicionar linha</button>
+  <button class="btn bs" style="font-size:10px;padding:3px 10px;margin-bottom:10px" onclick="addLinhaOrcamento()"><i class="ti ti-plus"></i> Adicionar linha</button>
   <div style="display:flex;justify-content:flex-end">
     <div style="width:280px;border:1px solid var(--bdr);border-radius:8px;padding:12px;background:var(--s2)">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
@@ -1518,7 +1518,7 @@ function parseDataExcel(valor){
 
 
 const uid  = () => '_' + Math.random().toString(36).substr(2,9) + Date.now().toString(36);
-const fmt  = v  => 'R$\u00a0' + Math.round(v||0).toLocaleString('pt-BR');
+const fmt  = v  => 'R$\u00a0' + (+(v||0)).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtD = d  => { if(!d) return '—'; var dt=new Date(d+'T12:00'); return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('pt-BR'); };
 const inic = s  => (s||'').split(' ').slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
 const dias = c  => c.ultFat ? Math.floor((Date.now()-new Date(c.ultFat+'T12:00'))/86400000) : 999;
@@ -8916,7 +8916,7 @@ function parseDataExcel(valor){
 
 
 const uid  = () => '_' + Math.random().toString(36).substr(2,9) + Date.now().toString(36);
-const fmt  = v  => 'R$\u00a0' + Math.round(v||0).toLocaleString('pt-BR');
+const fmt  = v  => 'R$\u00a0' + (+(v||0)).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtD = d  => { if(!d) return '—'; var dt=new Date(d+'T12:00'); return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('pt-BR'); };
 const inic = s  => (s||'').split(' ').slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('');
 const dias = c  => c.ultFat ? Math.floor((Date.now()-new Date(c.ultFat+'T12:00'))/86400000) : 999;
@@ -11480,6 +11480,8 @@ function renderEmpOrcam(){
 
 function abrirNovoOrcamento(){
   orcAtualId=null; orcItens=[];
+  // Pré-adiciona 10 linhas vazias
+  for(var i=0;i<10;i++) orcItens.push({cod:'',desc:'',detalhe:'',qtde:1,val:0});
   document.getElementById('orc-titulo').textContent='Novo Orçamento';
   document.getElementById('orc-cli-busca').value='';
   document.getElementById('orc-cli-id').value='';
@@ -11526,13 +11528,13 @@ function renderItensOrc(){
   tb.innerHTML=orcItens.map(function(it,i){
     return '<tr style="border-bottom:1px solid var(--s3)">'+
       '<td style="padding:4px 8px;text-align:center;color:var(--t3);font-size:11px">'+(i+1)+'</td>'+
-      '<td style="padding:4px 6px"><input class="fi" value="'+(it.cod||'')+'" placeholder="Código" style="width:100%;padding:4px 6px;font-size:11px" onchange="buscarProdutoLinha('+i+',this.value)" oninput="this.dataset.cod=this.value"></td>'+
-      '<td style="padding:4px 6px"><input class="fi" value="'+(it.desc||'')+'" placeholder="Descrição" style="width:100%;padding:4px 6px;font-size:11px" oninput="orcItens['+i+'].desc=this.value"></td>'+
-      '<td style="padding:4px 6px"><input class="fi" value="'+(it.detalhe||'')+'" placeholder="Detalhe" style="width:100%;padding:4px 6px;font-size:11px" oninput="orcItens['+i+'].detalhe=this.value"></td>'+
-      '<td style="padding:4px 6px"><input class="fi" type="number" value="'+(it.qtde||1)+'" min="1" step="1" style="width:100%;padding:4px 6px;font-size:11px;text-align:center" oninput="orcItens['+i+'].qtde=parseFloat(this.value)||1;calcTotaisOrc()"></td>'+
-      '<td style="padding:4px 6px"><input class="fi" type="number" value="'+(it.val||'')+'" placeholder="0,00" step="0.01" style="width:100%;padding:4px 6px;font-size:11px;text-align:right" oninput="orcItens['+i+'].val=parseFloat(this.value)||0;calcTotaisOrc()"></td>'+
-      '<td style="padding:4px 8px;text-align:right;font-weight:600;color:var(--t1);font-size:12px;white-space:nowrap">'+fmt((it.qtde||1)*(it.val||0))+'</td>'+
-      '<td style="padding:4px 6px;text-align:center"><button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px" onclick="removerLinhaOrc('+i+')"><i class="ti ti-x"></i></button></td>'+
+      '<td style="padding:2px 4px"><input class="fi" value="'+(it.cod||'')+'" placeholder="Cód" style="width:100%;padding:3px 5px;font-size:10px" onchange="buscarProdutoLinha('+i+',this.value)"></td>'+
+      '<td style="padding:2px 4px"><input class="fi" value="'+(it.desc||'')+'" placeholder="Descrição" style="width:100%;padding:3px 5px;font-size:10px" oninput="orcItens['+i+'].desc=this.value"></td>'+
+      '<td style="padding:2px 4px"><input class="fi" value="'+(it.detalhe||'')+'" placeholder="Detalhe" style="width:100%;padding:3px 5px;font-size:10px" oninput="orcItens['+i+'].detalhe=this.value"></td>'+
+      '<td style="padding:2px 4px"><input class="fi" type="number" value="'+(it.qtde||1)+'" min="1" step="1" style="width:100%;padding:3px 5px;font-size:10px;text-align:center" oninput="orcItens['+i+'].qtde=parseFloat(this.value)||1;calcTotaisOrc()"></td>'+
+      '<td style="padding:2px 4px"><input class="fi" type="number" value="'+(it.val||'')+'" placeholder="0,00" step="0.01" style="width:100%;padding:3px 5px;font-size:10px;text-align:right" oninput="orcItens['+i+'].val=parseFloat(this.value)||0;calcTotaisOrc()"></td>'+
+      '<td style="padding:2px 6px;text-align:right;font-weight:600;color:var(--t1);font-size:10px;white-space:nowrap">'+fmt((it.qtde||1)*(it.val||0))+'</td>'+
+      '<td style="padding:2px 4px;text-align:center"><button style="background:none;border:none;cursor:pointer;color:var(--red);font-size:12px" onclick="removerLinhaOrc('+i+')"><i class="ti ti-x"></i></button></td>'+
     '</tr>';
   }).join('');
 }
