@@ -924,6 +924,7 @@ if('serviceWorker' in navigator){
     <div class="pa" style="gap:8px">
       <button class="btn bs" onclick="baixarModeloProdutos()"><i class="ti ti-download"></i> Baixar modelo</button>
       <label class="btn bs" style="cursor:pointer"><i class="ti ti-file-import"></i> Importar Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarProdutosGlobal(this)"></label>
+      <button class="btn bs" onclick="migrarProdutosSemEmpresa()" id="btn-migrar-prod" style="display:none;color:var(--org);border-color:var(--org)"><i class="ti ti-alert-triangle"></i> Atribuir empresa</button>
       <button class="btn bp" onclick="abrirModalAddProduto()"><i class="ti ti-plus"></i> Novo produto</button>
     </div>
   </div>
@@ -932,6 +933,7 @@ if('serviceWorker' in navigator){
       <input class="fi" id="busca-prod-global" placeholder="Buscar código ou descrição..." style="flex:1;min-width:200px;padding:6px 10px;font-size:12px" oninput="renderPaginaProdutos()">
       <select class="fi" id="fil-emp-prod" style="width:180px;padding:6px 10px;font-size:12px" onchange="renderPaginaProdutos()">
         <option value="">Todas as empresas</option>
+        <option value="__sem__">⚠️ Sem empresa</option>
       </select>
       <select class="fi" id="fil-ord-prod" style="width:160px;padding:6px 10px;font-size:12px" onchange="renderPaginaProdutos()">
         <option value="desc">Descrição A→Z</option>
@@ -11457,7 +11459,7 @@ function renderPaginaProdutos(){
 
   var list = (DB.produtos||[]).filter(function(p){
     var matchBusca = !busca || (p.cod||'').toLowerCase().includes(busca) || (p.desc||'').toLowerCase().includes(busca);
-    var matchEmp   = !empFil || p.empId===empFil;
+    var matchEmp   = !empFil || (empFil==='__sem__' ? !p.empId : p.empId===empFil);
     return matchBusca && matchEmp;
   });
 
@@ -11470,7 +11472,10 @@ function renderPaginaProdutos(){
     return (a.desc||'').localeCompare(b.desc||''); // desc A→Z (default)
   });
 
-  if(count) count.textContent = list.length + ' produto(s)';
+  var orfaos = (DB.produtos||[]).filter(function(p){return !p.empId;}).length;
+  var btnMig = document.getElementById('btn-migrar-prod');
+  if(btnMig) btnMig.style.display = orfaos>0?'flex':'none';
+  if(count) count.textContent = list.length + ' produto(s)'+(orfaos>0?' · ⚠️ '+orfaos+' sem empresa':'');
 
   if(!list.length){
     tb.innerHTML='<tr><td colspan="6" style="color:var(--t3);padding:16px;text-align:center">Nenhum produto encontrado.</td></tr>';
@@ -11594,6 +11599,42 @@ function importarProdutosGlobal(input){
     toast('✅ '+novos+' novo(s) · '+atualizados+' atualizado(s)');
   };
   reader.readAsArrayBuffer(file);
+}
+function migrarProdutosSemEmpresa(){
+  var orfaos = (DB.produtos||[]).filter(function(p){return !p.empId;});
+  if(!orfaos.length){ toast('Nenhum produto sem empresa!'); return; }
+
+  // Monta select de empresas para escolha
+  var opts = DB.empresas.map(function(e){
+    return '<option value="'+e.id+'">'+e.nome+'</option>';
+  }).join('');
+
+  var sel = '<select id="sel-migrar-emp" style="width:100%;padding:8px;margin-top:10px;border:1px solid var(--bdr);border-radius:6px;background:var(--s1);color:var(--t1);font-size:13px">'+opts+'</select>';
+
+  var div = document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;display:flex;align-items:center;justify-content:center';
+  div.innerHTML='<div style="background:var(--s1);border-radius:12px;padding:24px;max-width:400px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.3)">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:8px"><i class="ti ti-alert-triangle" style="color:var(--org)"></i> Atribuir empresa</div>'
+    +'<div style="font-size:13px;color:var(--t2);margin-bottom:12px">Foram encontrados <b style="color:var(--org)">'+orfaos.length+' produto(s)</b> sem empresa vinculada. Selecione a empresa para atribuir a todos:</div>'
+    +sel
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">'
+      +'<button onclick="this.closest(\'[style*=fixed]\').remove()" style="padding:7px 16px;border:1px solid var(--bdr);border-radius:6px;background:none;color:var(--t2);cursor:pointer;font-size:12px">Cancelar</button>'
+      +'<button onclick="confirmarMigracao(this)" style="padding:7px 16px;border:none;border-radius:6px;background:var(--acc);color:#fff;cursor:pointer;font-size:12px;font-weight:600">Atribuir</button>'
+    +'</div>'
+  +'</div>';
+  document.body.appendChild(div);
+}
+
+function confirmarMigracao(btn){
+  var empId = document.getElementById('sel-migrar-emp')?.value;
+  if(!empId){ toast('Selecione uma empresa'); return; }
+  var emp = DB.empresas.find(function(e){return e.id===empId;});
+  var count = 0;
+  (DB.produtos||[]).forEach(function(p){ if(!p.empId){ p.empId=empId; count++; } });
+  salvarDB();
+  btn.closest('[style*="fixed"]').remove();
+  renderPaginaProdutos();
+  toast('✅ '+count+' produto(s) atribuídos à empresa '+( emp?.nome||empId));
 }
 // ══ FIM PÁGINA PRODUTOS ══
 if(!DB.produtos) DB.produtos=[];
@@ -13827,6 +13868,109 @@ function renderEmpVendas(){
   atualizarIconesOrdenacao('vendas');
   renderComparativosAnuais();
   setTimeout(renderComparativoTipo, 150);
+}
+
+// ══ COMPARATIVO POR TIPO DE PEDIDO ══
+var _tipoChartData=[];
+function renderComparativoTipo(){
+  _tipoChartData=[];
+  var el=document.getElementById('tb-comparativo-tipo'); if(!el) return;
+  var e=DB.empresas.find(function(x){return x.id===empAtual;});
+  if(!e){ el.innerHTML='<div style="color:var(--t3);padding:12px">Selecione uma empresa.</div>'; return; }
+  var peds=DB.pedidos.filter(function(p){return p.empId===empAtual&&!p.cancelado&&p.dt&&p.tipo;});
+  if(!peds.length){ el.innerHTML='<div style="color:var(--t3);padding:12px;text-align:center">Nenhum pedido com Tipo/Origem cadastrado.</div>'; return; }
+  var tipos=[...new Set(peds.map(function(p){return p.tipo;}))].sort();
+  var anos=[...new Set(peds.map(function(p){return p.dt.slice(0,4);}))].sort();
+  var html='';
+  tipos.forEach(function(tipo){
+    var pedsTipo=peds.filter(function(p){return p.tipo===tipo;});
+    if(!pedsTipo.length) return;
+    var chartId='ct_'+tipo.replace(/[^a-z0-9]/gi,'_');
+    var anosData=[]; var vendasData=[]; var fatsData=[];
+    var tableRows='';
+    var vendaAnt=0;
+    anos.forEach(function(ano,idx){
+      var pedAno=pedsTipo.filter(function(p){return p.dt.slice(0,4)===ano;});
+      if(!pedAno.length){ vendaAnt=0; return; }
+      var venda=pedAno.reduce(function(s,p){return s+(p.val||0);},0);
+      var nPed=pedAno.filter(function(p){return (p.val||0)>0;}).length;
+      var ticket=nPed?Math.round(venda/nPed):0;
+      var pctAnt=vendaAnt?Math.round((venda/vendaAnt-1)*100):null;
+      var corPct=pctAnt===null?'#999':pctAnt>=0?'#059669':'#dc2626';
+      var txtPct=pctAnt===null?'—':(pctAnt>=0?'+':'')+pctAnt+'%';
+      var fatAno=DB.pedidos.filter(function(p){return p.empId===empAtual&&!p.cancelado&&p.tipo===tipo&&p.dtFat&&p.dtFat.slice(0,4)===ano;});
+      var faturado=fatAno.reduce(function(s,p){return s+(p.valfat||p.val||0);},0);
+      var nNF=[...new Set(fatAno.filter(function(p){return p.nf;}).map(function(p){return p.nf;}))].length||fatAno.length;
+      var pctVF=venda?Math.round(faturado/venda*100):0;
+      var corVF=pctVF>=90?'#059669':pctVF>=70?'#d97706':'#dc2626';
+      var bg=idx%2?'background:#f9f9f9':'background:#fff';
+      anosData.push(ano); vendasData.push(venda); fatsData.push(faturado);
+      tableRows+='<tr style="'+bg+'">'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:center;font-weight:700;color:#475569">'+ano+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+fmt(venda)+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#475569">'+nPed+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#475569">'+fmt(ticket)+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:600;color:'+corPct+'">'+txtPct+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#059669">'+fmt(faturado)+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#475569">'+nNF+'</td>'+
+        '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;font-weight:600;color:'+corVF+'">'+pctVF+'%</td>'+
+      '</tr>';
+      vendaAnt=venda;
+    });
+    var totV=pedsTipo.reduce(function(s,p){return s+(p.val||0);},0);
+    var totN=pedsTipo.filter(function(p){return (p.val||0)>0;}).length;
+    var totT=totN?Math.round(totV/totN):0;
+    var fatTot=DB.pedidos.filter(function(p){return p.empId===empAtual&&!p.cancelado&&p.tipo===tipo&&p.dtFat;}).reduce(function(s,p){return s+(p.valfat||p.val||0);},0);
+    var nNFTot=[...new Set(DB.pedidos.filter(function(p){return p.empId===empAtual&&!p.cancelado&&p.tipo===tipo&&p.dtFat&&p.nf;}).map(function(p){return p.nf;}))].length;
+    var pctVFTot=totV?Math.round(fatTot/totV*100):0;
+    tableRows+='<tr style="background:#ececec;font-weight:700;border-top:2px solid #aaa">'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:center">TOTAL</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+fmt(totV)+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+totN+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+fmt(totT)+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">—</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:#059669">'+fmt(fatTot)+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right">'+nNFTot+'</td>'+
+      '<td style="padding:5px 10px;border:1px solid #ddd;text-align:right;color:'+(pctVFTot>=90?'#059669':pctVFTot>=70?'#d97706':'#dc2626')+'">'+pctVFTot+'%</td>'+
+    '</tr>';
+
+    html+='<div style="margin-bottom:24px">'+
+      '<div style="background:#f4b8a0;color:#333;font-weight:700;font-size:12px;padding:6px 12px;text-align:center;border-radius:4px 4px 0 0">'+tipo+'</div>'+
+      '<div style="display:flex;gap:12px;align-items:flex-start">'+
+      '<div style="width:40%;min-width:0;overflow-x:auto">'+
+      '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+        '<thead><tr>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#fff;text-align:center" rowspan="2">ANO</th>'+
+          '<th colspan="4" style="padding:5px 8px;border:1px solid #ccc;background:#4a7c59;color:#fff;text-align:center">VENDA</th>'+
+          '<th colspan="3" style="padding:5px 8px;border:1px solid #ccc;background:#2a5fa8;color:#fff;text-align:center">FATURAMENTO</th>'+
+        '</tr><tr>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d8ead2;color:#1a5c30;text-align:right">VENDA</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d8ead2;color:#1a5c30;text-align:right">N PED</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d8ead2;color:#1a5c30;text-align:right">TICKET</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d8ead2;color:#1a5c30;text-align:right">%</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d5e3f5;color:#1a3f80;text-align:right">FATURADO</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d5e3f5;color:#1a3f80;text-align:right">N NF</th>'+
+          '<th style="padding:5px 8px;border:1px solid #ccc;background:#d5e3f5;color:#1a3f80;text-align:right">%V/F</th>'+
+        '</tr></thead>'+
+        '<tbody>'+tableRows+'</tbody>'+
+      '</table></div>'+
+      '<div style="flex:1;min-width:0;padding:4px 0"><canvas id="'+chartId+'" style="max-height:100%;width:100%" height="'+Math.max(120, anosData.length*36+60)+'" ></canvas></div>'+
+      '</div>'+
+    '</div>';
+    _tipoChartData.push({id:chartId,anos:anosData,vendas:vendasData,fats:fatsData});
+  });
+  el.innerHTML=html||'<div style="color:var(--t3);padding:12px">Nenhum dado encontrado.</div>';
+  // Renderiza gráficos
+  setTimeout(function(){
+    _tipoChartData.forEach(function(d){
+      var ctx=document.getElementById(d.id); if(!ctx) return;
+      if(ctx._chart) ctx._chart.destroy();
+      ctx._chart=new Chart(ctx,{type:'bar',data:{labels:d.anos,datasets:[
+        {label:'Venda',data:d.vendas,backgroundColor:'rgba(74,124,89,.7)',borderRadius:2,barPercentage:0.25,categoryPercentage:0.5},
+        {label:'Faturado',data:d.fats,backgroundColor:'rgba(42,95,168,.6)',borderRadius:2,barPercentage:0.25,categoryPercentage:0.5}
+      ]},options:{responsive:true,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:9},boxWidth:10}},tooltip:{callbacks:{label:function(t){return t.dataset.label+': R$ '+t.raw.toLocaleString('pt-BR');}}}},scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9},callback:function(v){return v>=1000?(v/1000).toFixed(0)+'k':v;}}}}}});
+    });
+  },100);
 }
 
 // ══ COMPARATIVOS ANUAIS ══
