@@ -198,6 +198,7 @@ if('serviceWorker' in navigator){
     <div class="ni act" id="n-dash" onclick="sp('dash')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" id="n-cli" onclick="sp('cli')"><i class="ti ti-users"></i>Clientes</div>
     <div class="ni" id="n-leads" onclick="sp('leads')"><i class="ti ti-target-arrow" style="color:var(--org)"></i>Leads<span id="badge-leads" class="emp-badge-count warn" style="display:none"></span></div>
+    <div class="ni" id="n-produtos" onclick="sp('produtos')"><i class="ti ti-package" style="color:var(--cyn)"></i>Produtos</div>
     <div class="ni" id="n-agenda" onclick="sp('agenda')"><i class="ti ti-calendar-event"></i>Agenda<span id="badge-agenda" class="emp-badge-count warn" style="display:none"></span></div>
     <div class="slbl">Empresas</div>
     <div id="emp-sb"></div>
@@ -916,6 +917,66 @@ if('serviceWorker' in navigator){
   </div>
 </div></div>
 
+<!-- PÁGINA PRODUTOS -->
+<div id="p-produtos" style="display:none">
+  <div class="ph">
+    <div><div class="pt"><i class="ti ti-package" style="color:var(--cyn)"></i>Banco de Produtos</div><div class="ps" id="ph-prod-count"></div></div>
+    <div class="pa" style="gap:8px">
+      <button class="btn bs" onclick="baixarModeloProdutos()"><i class="ti ti-download"></i> Baixar modelo</button>
+      <label class="btn bs" style="cursor:pointer"><i class="ti ti-file-import"></i> Importar Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarProdutosGlobal(this)"></label>
+      <button class="btn bp" onclick="abrirModalAddProduto()"><i class="ti ti-plus"></i> Novo produto</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px;padding:10px 14px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input class="fi" id="busca-prod-global" placeholder="Buscar código ou descrição..." style="flex:1;min-width:200px;padding:6px 10px;font-size:12px" oninput="renderPaginaProdutos()">
+      <select class="fi" id="fil-emp-prod" style="width:180px;padding:6px 10px;font-size:12px" onchange="renderPaginaProdutos()">
+        <option value="">Todas as empresas</option>
+      </select>
+      <select class="fi" id="fil-ord-prod" style="width:160px;padding:6px 10px;font-size:12px" onchange="renderPaginaProdutos()">
+        <option value="desc">Descrição A→Z</option>
+        <option value="cod">Código A→Z</option>
+        <option value="val-asc">Valor ↑</option>
+        <option value="val-desc">Valor ↓</option>
+        <option value="emp">Por empresa</option>
+      </select>
+    </div>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr style="background:var(--s2)">
+        <th style="padding:8px 12px;text-align:left;color:var(--t3);font-weight:600">Código</th>
+        <th style="padding:8px 12px;text-align:left;color:var(--t3);font-weight:600">Descrição</th>
+        <th style="padding:8px 12px;text-align:center;color:var(--t3);font-weight:600">Unid.</th>
+        <th style="padding:8px 12px;text-align:right;color:var(--t3);font-weight:600">Valor Unit.</th>
+        <th style="padding:8px 12px;text-align:left;color:var(--t3);font-weight:600">Empresa</th>
+        <th style="padding:8px 12px;text-align:center;color:var(--t3);font-weight:600">Ações</th>
+      </tr></thead>
+      <tbody id="tb-prod-global"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL ADD/EDIT PRODUTO -->
+<div class="mbg" id="mProduto"><div class="modal" style="max-width:480px">
+  <div class="mtt"><i class="ti ti-package" style="color:var(--cyn)"></i> <span id="mprod-titulo">Novo Produto</span>
+    <button class="xb" onclick="cm('mProduto')"><i class="ti ti-x"></i></button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="fg"><label class="fl">Empresa</label>
+      <select class="fi" id="mprod-emp"><option value="">Selecione...</option></select>
+    </div>
+    <div class="fg"><label class="fl">Código</label><input class="fi" id="mprod-cod" placeholder="Ex: 10026391"></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Descrição *</label><input class="fi" id="mprod-desc" placeholder="Nome do produto"></div>
+    <div class="fg"><label class="fl">Valor Unit. (R$)</label><input class="fi" id="mprod-val" type="number" step="0.01" min="0" placeholder="0,00"></div>
+    <div class="fg"><label class="fl">Unidade</label><input class="fi" id="mprod-unid" placeholder="UN, CX, KG..."></div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn bs" onclick="cm('mProduto')">Cancelar</button>
+    <button class="btn bp" onclick="salvarProdutoModal()"><i class="ti ti-check"></i> Salvar</button>
+  </div>
+</div></div>
+
 <div id="p-agenda" style="display:none">
   <div class="ph">
     <div><div class="pt"><i class="ti ti-calendar-event"></i>Agenda</div><div class="ps">Telefonemas, reuniões e verificações</div></div>
@@ -1626,10 +1687,11 @@ function buildSidebar() {
   document.getElementById('nbdot').textContent = nr;
 }
 
-// ══ NAVEGAÇÃO ══
+// ══ NAVEGAÇÃO ══if(p==='produtos'){document.getElementById('n-produtos')&&document.getElementById('n-produtos').classList.add('act');renderPaginaProdutos();}
+  
 function sp(p) {
   // Esconder apenas as páginas de conteúdo (evitar esconder modais etc)
-  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam'];
+  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam','p-produtos'];
   pgs.forEach(function(pid){ var el=document.getElementById(pid); if(el) el.style.display='none'; });
   const el = document.getElementById('p-'+p);
   if(el) el.style.display='block';
@@ -1642,6 +1704,7 @@ function sp(p) {
   if(p==='ecom')  renderEmpCom();
   if(p==='evendas') renderEmpVendas();
   if(p==='eorcam')  { renderEmpOrcam(); if(typeof renderTabelaProdutos==='function') renderTabelaProdutos(); }
+  if(p==='produtos'){ document.getElementById('n-produtos')&&document.getElementById('n-produtos').classList.add('act'); renderPaginaProdutos(); }
   if(p==='lembretes') renderLembretes();
   if(p==='agenda') { document.getElementById('n-agenda').classList.add('act'); renderAgenda(); }
   if(p==='clidet') { /* already handled by abrirCli */ }
@@ -7877,6 +7940,7 @@ if('serviceWorker' in navigator){
     <div class="slbl">Principal</div>
     <div class="ni act" id="n-dash" onclick="sp('dash')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" id="n-cli" onclick="sp('cli')"><i class="ti ti-users"></i>Clientes</div>
+    <div class="ni" id="n-produtos" onclick="sp('produtos')"><i class="ti ti-package" style="color:var(--cyn)"></i>Produtos</div>
     <div class="ni" id="n-agenda" onclick="sp('agenda')"><i class="ti ti-calendar-event"></i>Agenda<span id="badge-agenda" class="emp-badge-count warn" style="display:none"></span></div>
     <div class="slbl">Empresas</div>
     <div id="emp-sb"></div>
@@ -9024,7 +9088,7 @@ function buildSidebar() {
 // ══ NAVEGAÇÃO ══
 function sp(p) {
   // Esconder apenas as páginas de conteúdo (evitar esconder modais etc)
-  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam'];
+  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam','p-produtos'];
   pgs.forEach(function(pid){ var el=document.getElementById(pid); if(el) el.style.display='none'; });
   const el = document.getElementById('p-'+p);
   if(el) el.style.display='block';
@@ -11372,7 +11436,166 @@ function confirmarImport(){
 }
 
 
-// ══ PRODUTOS ══
+// ══ PÁGINA DE PRODUTOS ══
+var _prodEditId = null;
+
+function renderPaginaProdutos(){
+  var tb     = document.getElementById('tb-prod-global');     if(!tb) return;
+  var count  = document.getElementById('ph-prod-count');
+  var busca  = (document.getElementById('busca-prod-global')?.value||'').toLowerCase();
+  var empFil = document.getElementById('fil-emp-prod')?.value||'';
+  var ord    = document.getElementById('fil-ord-prod')?.value||'desc';
+
+  // Preenche select de empresa
+  var sel = document.getElementById('fil-emp-prod');
+  if(sel && sel.options.length<=1){
+    DB.empresas.forEach(function(e){
+      var op=document.createElement('option'); op.value=e.id; op.textContent=e.nome;
+      sel.appendChild(op);
+    });
+  }
+
+  var list = (DB.produtos||[]).filter(function(p){
+    var matchBusca = !busca || (p.cod||'').toLowerCase().includes(busca) || (p.desc||'').toLowerCase().includes(busca);
+    var matchEmp   = !empFil || p.empId===empFil;
+    return matchBusca && matchEmp;
+  });
+
+  // Ordena
+  list.sort(function(a,b){
+    if(ord==='cod')      return (a.cod||'').localeCompare(b.cod||'');
+    if(ord==='val-asc')  return (a.val||0)-(b.val||0);
+    if(ord==='val-desc') return (b.val||0)-(a.val||0);
+    if(ord==='emp')      return (a.empId||'').localeCompare(b.empId||'');
+    return (a.desc||'').localeCompare(b.desc||''); // desc A→Z (default)
+  });
+
+  if(count) count.textContent = list.length + ' produto(s)';
+
+  if(!list.length){
+    tb.innerHTML='<tr><td colspan="6" style="color:var(--t3);padding:16px;text-align:center">Nenhum produto encontrado.</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = list.map(function(p, i){
+    var emp = DB.empresas.find(function(e){return e.id===p.empId;});
+    var corEmp = emp?.cor||'var(--t3)';
+    var bg = i%2?'background:var(--s2)':'';
+    return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'
+      +'<td style="padding:7px 12px;font-weight:600;color:var(--acc);font-family:monospace">'+(p.cod||'—')+'</td>'
+      +'<td style="padding:7px 12px;color:var(--t1)">'+p.desc+'</td>'
+      +'<td style="padding:7px 12px;text-align:center;color:var(--t3)">'+(p.unid||'UN')+'</td>'
+      +'<td style="padding:7px 12px;text-align:right;font-weight:600;color:var(--t1)">'+fmt(p.val||0)+'</td>'
+      +'<td style="padding:7px 12px"><span style="color:'+corEmp+';font-weight:600;font-size:11px">'+(emp?.nome||'<span style="color:var(--t3)">Sem empresa</span>')+'</span></td>'
+      +'<td style="padding:7px 12px;text-align:center;white-space:nowrap">'
+        +'<button class="btn bs" style="padding:2px 8px;font-size:11px" onclick="abrirModalEditProduto(\''+p.id+'\')" title="Editar"><i class="ti ti-pencil"></i></button> '
+        +'<button class="btn bs" style="padding:2px 8px;font-size:11px;color:var(--red);border-color:var(--red)" onclick="excluirProdutoGlobal(\''+p.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
+      +'</td>'
+    +'</tr>';
+  }).join('');
+}
+
+function abrirModalAddProduto(){
+  _prodEditId = null;
+  document.getElementById('mprod-titulo').textContent = 'Novo Produto';
+  document.getElementById('mprod-cod').value  = '';
+  document.getElementById('mprod-desc').value = '';
+  document.getElementById('mprod-val').value  = '';
+  document.getElementById('mprod-unid').value = 'UN';
+  // Preenche select empresa
+  var sel = document.getElementById('mprod-emp');
+  sel.innerHTML = '<option value="">Selecione a empresa...</option>';
+  DB.empresas.forEach(function(e){
+    var op = document.createElement('option');
+    op.value = e.id; op.textContent = e.nome;
+    if(e.id === empAtual) op.selected = true;
+    sel.appendChild(op);
+  });
+  om('mProduto');
+}
+
+function abrirModalEditProduto(id){
+  var p = (DB.produtos||[]).find(function(x){return x.id===id;}); if(!p) return;
+  _prodEditId = id;
+  document.getElementById('mprod-titulo').textContent = 'Editar Produto';
+  document.getElementById('mprod-cod').value  = p.cod||'';
+  document.getElementById('mprod-desc').value = p.desc||'';
+  document.getElementById('mprod-val').value  = p.val||'';
+  document.getElementById('mprod-unid').value = p.unid||'UN';
+  // Preenche select empresa
+  var sel = document.getElementById('mprod-emp');
+  sel.innerHTML = '<option value="">Selecione a empresa...</option>';
+  DB.empresas.forEach(function(e){
+    var op = document.createElement('option');
+    op.value = e.id; op.textContent = e.nome;
+    if(e.id === p.empId) op.selected = true;
+    sel.appendChild(op);
+  });
+  om('mProduto');
+}
+
+function salvarProdutoModal(){
+  var empId = document.getElementById('mprod-emp').value;
+  var cod   = document.getElementById('mprod-cod').value.trim();
+  var desc  = document.getElementById('mprod-desc').value.trim();
+  var val   = parseFloat(document.getElementById('mprod-val').value)||0;
+  var unid  = document.getElementById('mprod-unid').value.trim()||'UN';
+
+  if(!desc){ toast('Informe a descrição do produto'); return; }
+  if(!empId){ toast('Selecione a empresa'); return; }
+
+  if(!DB.produtos) DB.produtos=[];
+
+  if(_prodEditId){
+    var p = DB.produtos.find(function(x){return x.id===_prodEditId;});
+    if(p){ p.cod=cod; p.desc=desc; p.val=val; p.unid=unid; p.empId=empId; }
+    toast('✅ Produto atualizado!');
+  } else {
+    DB.produtos.push({id:uid(), cod, desc, val, unid, empId});
+    toast('✅ Produto adicionado!');
+  }
+
+  salvarDB(); cm('mProduto'); renderPaginaProdutos();
+}
+
+function excluirProdutoGlobal(id){
+  if(!confirm('Excluir este produto?')) return;
+  DB.produtos = (DB.produtos||[]).filter(function(p){return p.id!==id;});
+  salvarDB(); renderPaginaProdutos(); toast('Produto removido!');
+}
+
+function importarProdutosGlobal(input){
+  // Pede empresa se não há uma aberta
+  var empId = empAtual || (DB.empresas[0]?.id);
+  if(!empId){ toast('Abra uma empresa antes de importar'); return; }
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var wb   = XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+    var ws   = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
+    var novos=0, atualizados=0;
+    rows.slice(1).forEach(function(r){
+      if(!r[0]&&!r[1]) return;
+      var cod  = String(r[0]||'').trim();
+      var empR = String(r[4]||'').trim(); // col E opcional: empresa nome ou id
+      var eId  = empId; // padrão: empresa atual
+      if(empR){
+        var eFound = DB.empresas.find(function(e){ return e.id===empR||e.nome.toLowerCase()===empR.toLowerCase(); });
+        if(eFound) eId = eFound.id;
+      }
+      var existente = cod ? (DB.produtos||[]).find(function(p){return p.cod===cod&&p.empId===eId;}) : null;
+      var prod = {cod, desc:String(r[1]||'').trim(), val:parseFloat(r[2])||0, unid:String(r[3]||'UN').trim(), empId:eId};
+      if(existente){ Object.assign(existente,prod); atualizados++; }
+      else { prod.id=uid(); if(!DB.produtos) DB.produtos=[]; DB.produtos.push(prod); novos++; }
+    });
+    salvarDB(); input.value='';
+    renderPaginaProdutos();
+    toast('✅ '+novos+' novo(s) · '+atualizados+' atualizado(s)');
+  };
+  reader.readAsArrayBuffer(file);
+}
+// ══ FIM PÁGINA PRODUTOS ══
 if(!DB.produtos) DB.produtos=[];
 if(!DB.orcamentos) DB.orcamentos=[];
 
@@ -11400,8 +11623,8 @@ function importarProdutos(input){
     rows.slice(1).forEach(function(r){
       if(!r[0]&&!r[1]) return;
       var cod=String(r[0]||'').trim();
-      var existente=DB.produtos.find(function(p){return p.cod===cod;});
-      var prod={cod:cod, desc:String(r[1]||'').trim(), val:parseFloat(r[2])||0, unid:String(r[3]||'UN').trim()};
+      var existente=DB.produtos.find(function(p){return p.cod===cod&&p.empId===empAtual;});
+      var prod={cod:cod, desc:String(r[1]||'').trim(), val:parseFloat(r[2])||0, unid:String(r[3]||'UN').trim(), empId:empAtual};
       if(existente){ Object.assign(existente,prod); atualizados++; }
       else { prod.id=uid(); DB.produtos.push(prod); novos++; }
     });
@@ -11418,9 +11641,9 @@ function addProdutoManual(){
   var val=parseFloat(document.getElementById('np-val')?.value)||0;
   var unid=document.getElementById('np-unid')?.value.trim()||'UN';
   if(!desc){ toast('Informe a descrição'); return; }
-  var existente=cod?DB.produtos.find(function(p){return p.cod===cod;}):null;
-  if(existente){ Object.assign(existente,{desc,val,unid}); toast('Produto atualizado!'); }
-  else { DB.produtos.push({id:uid(),cod,desc,val,unid}); toast('Produto adicionado!'); }
+  var existente=cod?DB.produtos.find(function(p){return p.cod===cod&&p.empId===empAtual;}):null;
+  if(existente){ Object.assign(existente,{desc,val,unid,empId:empAtual}); toast('Produto atualizado!'); }
+  else { DB.produtos.push({id:uid(),cod,desc,val,unid,empId:empAtual}); toast('Produto adicionado!'); }
   salvarDB(); renderTabelaProdutos();
   ['np-cod','np-desc','np-val','np-unid'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
 }
@@ -11435,7 +11658,7 @@ function renderTabelaProdutos(){
   var tb=document.getElementById('tb-produtos'); if(!tb) return;
   var busca=(document.getElementById('busca-prod')?.value||'').toLowerCase();
   var list=DB.produtos.filter(function(p){
-    return !busca||(p.cod||'').toLowerCase().includes(busca)||(p.desc||'').toLowerCase().includes(busca);
+    return p.empId===empAtual&&(!busca||(p.cod||'').toLowerCase().includes(busca)||(p.desc||'').toLowerCase().includes(busca));
   });
   if(!list.length){ tb.innerHTML='<tr><td colspan="5" style="color:var(--t3);padding:12px;text-align:center">Nenhum produto cadastrado.</td></tr>'; return; }
   tb.innerHTML=list.map(function(p,i){
@@ -11557,7 +11780,7 @@ function buscarProdutoLinha(idx, cod){
   var cod2=String(cod||'').trim();
   orcItens[idx].cod=cod2;
   if(!cod2) return;
-  var prod=DB.produtos.find(function(p){return (p.cod||'').toLowerCase()===cod2.toLowerCase();});
+  var prod=DB.produtos.find(function(p){return p.empId===empAtual&&(p.cod||'').toLowerCase()===cod2.toLowerCase();});
   if(prod){
     orcItens[idx].desc=prod.desc;
     orcItens[idx].val=prod.val;
