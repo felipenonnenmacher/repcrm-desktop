@@ -891,7 +891,12 @@ if('serviceWorker' in navigator){
       <tbody id="tb-orc-itens"></tbody>
     </table>
   </div>
-  <button class="btn bs" style="font-size:10px;padding:3px 10px;margin-bottom:10px" onclick="addLinhaOrcamento()"><i class="ti ti-plus"></i> Adicionar linha</button>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn bs" style="font-size:10px;padding:3px 10px" onclick="addLinhaOrcamento()"><i class="ti ti-plus"></i> Adicionar linha</button>
+    <button class="btn bs" style="font-size:10px;padding:3px 10px;color:var(--grn);border-color:var(--grn)" onclick="baixarModeloItensOrc()"><i class="ti ti-download"></i> Baixar modelo</button>
+    <label class="btn bs" style="font-size:10px;padding:3px 10px;cursor:pointer;color:var(--acc2);border-color:var(--acc2)"><i class="ti ti-file-import"></i> Importar itens<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarItensOrcamento(this)"></label>
+    <button class="btn bs" style="font-size:10px;padding:3px 10px;color:#7c3aed;border-color:#7c3aed;background:rgba(124,58,237,.06)" onclick="om('mIAImport')"><i class="ti ti-sparkles"></i> Importar via IA</button>
+  </div>
   <div style="display:flex;justify-content:flex-end">
     <div style="width:280px;border:1px solid var(--bdr);border-radius:8px;padding:12px;background:var(--s2)">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px">
@@ -1244,6 +1249,58 @@ if('serviceWorker' in navigator){
   <div style="display:flex;gap:8px;margin-top:12px">
     <button class="btn bs" style="flex:1;justify-content:center" onclick="baixarModeloPed()"><i class="ti ti-download"></i> Baixar modelo</button>
     <button class="btn bs" onclick="cm('mImpPed')">Cancelar</button>
+  </div>
+</div></div>
+
+<!-- MODAL IA IMPORT -->
+<div class="mbg" id="mIAImport"><div class="modal" style="max-width:580px">
+  <div class="mtt" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;border-radius:10px 10px 0 0;margin:-16px -16px 16px;padding:14px 16px">
+    <i class="ti ti-sparkles"></i> Importar Itens via IA
+    <button class="xb" onclick="cm('mIAImport')" style="color:#fff;opacity:.7"><i class="ti ti-x"></i></button>
+  </div>
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:0;margin-bottom:14px;border:1px solid var(--bdr);border-radius:8px;overflow:hidden">
+    <button id="ia-tab-foto" onclick="iaTab('foto')" style="flex:1;padding:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:rgba(124,58,237,.1);color:#7c3aed;border-right:1px solid var(--bdr)"><i class="ti ti-camera"></i> Foto do pedido</button>
+    <button id="ia-tab-texto" onclick="iaTab('texto')" style="flex:1;padding:8px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--s1);color:var(--t3)"><i class="ti ti-clipboard-text"></i> Colar texto</button>
+  </div>
+
+  <!-- Tab Foto -->
+  <div id="ia-panel-foto">
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px">Tire uma foto do seu pedido manuscrito ou impresso. A IA vai ler os códigos e quantidades.</div>
+    <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed #7c3aed44;border-radius:10px;padding:24px;cursor:pointer;background:rgba(124,58,237,.03);gap:8px;transition:.2s" onmouseover="this.style.background='rgba(124,58,237,.07)'" onmouseout="this.style.background='rgba(124,58,237,.03)'">
+      <i class="ti ti-cloud-upload" style="font-size:32px;color:#7c3aed"></i>
+      <span style="font-size:13px;font-weight:600;color:#7c3aed">Clique para selecionar imagem</span>
+      <span style="font-size:11px;color:var(--t3)">JPG, PNG, WEBP — até 5MB</span>
+      <input type="file" accept="image/*" style="display:none" id="ia-img-input" onchange="iaPreviewImagem(this)">
+    </label>
+    <div id="ia-preview" style="display:none;margin-top:10px;text-align:center">
+      <img id="ia-img-preview" style="max-height:200px;max-width:100%;border-radius:8px;border:1px solid var(--bdr)">
+      <div style="font-size:11px;color:var(--grn);margin-top:4px"><i class="ti ti-check"></i> Imagem carregada</div>
+    </div>
+  </div>
+
+  <!-- Tab Texto -->
+  <div id="ia-panel-texto" style="display:none">
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px">Cole o texto do pedido. Aceita qualquer formato: "03 - PCH4431", "PCE4489 - 10", lista de WhatsApp, e-mail, etc.</div>
+    <textarea id="ia-texto" class="fi" style="width:100%;height:160px;resize:vertical;font-family:monospace;font-size:12px" placeholder="Cole aqui o texto do pedido...&#10;&#10;Ex:&#10;03 - PCH4431 (G)&#10;06 - ECA8858&#10;PCE4489 - 10&#10;PPC7448 - 5"></textarea>
+  </div>
+
+  <!-- Resultado preview -->
+  <div id="ia-resultado" style="display:none;margin-top:12px">
+    <div style="font-size:11px;font-weight:700;color:var(--t2);margin-bottom:6px"><i class="ti ti-list-check"></i> Itens reconhecidos pela IA:</div>
+    <div id="ia-lista-resultado" style="background:var(--s2);border-radius:8px;padding:10px;max-height:200px;overflow-y:auto;font-size:12px"></div>
+  </div>
+
+  <!-- Info chave -->
+  <div style="margin-top:12px;padding:8px 12px;background:rgba(124,58,237,.07);border:1px solid #7c3aed44;border-radius:8px;font-size:11px;color:#7c3aed">
+    <i class="ti ti-sparkles"></i> Utiliza automaticamente a <b>chave Gemini</b> configurada em <b>Configurações → IA</b>.
+  </div>
+
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+    <button class="btn bs" onclick="cm('mIAImport')">Cancelar</button>
+    <button id="btn-ia-processar" class="btn bp" style="background:#7c3aed;border-color:#7c3aed" onclick="processarIAImport()"><i class="ti ti-sparkles"></i> Processar com IA</button>
+    <button id="btn-ia-adicionar" class="btn bp" style="display:none" onclick="adicionarItensIA()"><i class="ti ti-check"></i> Adicionar ao orçamento</button>
   </div>
 </div></div>
 
@@ -4934,7 +4991,12 @@ function verPedido(id){
   document.getElementById('mVerPed-body').innerHTML=`
     <div style="background:var(--s2);border-radius:10px;padding:12px 16px">
       ${row('Empresa', e?`<span style="font-weight:700;color:${e.cor}">${e.nome}</span>`:' — ')}
-      ${row('Cliente', c?.rs||'—')}
+      ${row('Cliente', `<b>${c?.rs||'—'}</b>`)}
+      ${c?.cnpj?row('CNPJ', c.cnpj):''}
+      ${c?.end?row('Endereço', c.end+(c.cid?', '+c.cid:'')+(c.uf?' - '+c.uf:'')):c?.cid?row('Cidade', c.cid+(c.uf?' - '+c.uf:'')):''}
+      ${c?.comp?row('Comprador', c.comp):''}
+      ${c?.fone||c?.cel?row('Telefone', (c?.fone||'')+(c?.fone&&c?.cel?' · ':'')+( c?.cel||'')):''}
+      ${c?.email?row('E-mail', c.email):''}
       ${row('Data do pedido', fmtD(p.dt))}
       ${row('Nº Pedido', `<b>${p.num||'—'}</b>`)}
       ${row('Origem / Tipo', p.tipo||'—')}
@@ -11830,6 +11892,230 @@ function buscarProdutoLinha(idx, cod){
   }
 }
 
+// ══ IMPORTAÇÃO VIA IA ══
+var _iaItensReconhecidos = [];
+var _iaImagemBase64 = null;
+
+function iaTab(tab){
+  document.getElementById('ia-panel-foto').style.display  = tab==='foto'  ? 'block':'none';
+  document.getElementById('ia-panel-texto').style.display = tab==='texto' ? 'block':'none';
+  document.getElementById('ia-tab-foto').style.background  = tab==='foto'  ? 'rgba(124,58,237,.1)':'var(--s1)';
+  document.getElementById('ia-tab-texto').style.background = tab==='texto' ? 'rgba(124,58,237,.1)':'var(--s1)';
+  document.getElementById('ia-tab-foto').style.color  = tab==='foto'  ? '#7c3aed':'var(--t3)';
+  document.getElementById('ia-tab-texto').style.color = tab==='texto' ? '#7c3aed':'var(--t3)';
+}
+
+function iaPreviewImagem(input){
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    _iaImagemBase64 = e.target.result.split(',')[1];
+    document.getElementById('ia-img-preview').src = e.target.result;
+    document.getElementById('ia-preview').style.display = 'block';
+    document.getElementById('ia-resultado').style.display = 'none';
+    document.getElementById('btn-ia-adicionar').style.display = 'none';
+    _iaItensReconhecidos = [];
+  };
+  reader.readAsDataURL(file);
+}
+
+async function processarIAImport(){
+  const cfg = typeof loadCfg==='function' ? loadCfg() : {};
+  var apiKey = cfg.iakey || '';
+  if(!apiKey){ toast('⚠️ Configure a chave do Gemini em Configurações → IA'); return; }
+
+  var activeTab = document.getElementById('ia-panel-texto').style.display==='block' ? 'texto' : 'foto';
+  var texto = document.getElementById('ia-texto').value.trim();
+
+  if(activeTab==='foto' && !_iaImagemBase64){ toast('Selecione uma imagem'); return; }
+  if(activeTab==='texto' && !texto){ toast('Cole o texto do pedido'); return; }
+
+  var btn = document.getElementById('btn-ia-processar');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2 ti-spin"></i> Processando...';
+  document.getElementById('ia-resultado').style.display='none';
+
+  try{
+    var prompt = 'Analise este pedido e extraia APENAS os itens: código do produto e quantidade.\n\n' +
+      'Retorne SOMENTE um JSON válido neste formato exato, sem mais nada:\n' +
+      '{"itens":[{"cod":"CODIGO","qtde":1,"detalhe":""}]}\n\n' +
+      'Regras:\n' +
+      '- cod: código do produto (ex: PCE4489, PCH4431, ECA8856). Remova espaços internos do código.\n' +
+      '- qtde: número inteiro da quantidade\n' +
+      '- detalhe: observação entre parênteses se houver, senão string vazia\n' +
+      '- Ignore rabiscos, corações, assinaturas, cabeçalhos\n' +
+      '- Itens riscados/cancelados: ignore\n' +
+      '- Formatos comuns: "03 - PCH4431", "PCE4489 - 10", "PCH4431 (G) - 03"';
+
+    var parts = [];
+    if(activeTab==='foto'){
+      var ext = document.getElementById('ia-img-input').files[0].type || 'image/jpeg';
+      parts.push({inline_data:{mime_type:ext, data:_iaImagemBase64}});
+      parts.push({text:prompt});
+    } else {
+      parts.push({text: prompt + '\n\nTexto do pedido:\n' + texto});
+    }
+
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+    var resp = await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+      body: JSON.stringify({contents:[{parts:parts}], generationConfig:{maxOutputTokens:1500,temperature:0.1}})
+    });
+
+    if(!resp.ok){
+      var errD = await resp.json();
+      throw new Error(errD.error?.message || 'Erro API Gemini: '+resp.status);
+    }
+
+    var data = await resp.json();
+    var txt = (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+
+    // Parse JSON
+    var jsonMatch = txt.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('IA não retornou JSON válido');
+    var parsed = JSON.parse(jsonMatch[0]);
+    _iaItensReconhecidos = parsed.itens || [];
+
+    if(!_iaItensReconhecidos.length){ toast('Nenhum item reconhecido'); btn.disabled=false; btn.innerHTML='<i class="ti ti-sparkles"></i> Processar com IA'; return; }
+
+    // Cruza com banco de produtos
+    var naoEncontrados = [];
+    _iaItensReconhecidos.forEach(function(it){
+      var prod = (DB.produtos||[]).find(function(p){
+        return (p.cod||'').toUpperCase().replace(/\s/g,'')===(it.cod||'').toUpperCase().replace(/\s/g,'');
+      });
+      it.desc  = prod ? prod.desc : '';
+      it.val   = prod ? (prod.val||0) : 0;
+      it.found = !!prod;
+      if(!prod) naoEncontrados.push(it.cod);
+    });
+
+    // Mostra resultado
+    var listaEl = document.getElementById('ia-lista-resultado');
+    listaEl.innerHTML = _iaItensReconhecidos.map(function(it,i){
+      var cor = it.found ? 'var(--grn)' : 'var(--org)';
+      var ico = it.found ? '✓' : '?';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--s3)">'
+        +'<span style="color:'+cor+';font-weight:700;width:14px">'+ico+'</span>'
+        +'<span style="font-weight:700;color:var(--acc);min-width:90px;font-family:monospace">'+it.cod+'</span>'
+        +'<span style="color:var(--t3);min-width:30px">×'+it.qtde+'</span>'
+        +'<span style="color:var(--t2);flex:1;font-size:11px">'+(it.desc||'<i style="color:var(--org)">não encontrado no banco</i>')+'</span>'
+        +(it.detalhe?'<span style="color:var(--t3);font-size:10px">('+it.detalhe+')</span>':'')
+      +'</div>';
+    }).join('');
+
+    document.getElementById('ia-resultado').style.display='block';
+    document.getElementById('btn-ia-adicionar').style.display='flex';
+
+    var msg = '✅ '+_iaItensReconhecidos.length+' item(ns) reconhecido(s)!';
+    if(naoEncontrados.length) msg += ' · ⚠️ '+naoEncontrados.length+' não encontrado(s) no banco';
+    toast(msg);
+
+  } catch(err){
+    toast('Erro: '+err.message);
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-sparkles"></i> Processar com IA';
+  }
+}
+
+function adicionarItensIA(){
+  if(!_iaItensReconhecidos.length){ toast('Processe os itens primeiro'); return; }
+  _iaItensReconhecidos.forEach(function(it){
+    orcItens.push({
+      cod:     it.cod,
+      desc:    it.desc||'',
+      detalhe: it.detalhe||'',
+      qtde:    it.qtde||1,
+      val:     it.val||0
+    });
+  });
+  renderItensOrc();
+  calcTotaisOrc();
+  cm('mIAImport');
+  _iaItensReconhecidos = [];
+  _iaImagemBase64 = null;
+  toast('✅ '+orcItens.length+' item(ns) adicionado(s) ao orçamento!');
+}
+// ══ FIM IA IMPORT ══
+function baixarModeloItensOrc(){
+  var ws = XLSX.utils.aoa_to_sheet([
+    ['Codigo','Quantidade','Detalhe'],
+    ['10026391','10','Cor: Azul / Personalizado'],
+    ['10072755','5','Com logo bordado'],
+    ['','1','']
+  ]);
+  ws['!cols'] = [{wch:14},{wch:12},{wch:30}];
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Itens');
+  XLSX.writeFile(wb, 'modelo_itens_orcamento.xlsx');
+  toast('Modelo baixado! Preencha: A=Código · B=Quantidade · C=Detalhe');
+}
+
+function importarItensOrcamento(input){
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var wb   = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      var ws   = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+      var data = rows.slice(1).filter(function(r){ return r[0]||r[1]; });
+
+      if(!data.length){ toast('Nenhum item encontrado na planilha'); return; }
+
+      var adicionados=0, naoEncontrados=[];
+
+      data.forEach(function(r){
+        var cod     = String(r[0]||'').trim();
+        var qtde    = parseFloat(r[1])||1;
+        var detalhe = String(r[2]||'').trim();
+
+        // Busca produto no banco da empresa
+        var prod = null;
+        if(cod){
+          prod = (DB.produtos||[]).find(function(p){
+            return p.empId===empAtual && (p.cod||'').toLowerCase()===cod.toLowerCase();
+          });
+          // Fallback: busca sem filtro de empresa
+          if(!prod){
+            prod = (DB.produtos||[]).find(function(p){
+              return (p.cod||'').toLowerCase()===cod.toLowerCase();
+            });
+          }
+        }
+
+        orcItens.push({
+          cod:     cod,
+          desc:    prod ? prod.desc : (cod ? '— Produto não encontrado: '+cod : ''),
+          detalhe: detalhe,
+          qtde:    qtde,
+          val:     prod ? (prod.val||0) : 0
+        });
+
+        if(!prod && cod) naoEncontrados.push(cod);
+        adicionados++;
+      });
+
+      renderItensOrc();
+      calcTotaisOrc();
+      input.value='';
+
+      var msg = '✅ '+adicionados+' item(ns) importado(s)!';
+      if(naoEncontrados.length) msg += '\n⚠️ Códigos não encontrados no banco: '+naoEncontrados.join(', ')+'\n(Valor zerado — ajuste manualmente)';
+      toast(msg);
+      if(naoEncontrados.length) alert(msg);
+
+    } catch(err){
+      toast('Erro ao importar: '+err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+// ── fim importação itens ──
+
 function calcTotaisOrc(){
   var sub=orcItens.reduce(function(a,it){return a+(it.qtde||1)*(it.val||0);},0);
   var desc=parseFloat(document.getElementById('orc-desc')?.value)||0;
@@ -11953,11 +12239,15 @@ function imprimirOrcamento(){
   html+='</div></div>';
 
   if(cli){
-    html+='<div class="cli-box"><b>Cliente:</b> '+cli.rs;
-    if(cli.cnpj) html+=' &nbsp;|&nbsp; <b>CNPJ:</b> '+cli.cnpj;
-    if(cli.end)  html+='<br><b>Endereço:</b> '+cli.end;
-    if(cli.cid)  html+=' &nbsp;|&nbsp; <b>Cidade:</b> '+cli.cid+(cli.uf?' - '+cli.uf:'');
-    if(cli.fone||cli.cel) html+='<br><b>Tel:</b> '+(cli.fone||cli.cel||'');
+    html+='<div class="cli-box" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px">';
+    html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Razão Social</span><div style="font-weight:700;font-size:14px;color:#1a3a5c">'+cli.rs+'</div></div>';
+    html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">CNPJ</span><div>'+(cli.cnpj||'—')+'</div></div>';
+    if(cli.end) html+='<div style="grid-column:span 2"><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Endereço</span><div>'+cli.end+(cli.cid?', '+cli.cid:'')+(cli.uf?' - '+cli.uf:'')+'</div></div>';
+    else if(cli.cid) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Cidade</span><div>'+cli.cid+(cli.uf?' - '+cli.uf:'')+'</div></div>';
+    if(cli.comp) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Comprador</span><div>'+cli.comp+'</div></div>';
+    if(cli.fone||cli.cel) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Telefone</span><div>'+(cli.fone?cli.fone+' ':'')+( cli.cel?'· '+cli.cel:'')+'</div></div>';
+    if(cli.email) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">E-mail</span><div>'+cli.email+'</div></div>';
+    if(cli.seg) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Segmento</span><div>'+cli.seg+'</div></div>';
     html+='</div>';
   }
 
