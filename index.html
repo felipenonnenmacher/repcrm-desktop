@@ -1567,18 +1567,28 @@ let chEmps=null, chMen=null, chSeg=null, chCom=null, chTipo=null, chMeso=null;
 let xlData=[];
 
 function carregarDB() {
-  DB.empresas = load('empresas');
-  DB.clientes = load('clientes');
-  DB.pedidos  = load('pedidos');
-  DB.tarefas  = load('tarefas');
-  DB.eventos  = load('eventos');
+  DB.empresas   = load('empresas');
+  DB.clientes   = load('clientes');
+  DB.pedidos    = load('pedidos');
+  DB.tarefas    = load('tarefas');
+  DB.eventos    = load('eventos');
+  DB.leads      = load('leads')      || [];
+  DB.cicloAcoes = load('cicloAcoes') || {};
+  DB.segmentos  = load('segmentos')  || [];
+  DB.produtos   = load('produtos')   || [];
+  DB.orcamentos = load('orcamentos') || [];
 }
 function salvarDB() {
-  save('empresas', DB.empresas);
-  save('clientes', DB.clientes);
-  save('pedidos',  DB.pedidos);
-  save('tarefas',  DB.tarefas);
-  save('eventos',  DB.eventos);
+  save('empresas',   DB.empresas);
+  save('clientes',   DB.clientes);
+  save('pedidos',    DB.pedidos);
+  save('tarefas',    DB.tarefas);
+  save('eventos',    DB.eventos);
+  save('leads',      DB.leads      || []);
+  save('cicloAcoes', DB.cicloAcoes || {});
+  save('segmentos',  DB.segmentos  || []);
+  save('produtos',   DB.produtos   || []);
+  save('orcamentos', DB.orcamentos || []);
   salvarNuvem();
 }
 
@@ -3111,12 +3121,17 @@ function initFirebase(){
       var remoto = snap.val();
       if(!remoto) return;
       if(remoto._ts && DB._ts && remoto._ts <= DB._ts) return;
-      DB.empresas = remoto.empresas||[];
-      DB.clientes = remoto.clientes||[];
-      DB.pedidos  = remoto.pedidos||[];
-      DB.tarefas  = remoto.tarefas||[];
-      DB.eventos  = remoto.eventos||[];
-      DB._ts      = remoto._ts;
+      DB.empresas   = remoto.empresas   || [];
+      DB.clientes   = remoto.clientes   || [];
+      DB.pedidos    = remoto.pedidos    || [];
+      DB.tarefas    = remoto.tarefas    || [];
+      DB.eventos    = remoto.eventos    || [];
+      DB.leads      = remoto.leads      || [];
+      DB.cicloAcoes = remoto.cicloAcoes || {};
+      DB.segmentos  = remoto.segmentos  || [];
+      DB.produtos   = remoto.produtos   || [];
+      DB.orcamentos = remoto.orcamentos || [];
+      DB._ts        = remoto._ts;
       salvarLocal();
       renderDash();
     }, function(err){
@@ -3132,11 +3147,16 @@ function initFirebase(){
 }
 
 function salvarLocal(){
-  save('empresas', DB.empresas);
-  save('clientes', DB.clientes);
-  save('pedidos',  DB.pedidos);
-  save('tarefas',  DB.tarefas);
-  save('eventos',  DB.eventos);
+  save('empresas',   DB.empresas);
+  save('clientes',   DB.clientes);
+  save('pedidos',    DB.pedidos);
+  save('tarefas',    DB.tarefas);
+  save('eventos',    DB.eventos);
+  save('leads',      DB.leads      || []);
+  save('cicloAcoes', DB.cicloAcoes || {});
+  save('segmentos',  DB.segmentos  || []);
+  save('produtos',   DB.produtos   || []);
+  save('orcamentos', DB.orcamentos || []);
 }
 
 function salvarNuvem(){
@@ -3144,12 +3164,17 @@ function salvarNuvem(){
   setSyncStatus('sincronizando');
   DB._ts = Date.now();
   fbRef.set({
-    empresas: DB.empresas,
-    clientes: DB.clientes,
-    pedidos:  DB.pedidos,
-    tarefas:  DB.tarefas,
-    eventos:  DB.eventos,
-    _ts:      DB._ts
+    empresas:   DB.empresas,
+    clientes:   DB.clientes,
+    pedidos:    DB.pedidos,
+    tarefas:    DB.tarefas,
+    eventos:    DB.eventos,
+    leads:      DB.leads      || [],
+    cicloAcoes: DB.cicloAcoes || {},
+    segmentos:  DB.segmentos  || [],
+    produtos:   DB.produtos   || [],
+    orcamentos: DB.orcamentos || [],
+    _ts:        DB._ts
   }).then(function(){ setSyncStatus('conectado'); })
     .catch(function(e){ console.error(e); setSyncStatus('erro'); });
 }
@@ -8973,18 +8998,28 @@ let chEmps=null, chMen=null, chSeg=null, chCom=null, chTipo=null, chMeso=null;
 let xlData=[];
 
 function carregarDB() {
-  DB.empresas = load('empresas');
-  DB.clientes = load('clientes');
-  DB.pedidos  = load('pedidos');
-  DB.tarefas  = load('tarefas');
-  DB.eventos  = load('eventos');
+  DB.empresas   = load('empresas');
+  DB.clientes   = load('clientes');
+  DB.pedidos    = load('pedidos');
+  DB.tarefas    = load('tarefas');
+  DB.eventos    = load('eventos');
+  DB.leads      = load('leads')      || [];
+  DB.cicloAcoes = load('cicloAcoes') || {};
+  DB.segmentos  = load('segmentos')  || [];
+  DB.produtos   = load('produtos')   || [];
+  DB.orcamentos = load('orcamentos') || [];
 }
 function salvarDB() {
-  save('empresas', DB.empresas);
-  save('clientes', DB.clientes);
-  save('pedidos',  DB.pedidos);
-  save('tarefas',  DB.tarefas);
-  save('eventos',  DB.eventos);
+  save('empresas',   DB.empresas);
+  save('clientes',   DB.clientes);
+  save('pedidos',    DB.pedidos);
+  save('tarefas',    DB.tarefas);
+  save('eventos',    DB.eventos);
+  save('leads',      DB.leads      || []);
+  save('cicloAcoes', DB.cicloAcoes || {});
+  save('segmentos',  DB.segmentos  || []);
+  save('produtos',   DB.produtos   || []);
+  save('orcamentos', DB.orcamentos || []);
   salvarNuvem();
 }
 
@@ -10412,12 +10447,17 @@ function initFirebase(){
       var remoto = snap.val();
       if(!remoto) return;
       if(remoto._ts && DB._ts && remoto._ts <= DB._ts) return;
-      DB.empresas = remoto.empresas||[];
-      DB.clientes = remoto.clientes||[];
-      DB.pedidos  = remoto.pedidos||[];
-      DB.tarefas  = remoto.tarefas||[];
-      DB.eventos  = remoto.eventos||[];
-      DB._ts      = remoto._ts;
+      DB.empresas   = remoto.empresas   || [];
+      DB.clientes   = remoto.clientes   || [];
+      DB.pedidos    = remoto.pedidos    || [];
+      DB.tarefas    = remoto.tarefas    || [];
+      DB.eventos    = remoto.eventos    || [];
+      DB.leads      = remoto.leads      || [];
+      DB.cicloAcoes = remoto.cicloAcoes || {};
+      DB.segmentos  = remoto.segmentos  || [];
+      DB.produtos   = remoto.produtos   || [];
+      DB.orcamentos = remoto.orcamentos || [];
+      DB._ts        = remoto._ts;
       salvarLocal();
       renderDash();
     }, function(err){
@@ -10433,11 +10473,16 @@ function initFirebase(){
 }
 
 function salvarLocal(){
-  save('empresas', DB.empresas);
-  save('clientes', DB.clientes);
-  save('pedidos',  DB.pedidos);
-  save('tarefas',  DB.tarefas);
-  save('eventos',  DB.eventos);
+  save('empresas',   DB.empresas);
+  save('clientes',   DB.clientes);
+  save('pedidos',    DB.pedidos);
+  save('tarefas',    DB.tarefas);
+  save('eventos',    DB.eventos);
+  save('leads',      DB.leads      || []);
+  save('cicloAcoes', DB.cicloAcoes || {});
+  save('segmentos',  DB.segmentos  || []);
+  save('produtos',   DB.produtos   || []);
+  save('orcamentos', DB.orcamentos || []);
 }
 
 function salvarNuvem(){
@@ -10445,12 +10490,17 @@ function salvarNuvem(){
   setSyncStatus('sincronizando');
   DB._ts = Date.now();
   fbRef.set({
-    empresas: DB.empresas,
-    clientes: DB.clientes,
-    pedidos:  DB.pedidos,
-    tarefas:  DB.tarefas,
-    eventos:  DB.eventos,
-    _ts:      DB._ts
+    empresas:   DB.empresas,
+    clientes:   DB.clientes,
+    pedidos:    DB.pedidos,
+    tarefas:    DB.tarefas,
+    eventos:    DB.eventos,
+    leads:      DB.leads      || [],
+    cicloAcoes: DB.cicloAcoes || {},
+    segmentos:  DB.segmentos  || [],
+    produtos:   DB.produtos   || [],
+    orcamentos: DB.orcamentos || [],
+    _ts:        DB._ts
   }).then(function(){ setSyncStatus('conectado'); })
     .catch(function(e){ console.error(e); setSyncStatus('erro'); });
 }
