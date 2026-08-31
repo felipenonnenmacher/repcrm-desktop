@@ -199,6 +199,7 @@ if('serviceWorker' in navigator){
     <div class="ni" id="n-cli" onclick="sp('cli')"><i class="ti ti-users"></i>Clientes</div>
     <div class="ni" id="n-leads" onclick="sp('leads')"><i class="ti ti-target-arrow" style="color:var(--org)"></i>Leads<span id="badge-leads" class="emp-badge-count warn" style="display:none"></span></div>
     <div class="ni" id="n-produtos" onclick="sp('produtos')"><i class="ti ti-package" style="color:var(--cyn)"></i>Produtos</div>
+    <div class="ni" id="n-fiscal" onclick="sp('fiscal')"><i class="ti ti-receipt-2" style="color:#185FA5"></i>Fiscal</div>
     <div class="ni" id="n-agenda" onclick="sp('agenda')"><i class="ti ti-calendar-event"></i>Agenda<span id="badge-agenda" class="emp-badge-count warn" style="display:none"></span></div>
     <div class="slbl">Empresas</div>
     <div id="emp-sb"></div>
@@ -984,6 +985,125 @@ if('serviceWorker' in navigator){
   </div>
 </div></div>
 
+<!-- ══ PÁGINA FISCAL ══ -->
+<div id="p-fiscal" style="display:none">
+  <div class="ph">
+    <div>
+      <div class="pt"><i class="ti ti-receipt-2" style="color:#185FA5"></i>Módulo Fiscal</div>
+      <div class="ps" id="fiscal-mes-label"></div>
+    </div>
+    <div class="pa" style="gap:8px">
+      <button class="btn bs" onclick="fiscalMesNav(-1)"><i class="ti ti-chevron-left"></i></button>
+      <span id="fiscal-mes-nav" style="font-size:13px;font-weight:600;color:var(--t1);min-width:110px;text-align:center;align-self:center"></span>
+      <button class="btn bs" onclick="fiscalMesNav(1)"><i class="ti ti-chevron-right"></i></button>
+      <button class="btn bs" style="color:#3B6D11;border-color:#3B6D11" onclick="imprimirFiscalA4()"><i class="ti ti-printer"></i> Imprimir A4</button>
+      <button class="btn bs" onclick="exportarFiscalPDF()"><i class="ti ti-file-export"></i> Exportar PDF</button>
+      <button class="btn bp" onclick="om('mAnexarNF')"><i class="ti ti-plus"></i> Anexar NF</button>
+    </div>
+  </div>
+
+  <!-- Cards resumo -->
+  <div class="mg" id="mg-fiscal" style="grid-template-columns:repeat(5,1fr);margin-bottom:14px"></div>
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:14px">
+    <button id="ftab-gastos" onclick="fiscalTab('gastos')" class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px;font-weight:600;background:var(--acc);color:#fff;border-color:var(--acc)">Gastos do mês</button>
+    <button id="ftab-fotos"  onclick="fiscalTab('fotos')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Fotos das NFs</button>
+    <button id="ftab-cfg"    onclick="fiscalTab('cfg')"    class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Configurações</button>
+  </div>
+
+  <!-- Aba Gastos -->
+  <div id="fpanel-gastos">
+    <div class="card" style="margin-bottom:12px;overflow-x:auto">
+      <div class="ct" style="padding:10px 14px">
+        <div class="ctl"><i class="ti ti-list"></i> Extrato de gastos</div>
+        <div style="display:flex;gap:8px">
+          <select class="fi" id="fil-fiscal-fin" style="width:160px;padding:5px 9px;font-size:12px" onchange="renderFiscal()">
+            <option value="">Todas finalidades</option>
+          </select>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--s2)">
+          <th style="padding:6px 12px;text-align:left;color:var(--t3);font-size:10px;text-transform:uppercase">Data</th>
+          <th style="padding:6px 12px;text-align:left;color:var(--t3);font-size:10px;text-transform:uppercase">Razão Social</th>
+          <th style="padding:6px 12px;text-align:left;color:var(--t3);font-size:10px;text-transform:uppercase">CNPJ</th>
+          <th style="padding:6px 12px;text-align:center;color:var(--t3);font-size:10px;text-transform:uppercase">Nº NF</th>
+          <th style="padding:6px 12px;text-align:center;color:var(--t3);font-size:10px;text-transform:uppercase">Finalidade</th>
+          <th style="padding:6px 12px;text-align:right;color:var(--t3);font-size:10px;text-transform:uppercase">Valor</th>
+          <th style="padding:6px 12px;text-align:center;color:var(--t3);font-size:10px;text-transform:uppercase">Ações</th>
+        </tr></thead>
+        <tbody id="tb-fiscal-gastos"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Aba Fotos -->
+  <div id="fpanel-fotos" style="display:none">
+    <div class="card" style="padding:14px">
+      <div id="grid-fiscal-fotos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
+    </div>
+  </div>
+
+  <!-- Aba Configurações -->
+  <div id="fpanel-cfg" style="display:none">
+    <div class="card" style="max-width:500px">
+      <div class="ct"><div class="ctl"><i class="ti ti-settings"></i> Finalidades de gasto</div></div>
+      <div style="padding:14px">
+        <div id="lista-finalidades" style="margin-bottom:14px"></div>
+        <div style="display:flex;gap:8px">
+          <input class="fi" id="nova-finalidade" placeholder="Nova finalidade..." style="flex:1">
+          <button class="btn bp" onclick="addFinalidade()"><i class="ti ti-plus"></i> Adicionar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ANEXAR NF -->
+<div class="mbg" id="mAnexarNF"><div class="modal" style="max-width:520px">
+  <div class="mtt" style="background:linear-gradient(135deg,#0C447C,#185FA5);color:#fff;border-radius:10px 10px 0 0;margin:-16px -16px 16px;padding:14px 16px">
+    <i class="ti ti-receipt-2"></i> Anexar Nota Fiscal
+    <button class="xb" onclick="cm('mAnexarNF')" style="color:#fff;opacity:.8"><i class="ti ti-x"></i></button>
+  </div>
+  <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed #185FA544;border-radius:10px;padding:28px;cursor:pointer;background:rgba(24,95,165,.03);gap:8px;margin-bottom:14px" id="nf-upload-label">
+    <i class="ti ti-cloud-upload" style="font-size:36px;color:#185FA5"></i>
+    <span style="font-size:13px;font-weight:600;color:#185FA5">Clique para selecionar a foto da NF</span>
+    <span style="font-size:11px;color:var(--t3)">JPG, PNG, WEBP — até 10MB</span>
+    <input type="file" accept="image/*" style="display:none" id="nf-img-input" onchange="nfPreview(this)">
+  </label>
+  <div id="nf-preview-box" style="display:none;margin-bottom:14px;text-align:center">
+    <img id="nf-preview-img" style="max-height:200px;max-width:100%;border-radius:8px;border:1px solid var(--bdr)">
+    <div style="font-size:11px;color:var(--grn);margin-top:6px"><i class="ti ti-check"></i> Imagem carregada — pronta para leitura</div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn bs" onclick="cm('mAnexarNF')">Cancelar</button>
+    <button class="btn bp" style="background:#185FA5;border-color:#185FA5" onclick="lerNFcomIA()" id="btn-ler-nf"><i class="ti ti-sparkles"></i> Ler com IA</button>
+  </div>
+</div></div>
+
+<!-- MODAL CONFIRMAR NF -->
+<div class="mbg" id="mConfirmarNF"><div class="modal" style="max-width:500px">
+  <div class="mtt"><i class="ti ti-receipt" style="color:#185FA5"></i> Confirmar dados da NF
+    <button class="xb" onclick="cm('mConfirmarNF')"><i class="ti ti-x"></i></button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="fg"><label class="fl">Data da NF</label><input class="fi" id="nf-data" type="date"></div>
+    <div class="fg"><label class="fl">Número NF</label><input class="fi" id="nf-num" placeholder="Ex: 4521"></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Razão Social *</label><input class="fi" id="nf-rs" placeholder="Nome da empresa emissora"></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">CNPJ</label><input class="fi" id="nf-cnpj" placeholder="XX.XXX.XXX/XXXX-XX"></div>
+    <div class="fg"><label class="fl">Valor (R$) *</label><input class="fi" id="nf-val" type="number" step="0.01" min="0" placeholder="0,00"></div>
+    <div class="fg"><label class="fl">Finalidade *</label>
+      <select class="fi" id="nf-finalidade"></select>
+    </div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Observação</label><input class="fi" id="nf-obs" placeholder="Opcional..."></div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn bs" onclick="cm('mConfirmarNF')">Cancelar</button>
+    <button class="btn bp" onclick="salvarNF()"><i class="ti ti-check"></i> Salvar NF</button>
+  </div>
+</div></div>
+
 <div id="p-agenda" style="display:none">
   <div class="ph">
     <div><div class="pt"><i class="ti ti-calendar-event"></i>Agenda</div><div class="ps">Telefonemas, reuniões e verificações</div></div>
@@ -1576,7 +1696,9 @@ function carregarDB() {
   DB.cicloAcoes = load('cicloAcoes') || {};
   DB.segmentos  = load('segmentos')  || [];
   DB.produtos   = load('produtos')   || [];
-  DB.orcamentos = load('orcamentos') || [];
+  DB.orcamentos  = load('orcamentos')  || [];
+  DB.fiscal      = load('fiscal')      || [];
+  DB.finalidades = load('finalidades') || [];
 }
 function salvarDB() {
   save('empresas',   DB.empresas);
@@ -1589,6 +1711,8 @@ function salvarDB() {
   save('segmentos',  DB.segmentos  || []);
   save('produtos',   DB.produtos   || []);
   save('orcamentos', DB.orcamentos || []);
+  save('fiscal',      DB.fiscal      || []);
+  save('finalidades', DB.finalidades || []);
   salvarNuvem();
 }
 
@@ -1757,10 +1881,11 @@ function buildSidebar() {
 }
 
 // ══ NAVEGAÇÃO ══if(p==='produtos'){document.getElementById('n-produtos')&&document.getElementById('n-produtos').classList.add('act');renderPaginaProdutos();}
+  if(p==='fiscal'){document.getElementById('n-fiscal')&&document.getElementById('n-fiscal').classList.add('act');renderFiscal();}
   
 function sp(p) {
   // Esconder apenas as páginas de conteúdo (evitar esconder modais etc)
-  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam','p-produtos'];
+  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam','p-produtos','p-fiscal'];
   pgs.forEach(function(pid){ var el=document.getElementById(pid); if(el) el.style.display='none'; });
   const el = document.getElementById('p-'+p);
   if(el) el.style.display='block';
@@ -3130,7 +3255,9 @@ function initFirebase(){
       DB.cicloAcoes = remoto.cicloAcoes || {};
       DB.segmentos  = remoto.segmentos  || [];
       DB.produtos   = remoto.produtos   || [];
-      DB.orcamentos = remoto.orcamentos || [];
+      DB.orcamentos  = remoto.orcamentos  || [];
+      DB.fiscal      = remoto.fiscal      || [];
+      DB.finalidades = remoto.finalidades || [];
       DB._ts        = remoto._ts;
       salvarLocal();
       renderDash();
@@ -3157,6 +3284,8 @@ function salvarLocal(){
   save('segmentos',  DB.segmentos  || []);
   save('produtos',   DB.produtos   || []);
   save('orcamentos', DB.orcamentos || []);
+  save('fiscal',      DB.fiscal      || []);
+  save('finalidades', DB.finalidades || []);
 }
 
 function salvarNuvem(){
@@ -3174,6 +3303,8 @@ function salvarNuvem(){
     segmentos:  DB.segmentos  || [],
     produtos:   DB.produtos   || [],
     orcamentos: DB.orcamentos || [],
+    fiscal:     DB.fiscal     || [],
+    finalidades:DB.finalidades|| [],
     _ts:        DB._ts
   }).then(function(){ setSyncStatus('conectado'); })
     .catch(function(e){ console.error(e); setSyncStatus('erro'); });
@@ -8030,6 +8161,7 @@ if('serviceWorker' in navigator){
     <div class="ni act" id="n-dash" onclick="sp('dash')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" id="n-cli" onclick="sp('cli')"><i class="ti ti-users"></i>Clientes</div>
     <div class="ni" id="n-produtos" onclick="sp('produtos')"><i class="ti ti-package" style="color:var(--cyn)"></i>Produtos</div>
+    <div class="ni" id="n-fiscal" onclick="sp('fiscal')"><i class="ti ti-receipt-2" style="color:#185FA5"></i>Fiscal</div>
     <div class="ni" id="n-agenda" onclick="sp('agenda')"><i class="ti ti-calendar-event"></i>Agenda<span id="badge-agenda" class="emp-badge-count warn" style="display:none"></span></div>
     <div class="slbl">Empresas</div>
     <div id="emp-sb"></div>
@@ -9007,7 +9139,9 @@ function carregarDB() {
   DB.cicloAcoes = load('cicloAcoes') || {};
   DB.segmentos  = load('segmentos')  || [];
   DB.produtos   = load('produtos')   || [];
-  DB.orcamentos = load('orcamentos') || [];
+  DB.orcamentos  = load('orcamentos')  || [];
+  DB.fiscal      = load('fiscal')      || [];
+  DB.finalidades = load('finalidades') || [];
 }
 function salvarDB() {
   save('empresas',   DB.empresas);
@@ -9020,6 +9154,8 @@ function salvarDB() {
   save('segmentos',  DB.segmentos  || []);
   save('produtos',   DB.produtos   || []);
   save('orcamentos', DB.orcamentos || []);
+  save('fiscal',      DB.fiscal      || []);
+  save('finalidades', DB.finalidades || []);
   salvarNuvem();
 }
 
@@ -9187,7 +9323,7 @@ function buildSidebar() {
 // ══ NAVEGAÇÃO ══
 function sp(p) {
   // Esconder apenas as páginas de conteúdo (evitar esconder modais etc)
-  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam','p-produtos'];
+  var pgs=['p-dash','p-cli','p-clidet','p-edash','p-ecli','p-eped','p-ecom','p-lembretes','p-agenda','p-evendas','p-leads','p-eorcam','p-produtos','p-fiscal'];
   pgs.forEach(function(pid){ var el=document.getElementById(pid); if(el) el.style.display='none'; });
   const el = document.getElementById('p-'+p);
   if(el) el.style.display='block';
@@ -10456,7 +10592,9 @@ function initFirebase(){
       DB.cicloAcoes = remoto.cicloAcoes || {};
       DB.segmentos  = remoto.segmentos  || [];
       DB.produtos   = remoto.produtos   || [];
-      DB.orcamentos = remoto.orcamentos || [];
+      DB.orcamentos  = remoto.orcamentos  || [];
+      DB.fiscal      = remoto.fiscal      || [];
+      DB.finalidades = remoto.finalidades || [];
       DB._ts        = remoto._ts;
       salvarLocal();
       renderDash();
@@ -10483,6 +10621,8 @@ function salvarLocal(){
   save('segmentos',  DB.segmentos  || []);
   save('produtos',   DB.produtos   || []);
   save('orcamentos', DB.orcamentos || []);
+  save('fiscal',      DB.fiscal      || []);
+  save('finalidades', DB.finalidades || []);
 }
 
 function salvarNuvem(){
@@ -10500,6 +10640,8 @@ function salvarNuvem(){
     segmentos:  DB.segmentos  || [],
     produtos:   DB.produtos   || [],
     orcamentos: DB.orcamentos || [],
+    fiscal:     DB.fiscal     || [],
+    finalidades:DB.finalidades|| [],
     _ts:        DB._ts
   }).then(function(){ setSyncStatus('conectado'); })
     .catch(function(e){ console.error(e); setSyncStatus('erro'); });
@@ -11942,7 +12084,387 @@ function buscarProdutoLinha(idx, cod){
   }
 }
 
-// ══ IMPORTAÇÃO VIA IA ══
+// ══ MÓDULO FISCAL ══
+if(!DB.fiscal)      DB.fiscal=[];
+if(!DB.finalidades) DB.finalidades=['Combustível','Alimentação','Hospedagem','Impostos','Diversos','Captação','Manutenção','Comunicação'];
+
+var _fiscalMes  = new Date().getMonth();
+var _fiscalAno  = new Date().getFullYear();
+var _fiscalTab  = 'gastos';
+var _nfImgB64   = null;
+var _nfImgMime  = 'image/jpeg';
+var _nfEditId   = null;
+
+const NOMES_MES_FISCAL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const CORES_FIN = ['#EF9F27','#97C459','#85B7EB','#F09595','#B4B2A9','#5DCAA5','#7F77DD','#F0997B'];
+
+function fiscalCorFin(nome){
+  if(!DB.finalidades) return 'var(--acc)';
+  var i=DB.finalidades.indexOf(nome);
+  return CORES_FIN[i%CORES_FIN.length]||'var(--acc)';
+}
+function fiscalBgFin(nome){
+  var cores={
+    'Combustível':'#FAEEDA','Alimentação':'#EAF3DE','Hospedagem':'#E6F1FB',
+    'Impostos':'#FCEBEB','Diversos':'#F1EFE8','Captação':'#EEEDFE',
+    'Manutenção':'#E1F5EE','Comunicação':'#FBEAF0'
+  };
+  return cores[nome]||'var(--s2)';
+}
+function fiscalTxtFin(nome){
+  var cores={
+    'Combustível':'#633806','Alimentação':'#27500A','Hospedagem':'#0C447C',
+    'Impostos':'#791F1F','Diversos':'#444441','Captação':'#3C3489',
+    'Manutenção':'#085041','Comunicação':'#72243E'
+  };
+  return cores[nome]||'var(--t1)';
+}
+
+function fiscalMesNav(dir){
+  _fiscalMes+=dir;
+  if(_fiscalMes>11){_fiscalMes=0;_fiscalAno++;}
+  if(_fiscalMes<0){_fiscalMes=11;_fiscalAno--;}
+  renderFiscal();
+}
+
+function fiscalTab(tab){
+  _fiscalTab=tab;
+  ['gastos','fotos','cfg'].forEach(function(t){
+    var p=document.getElementById('fpanel-'+t);
+    var b=document.getElementById('ftab-'+t);
+    if(p) p.style.display=t===tab?'block':'none';
+    if(b){
+      if(t===tab){ b.style.background='var(--acc)'; b.style.color='#fff'; b.style.borderColor='var(--acc)'; }
+      else { b.style.background='var(--s1)'; b.style.color='var(--t2)'; b.style.borderColor='var(--bdr)'; }
+    }
+  });
+}
+
+function renderFiscal(){
+  if(!DB.fiscal)      DB.fiscal=[];
+  if(!DB.finalidades) DB.finalidades=['Combustível','Alimentação','Hospedagem','Impostos','Diversos','Captação'];
+
+  // Atualiza label do mês
+  var label=document.getElementById('fiscal-mes-nav');
+  if(label) label.textContent=NOMES_MES_FISCAL[_fiscalMes]+' / '+_fiscalAno;
+
+  // Filtra NFs do mês
+  var mesStr=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0');
+  var nfs=DB.fiscal.filter(function(n){ return n.data&&n.data.startsWith(mesStr); });
+
+  // Cards resumo
+  var total=nfs.reduce(function(a,n){return a+(n.valor||0);},0);
+  var porFin={};
+  nfs.forEach(function(n){ porFin[n.finalidade]=(porFin[n.finalidade]||0)+(n.valor||0); });
+  var topFin=Object.entries(porFin).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
+
+  var mgEl=document.getElementById('mg-fiscal');
+  if(mgEl){
+    var html='<div class="mc"><div class="mcl">Total de gastos</div><div class="mcv" style="color:var(--red)">'+fmt(total)+'</div><div class="mcs">'+nfs.length+' nota(s)</div></div>';
+    topFin.forEach(function(e){
+      html+='<div class="mc"><div class="mcl">'+e[0]+'</div><div class="mcv">'+fmt(e[1])+'</div><div class="mcs" style="color:var(--t3)">'+nfs.filter(function(n){return n.finalidade===e[0];}).length+' NF(s)</div></div>';
+    });
+    mgEl.innerHTML=html;
+  }
+
+  // Select finalidade filtro
+  var selFil=document.getElementById('fil-fiscal-fin');
+  if(selFil&&selFil.options.length<=1){
+    DB.finalidades.forEach(function(f){ var o=document.createElement('option'); o.value=f; o.textContent=f; selFil.appendChild(o); });
+  }
+  var filtFin=selFil?selFil.value:'';
+  var nfsFil=filtFin?nfs.filter(function(n){return n.finalidade===filtFin;}):nfs;
+  nfsFil.sort(function(a,b){return (b.data||'')>(a.data||'')?1:-1;});
+
+  // Tabela gastos
+  var tb=document.getElementById('tb-fiscal-gastos');
+  if(tb){
+    if(!nfsFil.length){
+      tb.innerHTML='<tr><td colspan="7" style="color:var(--t3);padding:16px;text-align:center">Nenhuma NF registrada em '+NOMES_MES_FISCAL[_fiscalMes]+'/'+_fiscalAno+'.</td></tr>';
+    } else {
+      tb.innerHTML=nfsFil.map(function(n,i){
+        var bg=i%2?'background:var(--s2)':'';
+        var corFin=fiscalBgFin(n.finalidade);
+        var txtFin=fiscalTxtFin(n.finalidade);
+        return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'
+          +'<td style="padding:7px 12px;color:var(--t1)">'+(fmtD(n.data)||'—')+'</td>'
+          +'<td style="padding:7px 12px;font-weight:500;color:var(--t1)">'+(n.rs||'—')+'</td>'
+          +'<td style="padding:7px 12px;color:var(--t3);font-family:monospace;font-size:11px">'+(n.cnpj||'—')+'</td>'
+          +'<td style="padding:7px 12px;text-align:center;font-weight:700;color:var(--acc)">'+(n.num||'—')+'</td>'
+          +'<td style="padding:7px 12px;text-align:center"><span style="background:'+corFin+';color:'+txtFin+';border-radius:12px;padding:2px 10px;font-size:10px;font-weight:600">'+(n.finalidade||'—')+'</span></td>'
+          +'<td style="padding:7px 12px;text-align:right;font-weight:700;color:var(--t1)">'+fmt(n.valor||0)+'</td>'
+          +'<td style="padding:7px 12px;text-align:center;white-space:nowrap">'
+            +'<button class="btn bs" style="padding:2px 7px;font-size:10px" onclick="editarNF(\''+n.id+'\')" title="Editar"><i class="ti ti-pencil"></i></button> '
+            +'<button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirNF(\''+n.id+'\')" title="Excluir"><i class="ti ti-trash"></i></button>'
+          +'</td>'
+        +'</tr>';
+      }).join('')
+      +'<tr style="background:var(--s2);font-weight:700;border-top:2px solid var(--bdr)">'
+      +'<td colspan="5" style="padding:7px 12px;color:var(--t1)">Total — '+nfsFil.length+' nota(s)</td>'
+      +'<td style="padding:7px 12px;text-align:right;color:var(--red);font-size:14px">'+fmt(nfsFil.reduce(function(a,n){return a+(n.valor||0);},0))+'</td>'
+      +'<td></td></tr>';
+    }
+  }
+
+  // Grid fotos
+  var grid=document.getElementById('grid-fiscal-fotos');
+  if(grid){
+    var nfsFotos=nfs.filter(function(n){return n.imgB64;});
+    var html=nfsFotos.map(function(n){
+      var corFin=fiscalBgFin(n.finalidade); var txtFin=fiscalTxtFin(n.finalidade);
+      return '<div style="background:var(--s1);border:1px solid var(--bdr);border-radius:10px;overflow:hidden">'
+        +'<img src="data:'+n.imgMime+';base64,'+n.imgB64+'" style="width:100%;height:150px;object-fit:cover;display:block">'
+        +'<div style="padding:8px 10px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
+            +'<span style="font-weight:700;font-size:11px;color:var(--acc)">NF '+(n.num||'—')+'</span>'
+            +'<span style="background:'+corFin+';color:'+txtFin+';border-radius:10px;padding:1px 7px;font-size:9px;font-weight:600">'+(n.finalidade||'')+'</span>'
+          +'</div>'
+          +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+(n.rs||'—')+'</div>'
+          +'<div style="display:flex;justify-content:space-between;margin-top:2px">'
+            +'<span style="font-size:10px;color:var(--t3)">'+(fmtD(n.data)||'—')+'</span>'
+            +'<span style="font-size:12px;font-weight:700;color:var(--t1)">'+fmt(n.valor||0)+'</span>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+    html+='<div style="border:1.5px dashed var(--bdr);border-radius:10px;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer" onclick="om(\'mAnexarNF\')">'
+      +'<div style="text-align:center;color:var(--t3)"><i class="ti ti-plus" style="font-size:28px"></i><div style="font-size:11px;margin-top:4px">Anexar NF</div></div>'
+    +'</div>';
+    grid.innerHTML=html;
+  }
+
+  // Lista finalidades (aba cfg)
+  renderListaFinalidades();
+}
+
+function renderListaFinalidades(){
+  var el=document.getElementById('lista-finalidades'); if(!el) return;
+  el.innerHTML=(DB.finalidades||[]).map(function(f,i){
+    var bg=fiscalBgFin(f); var txt=fiscalTxtFin(f);
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--s3)">'
+      +'<span style="background:'+bg+';color:'+txt+';border-radius:12px;padding:2px 12px;font-size:12px;font-weight:600;flex:1">'+f+'</span>'
+      +'<button class="btn bs" style="padding:2px 8px;font-size:11px;color:var(--red);border-color:var(--red)" onclick="removerFinalidade('+i+')"><i class="ti ti-trash"></i></button>'
+    +'</div>';
+  }).join('');
+}
+
+function addFinalidade(){
+  var el=document.getElementById('nova-finalidade'); if(!el||!el.value.trim()) return;
+  var nome=el.value.trim();
+  if(!(DB.finalidades||[]).includes(nome)){ if(!DB.finalidades) DB.finalidades=[]; DB.finalidades.push(nome); }
+  el.value=''; salvarDB(); renderListaFinalidades(); toast('Finalidade adicionada!');
+}
+
+function removerFinalidade(i){
+  if(!confirm('Remover esta finalidade?')) return;
+  DB.finalidades.splice(i,1); salvarDB(); renderListaFinalidades(); toast('Finalidade removida!');
+}
+
+// ── Upload e leitura IA ──
+function nfPreview(input){
+  var file=input.files[0]; if(!file) return;
+  _nfImgMime=file.type||'image/jpeg';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    _nfImgB64=e.target.result.split(',')[1];
+    document.getElementById('nf-preview-img').src=e.target.result;
+    document.getElementById('nf-preview-box').style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function lerNFcomIA(){
+  if(!_nfImgB64){ toast('Selecione uma imagem primeiro'); return; }
+  var cfg=typeof loadCfg==='function'?loadCfg():{};
+  var apiKey=cfg.iakey||'';
+  if(!apiKey){ toast('Configure a chave Gemini em Configurações → IA'); return; }
+
+  var btn=document.getElementById('btn-ler-nf');
+  btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2 ti-spin"></i> Lendo...';
+
+  try{
+    var prompt='Analise esta nota fiscal e extraia os dados. Retorne SOMENTE JSON válido:\n'
+      +'{"data":"AAAA-MM-DD","num":"numero da NF","rs":"razao social emissora","cnpj":"XX.XXX.XXX/XXXX-XX","valor":0.00}\n'
+      +'- data: data de emissão no formato AAAA-MM-DD\n'
+      +'- num: número da NF (somente dígitos)\n'
+      +'- rs: razão social ou nome do estabelecimento\n'
+      +'- cnpj: CNPJ do emitente com formatação\n'
+      +'- valor: valor total em número decimal\n'
+      +'Se não encontrar algum campo, use string vazia ou 0.';
+
+    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+      body:JSON.stringify({
+        contents:[{parts:[{inline_data:{mime_type:_nfImgMime,data:_nfImgB64}},{text:prompt}]}],
+        generationConfig:{maxOutputTokens:500,temperature:0.1}
+      })
+    });
+    if(!resp.ok){ var er=await resp.json(); throw new Error(er.error?.message||'Erro '+resp.status); }
+    var data=await resp.json();
+    var txt=(data.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+    var jsonMatch=txt.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('IA não retornou JSON');
+    var parsed=JSON.parse(jsonMatch[0]);
+
+    // Preenche modal de confirmação
+    cm('mAnexarNF');
+    preencherModalNF(parsed);
+    om('mConfirmarNF');
+
+  }catch(err){
+    toast('Erro ao ler NF: '+err.message);
+  }finally{
+    btn.disabled=false; btn.innerHTML='<i class="ti ti-sparkles"></i> Ler com IA';
+  }
+}
+
+function preencherModalNF(dados){
+  _nfEditId=null;
+  document.getElementById('nf-data').value=dados.data||new Date().toISOString().split('T')[0];
+  document.getElementById('nf-num').value=dados.num||'';
+  document.getElementById('nf-rs').value=dados.rs||'';
+  document.getElementById('nf-cnpj').value=dados.cnpj||'';
+  document.getElementById('nf-val').value=dados.valor||'';
+  document.getElementById('nf-obs').value='';
+  // Preenche select de finalidade
+  var sel=document.getElementById('nf-finalidade');
+  sel.innerHTML=(DB.finalidades||[]).map(function(f){ return '<option value="'+f+'">'+f+'</option>'; }).join('');
+}
+
+function editarNF(id){
+  var n=(DB.fiscal||[]).find(function(x){return x.id===id;}); if(!n) return;
+  _nfEditId=id;
+  _nfImgB64=n.imgB64||null;
+  _nfImgMime=n.imgMime||'image/jpeg';
+  preencherModalNF(n);
+  document.getElementById('nf-num').value=n.num||'';
+  document.getElementById('nf-obs').value=n.obs||'';
+  var sel=document.getElementById('nf-finalidade'); if(sel) sel.value=n.finalidade||'';
+  om('mConfirmarNF');
+}
+
+function salvarNF(){
+  var data=document.getElementById('nf-data').value;
+  var rs=document.getElementById('nf-rs').value.trim();
+  var val=parseFloat(document.getElementById('nf-val').value)||0;
+  var fin=document.getElementById('nf-finalidade').value;
+  if(!rs){ toast('Informe a razão social'); return; }
+  if(!val){ toast('Informe o valor'); return; }
+  if(!fin){ toast('Selecione a finalidade'); return; }
+
+  var nf={
+    id:_nfEditId||uid(),
+    data:data||new Date().toISOString().split('T')[0],
+    num:document.getElementById('nf-num').value.trim(),
+    rs:rs,
+    cnpj:document.getElementById('nf-cnpj').value.trim(),
+    valor:val,
+    finalidade:fin,
+    obs:document.getElementById('nf-obs').value.trim(),
+    imgB64:_nfImgB64,
+    imgMime:_nfImgMime,
+    dtCad:new Date().toISOString().split('T')[0]
+  };
+
+  if(!DB.fiscal) DB.fiscal=[];
+  if(_nfEditId){
+    var idx=DB.fiscal.findIndex(function(x){return x.id===_nfEditId;});
+    if(idx>=0) DB.fiscal[idx]=nf;
+  } else {
+    DB.fiscal.push(nf);
+  }
+
+  salvarDB(); cm('mConfirmarNF');
+  _nfImgB64=null; _nfEditId=null;
+  // Ajusta mês para o da NF salva
+  if(data){ _fiscalMes=parseInt(data.slice(5,7))-1; _fiscalAno=parseInt(data.slice(0,4)); }
+  renderFiscal();
+  toast('✅ NF '+(nf.num||'')+ ' salva com sucesso!');
+}
+
+function excluirNF(id){
+  if(!confirm('Excluir esta nota fiscal?')) return;
+  DB.fiscal=(DB.fiscal||[]).filter(function(x){return x.id!==id;});
+  salvarDB(); renderFiscal(); toast('NF removida!');
+}
+
+// ── Impressão A4 (3-4 NFs por folha) ──
+function imprimirFiscalA4(){
+  var mesStr=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0');
+  var nfs=(DB.fiscal||[]).filter(function(n){return n.data&&n.data.startsWith(mesStr)&&n.imgB64;});
+  if(!nfs.length){ toast('Nenhuma NF com foto neste mês'); return; }
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>NFs '+NOMES_MES_FISCAL[_fiscalMes]+'/'+_fiscalAno+'</title><style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:Arial,sans-serif;background:#fff}'
+    +'@page{size:A4;margin:12mm}'
+    +'.page{page-break-after:always}'
+    +'.grid{display:grid;grid-template-columns:1fr 1fr;gap:8mm;height:100%}'
+    +'.nf-card{border:1px solid #ccc;border-radius:6px;overflow:hidden;display:flex;flex-direction:column}'
+    +'.nf-card img{width:100%;height:110mm;object-fit:contain;background:#f5f5f5}'
+    +'.nf-info{padding:4mm;border-top:1px solid #eee;font-size:10pt}'
+    +'.nf-titulo{font-weight:700;color:#185FA5;font-size:11pt}'
+    +'.nf-sub{color:#444;margin-top:1mm}'
+    +'.nf-val{font-weight:700;font-size:13pt;float:right}'
+    +'.mes-header{text-align:center;font-size:13pt;font-weight:700;color:#185FA5;margin-bottom:6mm;padding-bottom:3mm;border-bottom:1px solid #185FA5}'
+    +'</style></head><body>';
+
+  // Agrupa 4 por página
+  for(var i=0;i<nfs.length;i+=4){
+    var grupo=nfs.slice(i,i+4);
+    html+='<div class="page"><div class="mes-header">'+NOMES_MES_FISCAL[_fiscalMes]+' / '+_fiscalAno+'</div><div class="grid">';
+    grupo.forEach(function(n){
+      html+='<div class="nf-card"><img src="data:'+n.imgMime+';base64,'+n.imgB64+'">'
+        +'<div class="nf-info">'
+          +'<div class="nf-titulo">NF '+(n.num||'—')+'<span class="nf-val">'+fmt(n.valor||0)+'</span></div>'
+          +'<div class="nf-sub">'+(n.rs||'—')+'</div>'
+          +'<div class="nf-sub" style="color:#185FA5;font-size:9pt">'+(n.finalidade||'')+'</div>'
+          +'<div class="nf-sub" style="color:#888;font-size:9pt">'+(fmtD(n.data)||'—')+(n.cnpj?' · '+n.cnpj:'')+'</div>'
+        +'</div></div>';
+    });
+    html+='</div></div>';
+  }
+  html+='</body></html>';
+  var win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(function(){win.print();},600);
+}
+
+// ── Exportar PDF do extrato ──
+function exportarFiscalPDF(){
+  var mesStr=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0');
+  var nfs=(DB.fiscal||[]).filter(function(n){return n.data&&n.data.startsWith(mesStr);});
+  nfs.sort(function(a,b){return (b.data||'')>(a.data||'')?1:-1;});
+  var total=nfs.reduce(function(a,n){return a+(n.valor||0);},0);
+
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato Fiscal '+NOMES_MES_FISCAL[_fiscalMes]+'/'+_fiscalAno+'</title><style>'
+    +'*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:11pt;color:#222;margin:20mm}'
+    +'h1{font-size:16pt;color:#185FA5;border-bottom:2px solid #185FA5;padding-bottom:4mm;margin-bottom:6mm}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:8mm}'
+    +'thead tr{background:#185FA5;color:#fff}th{padding:5pt 8pt;text-align:left;font-weight:600}'
+    +'tbody tr:nth-child(even){background:#f0f4f8}td{padding:5pt 8pt;border-bottom:1px solid #ddd}'
+    +'.total{font-weight:700;font-size:13pt;text-align:right;color:#185FA5}'
+    +'@media print{button{display:none}}'
+    +'</style></head><body>'
+    +'<h1>Extrato de Gastos — '+NOMES_MES_FISCAL[_fiscalMes]+' / '+_fiscalAno+'</h1>'
+    +'<table><thead><tr><th>Data</th><th>Razão Social</th><th>CNPJ</th><th>Nº NF</th><th>Finalidade</th><th style="text-align:right">Valor</th></tr></thead><tbody>';
+
+  nfs.forEach(function(n){
+    html+='<tr><td>'+(fmtD(n.data)||'—')+'</td><td>'+( n.rs||'—')+'</td><td style="font-family:monospace;font-size:9pt">'+(n.cnpj||'—')+'</td><td style="font-weight:700;color:#185FA5">'+(n.num||'—')+'</td><td>'+(n.finalidade||'—')+'</td><td style="text-align:right;font-weight:600">'+fmt(n.valor||0)+'</td></tr>';
+  });
+
+  html+='</tbody></table><div class="total">Total: '+fmt(total)+'</div>'
+    +'<div style="margin-top:8mm;font-size:9pt;color:#888">'+nfs.length+' nota(s) fiscal(is) · RepCRM Pro</div>'
+    +'</body></html>';
+
+  var win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(function(){win.print();},600);
+}
+// ══ FIM MÓDULO FISCAL ══
 var _iaItensReconhecidos = [];
 var _iaImagemBase64 = null;
 
