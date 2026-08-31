@@ -5486,7 +5486,7 @@ async function chamarGemini(prompt){
   if(!isGemini){ return '⚠️ Esta função requer a API Key do Gemini (AIza... ou AQ...).'; }
   // Usa v1 com gemini-1.5-flash (modelo mais estável e gratuito)
   // Chamada direta - gemini-2.0-flash-lite (mais econômico)
-  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
     body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:800,temperature:0.7}})});
   const d=await r.json();
@@ -12292,7 +12292,7 @@ async function lerNFcomIA(){
       +'- valor: valor total em número decimal\n'
       +'Se não encontrar algum campo, use string vazia ou 0.';
 
-    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',{
+    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
       body:JSON.stringify({
@@ -12528,7 +12528,7 @@ async function processarIAImport(){
       parts.push({text: prompt + '\n\nTexto do pedido:\n' + texto});
     }
 
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+    var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
     var resp = await fetch(url,{
       method:'POST',
       headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
@@ -13225,7 +13225,7 @@ async function chamarGemini(prompt){
   if(!isGemini){ return '⚠️ Esta função requer a API Key do Gemini (AIza... ou AQ...).'; }
   // Usa v1 com gemini-1.5-flash (modelo mais estável e gratuito)
   // Chamada direta - gemini-2.0-flash-lite (mais econômico)
-  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent';
+  const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},
     body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:800,temperature:0.7}})});
   const d=await r.json();
