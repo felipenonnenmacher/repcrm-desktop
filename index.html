@@ -1697,7 +1697,11 @@ function carregarDB() {
   DB.segmentos  = load('segmentos')  || [];
   DB.produtos   = load('produtos')   || [];
   DB.orcamentos  = load('orcamentos')  || [];
-  DB.fiscal      = load('fiscal')      || [];
+  var fiscalBase = load('fiscal') || [];
+  DB.fiscal = fiscalBase.map(function(n){
+    try{ var imgData=localStorage.getItem('repcrm_nf_img_'+n.id); if(imgData){var p=JSON.parse(imgData);n.imgB64=p.b64;n.imgMime=p.mime||'image/jpeg';} }catch(e){}
+    return n;
+  });
   DB.finalidades = load('finalidades') || [];
 }
 function salvarDB() {
@@ -1711,7 +1715,8 @@ function salvarDB() {
   save('segmentos',  DB.segmentos  || []);
   save('produtos',   DB.produtos   || []);
   save('orcamentos', DB.orcamentos || []);
-  save('fiscal',      DB.fiscal      || []);
+  var fiscalSemImg=(DB.fiscal||[]).map(function(n){var cp=Object.assign({},n);delete cp.imgB64;delete cp.imgMime;return cp;});
+  save('fiscal',      fiscalSemImg);
   save('finalidades', DB.finalidades || []);
   salvarNuvem();
 }
@@ -3286,7 +3291,8 @@ function salvarLocal(){
   save('segmentos',  DB.segmentos  || []);
   save('produtos',   DB.produtos   || []);
   save('orcamentos', DB.orcamentos || []);
-  save('fiscal',      DB.fiscal      || []);
+  var fiscalSemImg=(DB.fiscal||[]).map(function(n){var cp=Object.assign({},n);delete cp.imgB64;delete cp.imgMime;return cp;});
+  save('fiscal',      fiscalSemImg);
   save('finalidades', DB.finalidades || []);
 }
 
@@ -3305,7 +3311,7 @@ function salvarNuvem(){
     segmentos:  DB.segmentos  || [],
     produtos:   DB.produtos   || [],
     orcamentos: DB.orcamentos || [],
-    fiscal:     DB.fiscal     || [],
+    fiscal:     (DB.fiscal||[]).map(function(n){var cp=Object.assign({},n);delete cp.imgB64;delete cp.imgMime;return cp;}),
     finalidades:DB.finalidades|| [],
     _ts:        DB._ts
   }).then(function(){ setSyncStatus('conectado'); })
@@ -9142,7 +9148,11 @@ function carregarDB() {
   DB.segmentos  = load('segmentos')  || [];
   DB.produtos   = load('produtos')   || [];
   DB.orcamentos  = load('orcamentos')  || [];
-  DB.fiscal      = load('fiscal')      || [];
+  var fiscalBase = load('fiscal') || [];
+  DB.fiscal = fiscalBase.map(function(n){
+    try{ var imgData=localStorage.getItem('repcrm_nf_img_'+n.id); if(imgData){var p=JSON.parse(imgData);n.imgB64=p.b64;n.imgMime=p.mime||'image/jpeg';} }catch(e){}
+    return n;
+  });
   DB.finalidades = load('finalidades') || [];
 }
 function salvarDB() {
@@ -9156,7 +9166,8 @@ function salvarDB() {
   save('segmentos',  DB.segmentos  || []);
   save('produtos',   DB.produtos   || []);
   save('orcamentos', DB.orcamentos || []);
-  save('fiscal',      DB.fiscal      || []);
+  var fiscalSemImg=(DB.fiscal||[]).map(function(n){var cp=Object.assign({},n);delete cp.imgB64;delete cp.imgMime;return cp;});
+  save('fiscal',      fiscalSemImg);
   save('finalidades', DB.finalidades || []);
   salvarNuvem();
 }
@@ -10625,7 +10636,8 @@ function salvarLocal(){
   save('segmentos',  DB.segmentos  || []);
   save('produtos',   DB.produtos   || []);
   save('orcamentos', DB.orcamentos || []);
-  save('fiscal',      DB.fiscal      || []);
+  var fiscalSemImg=(DB.fiscal||[]).map(function(n){var cp=Object.assign({},n);delete cp.imgB64;delete cp.imgMime;return cp;});
+  save('fiscal',      fiscalSemImg);
   save('finalidades', DB.finalidades || []);
 }
 
@@ -10644,7 +10656,7 @@ function salvarNuvem(){
     segmentos:  DB.segmentos  || [],
     produtos:   DB.produtos   || [],
     orcamentos: DB.orcamentos || [],
-    fiscal:     DB.fiscal     || [],
+    fiscal:     (DB.fiscal||[]).map(function(n){var cp=Object.assign({},n);delete cp.imgB64;delete cp.imgMime;return cp;}),
     finalidades:DB.finalidades|| [],
     _ts:        DB._ts
   }).then(function(){ setSyncStatus('conectado'); })
@@ -12364,8 +12376,11 @@ function salvarNF(){
   if(!val){ toast('Informe o valor'); return; }
   if(!fin){ toast('Selecione a finalidade'); return; }
 
+  var nfId=_nfEditId||uid();
+  // Salva imagem separada no localStorage
+  if(_nfImgB64){ try{localStorage.setItem('repcrm_nf_img_'+nfId, JSON.stringify({b64:_nfImgB64,mime:_nfImgMime}));}catch(e){console.warn('Img storage failed',e);} }
   var nf={
-    id:_nfEditId||uid(),
+    id:nfId,
     data:data||new Date().toISOString().split('T')[0],
     num:document.getElementById('nf-num').value.trim(),
     rs:rs,
