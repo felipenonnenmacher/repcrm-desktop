@@ -3259,6 +3259,8 @@ function initFirebase(){
       DB.fiscal      = remoto.fiscal      || [];
       DB.finalidades = remoto.finalidades || [];
       DB._ts        = remoto._ts;
+      // Re-renderiza fiscal se estiver na página
+      if(document.getElementById('p-fiscal')&&document.getElementById('p-fiscal').style.display!=='none') renderFiscal();
       salvarLocal();
       renderDash();
     }, function(err){
@@ -10596,6 +10598,8 @@ function initFirebase(){
       DB.fiscal      = remoto.fiscal      || [];
       DB.finalidades = remoto.finalidades || [];
       DB._ts        = remoto._ts;
+      // Re-renderiza fiscal se estiver na página
+      if(document.getElementById('p-fiscal')&&document.getElementById('p-fiscal').style.display!=='none') renderFiscal();
       salvarLocal();
       renderDash();
     }, function(err){
@@ -12382,12 +12386,13 @@ function salvarNF(){
     DB.fiscal.push(nf);
   }
 
-  salvarDB(); cm('mConfirmarNF');
+  salvarDB();
+  // Fecha modal e atualiza mês
+  var mConfEl=document.getElementById('mConfirmarNF'); if(mConfEl) mConfEl.style.display='none';
   _nfImgB64=null; _nfEditId=null;
-  // Ajusta mês para o da NF salva
-  if(data){ _fiscalMes=parseInt(data.slice(5,7))-1; _fiscalAno=parseInt(data.slice(0,4)); }
+  if(nf.data){ _fiscalMes=parseInt(nf.data.slice(5,7))-1; _fiscalAno=parseInt(nf.data.slice(0,4)); }
   renderFiscal();
-  toast('✅ NF '+(nf.num||'')+ ' salva com sucesso!');
+  toast('✅ NF '+(nf.num||'')+ ' salva!');
 }
 
 function excluirNF(id){
