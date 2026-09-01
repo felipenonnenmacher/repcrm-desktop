@@ -170,6 +170,46 @@ tr:hover td{background:var(--s2);color:var(--t1)}
 .com-prev{background:var(--s2);border-radius:8px;padding:12px;margin-top:4px;border:1px solid var(--bdr);display:flex;flex-direction:column;gap:4px}
 </style>
 <script>
+// ══ IndexedDB para imagens NF (sem limite de quota) ══
+var _nfImgDB = null;
+function abrirNFImgDB(){
+  return new Promise(function(resolve){
+    if(_nfImgDB){resolve(_nfImgDB);return;}
+    var req=indexedDB.open('repcrm_nf_imgs',1);
+    req.onupgradeneeded=function(e){e.target.result.createObjectStore('imgs',{keyPath:'id'});};
+    req.onsuccess=function(e){_nfImgDB=e.target.result;resolve(_nfImgDB);};
+    req.onerror=function(){resolve(null);};
+  });
+}
+function salvarNFImg(id, b64, mime){
+  abrirNFImgDB().then(function(db){
+    if(!db||!b64) return;
+    var tx=db.transaction('imgs','readwrite');
+    tx.objectStore('imgs').put({id:id,b64:b64,mime:mime||'image/jpeg'});
+  });
+}
+function carregarNFImgs(ids, callback){
+  abrirNFImgDB().then(function(db){
+    if(!db){callback({});return;}
+    var result={}; var pending=ids.length; if(!pending){callback({});return;}
+    ids.forEach(function(id){
+      var req=db.transaction('imgs','readonly').objectStore('imgs').get(id);
+      req.onsuccess=function(e){
+        if(e.target.result) result[id]=e.target.result;
+        if(--pending===0) callback(result);
+      };
+      req.onerror=function(){ if(--pending===0) callback(result); };
+    });
+  });
+}
+function excluirNFImg(id){
+  abrirNFImgDB().then(function(db){
+    if(!db) return;
+    db.transaction('imgs','readwrite').objectStore('imgs').delete(id);
+  });
+}
+// ══ fim IndexedDB ══
+
 if('serviceWorker' in navigator){
   var swBlob=new Blob(["const CACHE='repcrm-v14';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('activate',e=>{self.clients.claim();});self.addEventListener('fetch',e=>{e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));})"],{type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(swBlob),{scope:'./'}).catch(function(){});
@@ -1010,6 +1050,7 @@ if('serviceWorker' in navigator){
     <button id="ftab-gastos" onclick="fiscalTab('gastos')" class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px;font-weight:600;background:var(--acc);color:#fff;border-color:var(--acc)">Gastos do mês</button>
     <button id="ftab-fotos"  onclick="fiscalTab('fotos')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Fotos das NFs</button>
     <button id="ftab-cfg"    onclick="fiscalTab('cfg')"    class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Configurações</button>
+    <button id="ftab-conc"   onclick="fiscalTab('conc')"   class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px"><i class="ti ti-arrows-exchange"></i> Conciliação</button>
   </div>
 
   <!-- Aba Gastos -->
@@ -1082,6 +1123,69 @@ if('serviceWorker' in navigator){
     </div>
   </div>
 </div>
+
+<!-- Aba Conciliação Bancária -->
+  <div id="fpanel-conc" style="display:none">
+    <div class="card" style="padding:12px 14px;margin-bottom:12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div style="font-size:13px;font-weight:600;color:var(--t1)"><i class="ti ti-building-bank" style="color:#185FA5"></i> Conciliação Bancária</div>
+        <label class="btn bp" style="cursor:pointer;font-size:12px;padding:6px 16px">
+          <i class="ti ti-file-import"></i> Importar extrato do banco (.xlsx)
+          <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importarExtratoConc(this)">
+        </label>
+        <button class="btn bs" style="font-size:12px;padding:6px 14px;color:#3B6D11;border-color:#3B6D11" onclick="exportarConciliacaoExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button>
+        <span id="conc-status" style="font-size:11px;color:var(--t3)"></span>
+      </div>
+      <div style="font-size:11px;color:var(--t3);margin-top:8px;padding-top:8px;border-top:1px solid var(--s3)">
+        <i class="ti ti-info-circle"></i> Importe o extrato bancário em Excel — o sistema distribui automaticamente nas abas, categoriza e cruza com pedidos e NFs cadastradas.
+      </div>
+    </div>
+    <div id="conc-cards" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:12px">
+      <button onclick="concTab('entr')" id="ctab-entr" class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;font-size:12px;padding:7px 16px;background:var(--acc);color:#fff;border-color:var(--acc)"><i class="ti ti-arrow-down-circle"></i> Recebimentos</button>
+      <button onclick="concTab('said')" id="ctab-said" class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;font-size:12px;padding:7px 16px"><i class="ti ti-arrow-up-circle"></i> Pagamentos</button>
+      <button onclick="concTab('imp')"  id="ctab-imp"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;font-size:12px;padding:7px 16px"><i class="ti ti-receipt-tax"></i> Impostos</button>
+      <button onclick="concTab('sal')"  id="ctab-sal"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;font-size:12px;padding:7px 16px"><i class="ti ti-user-dollar"></i> Pró-labore</button>
+      <button onclick="concTab('dre')"  id="ctab-dre"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;font-size:12px;padding:7px 16px"><i class="ti ti-chart-bar"></i> DRE</button>
+    </div>
+    <div id="cpanel-entr"><div class="card" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--s2)">
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:left">Data</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:left">Cliente / Descrição</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:center">Doc</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:center;background:#E6F1FB44">Nº NF ✏️</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:right">Valor</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:center">Origem</th>
+      </tr></thead><tbody id="tb-conc-entr"><tr><td colspan="6" style="padding:16px;text-align:center;color:var(--t3)">Importe o extrato para visualizar.</td></tr></tbody></table>
+    </div></div>
+    <div id="cpanel-said" style="display:none"><div class="card" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--s2)">
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:left">Data</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:left">Fornecedor / Descrição</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:center">Doc</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:center;background:#FAEEDA44">Nº NF ✏️</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:center">Finalidade</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:right">Valor</th>
+      </tr></thead><tbody id="tb-conc-said"><tr><td colspan="6" style="padding:16px;text-align:center;color:var(--t3)">Importe o extrato para visualizar.</td></tr></tbody></table>
+    </div></div>
+    <div id="cpanel-imp" style="display:none"><div class="card" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--s2)">
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:left">Data</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:left">Imposto</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:center">Doc</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:right">Valor</th>
+      </tr></thead><tbody id="tb-conc-imp"><tr><td colspan="4" style="padding:16px;text-align:center;color:var(--t3)">Nenhum imposto identificado.</td></tr></tbody></table>
+    </div></div>
+    <div id="cpanel-sal" style="display:none"><div class="card" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--s2)">
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:left">Data</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:left">Beneficiário</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:center">Tipo</th>
+        <th style="padding:7px 10px;color:var(--t3);font-size:10px;text-transform:uppercase;text-align:right">Valor</th>
+      </tr></thead><tbody id="tb-conc-sal"><tr><td colspan="4" style="padding:16px;text-align:center;color:var(--t3)">Nenhum lançamento identificado.</td></tr></tbody></table>
+    </div></div>
+    <div id="cpanel-dre" style="display:none"><div id="conc-dre-content"><div class="card" style="padding:14px;text-align:center;color:var(--t3)">Importe o extrato para ver o DRE.</div></div></div>
+  </div>
 
 <!-- MODAL ANEXAR NF -->
 <div class="mbg" id="mAnexarNF"><div class="modal" style="max-width:520px">
@@ -1725,10 +1829,7 @@ function carregarDB() {
   DB.produtos   = load('produtos')   || [];
   DB.orcamentos  = load('orcamentos')  || [];
   var fiscalBase = load('fiscal') || [];
-  DB.fiscal = fiscalBase.map(function(n){
-    try{ var imgData=localStorage.getItem('repcrm_nf_img_'+n.id); if(imgData){var p=JSON.parse(imgData);n.imgB64=p.b64;n.imgMime=p.mime||'image/jpeg';} }catch(e){}
-    return n;
-  });
+  DB.fiscal = fiscalBase;
   DB.finalidades = load('finalidades') || [];
 }
 function salvarDB() {
@@ -9178,10 +9279,7 @@ function carregarDB() {
   DB.produtos   = load('produtos')   || [];
   DB.orcamentos  = load('orcamentos')  || [];
   var fiscalBase = load('fiscal') || [];
-  DB.fiscal = fiscalBase.map(function(n){
-    try{ var imgData=localStorage.getItem('repcrm_nf_img_'+n.id); if(imgData){var p=JSON.parse(imgData);n.imgB64=p.b64;n.imgMime=p.mime||'image/jpeg';} }catch(e){}
-    return n;
-  });
+  DB.fiscal = fiscalBase;
   DB.finalidades = load('finalidades') || [];
 }
 function salvarDB() {
@@ -12176,7 +12274,7 @@ function fiscalMesNav(dir){
 
 function fiscalTab(tab){
   _fiscalTab=tab;
-  ['gastos','fotos','cfg'].forEach(function(t){
+  ['gastos','fotos','cfg','conc'].forEach(function(t){
     var p=document.getElementById('fpanel-'+t);
     var b=document.getElementById('ftab-'+t);
     if(p) p.style.display=t===tab?'block':'none';
@@ -12256,65 +12354,372 @@ function renderFiscal(){
   // Grid fotos
   var grid=document.getElementById('grid-fiscal-fotos');
   if(grid){
-    // Preenche select finalidade do filtro de fotos
-    var selFoto=document.getElementById('fil-foto-fin');
-    if(selFoto && selFoto.options.length<=1){
-      (DB.finalidades||[]).forEach(function(f){ var o=document.createElement('option'); o.value=f; o.textContent=f; selFoto.appendChild(o); });
+    var semImg=nfs.filter(function(n){return !n.imgB64;}).map(function(n){return n.id;});
+    if(semImg.length){
+      carregarNFImgs(semImg,function(imgs){
+        nfs.forEach(function(n){if(imgs[n.id]){n.imgB64=imgs[n.id].b64;n.imgMime=imgs[n.id].mime||'image/jpeg';}});
+        _renderGridFotosNF(nfs,grid);
+      });
+    } else {
+      _renderGridFotosNF(nfs,grid);
     }
-    var fotoIni=document.getElementById('fil-foto-ini')?.value||'';
-    var fotoFim=document.getElementById('fil-foto-fim')?.value||'';
-    var fotoFin=document.getElementById('fil-foto-fin')?.value||'';
-    var fotoOrd=document.getElementById('fil-foto-ord')?.value||'data-desc';
-    // Restaura imagens faltando do localStorage
-    nfs.forEach(function(n){
-      if(!n.imgB64){
-        try{ var raw=localStorage.getItem('repcrm_nf_img_'+n.id); if(raw){var p=JSON.parse(raw);n.imgB64=p.b64;n.imgMime=p.mime||'image/jpeg';} }catch(e){}
-      }
-    });
-    // Aplica filtros
-    var nfsFilt=nfs.filter(function(n){
-      if(fotoIni && n.data && n.data<fotoIni) return false;
-      if(fotoFim && n.data && n.data>fotoFim) return false;
-      if(fotoFin && n.finalidade!==fotoFin) return false;
-      return true;
-    });
-    nfsFilt.sort(function(a,b){
-      if(fotoOrd==='data-asc')  return (a.data||'')>(b.data||'')?1:-1;
-      if(fotoOrd==='val-desc')  return (b.valor||0)-(a.valor||0);
-      if(fotoOrd==='val-asc')   return (a.valor||0)-(b.valor||0);
-      return (b.data||'')>(a.data||'')?1:-1;
-    });
-    var countEl=document.getElementById('foto-count');
-    if(countEl) countEl.textContent=nfsFilt.length+' de '+nfs.length+' NF(s)';
-    var html=nfsFilt.map(function(n){
-      var corFin=fiscalBgFin(n.finalidade); var txtFin=fiscalTxtFin(n.finalidade);
-      var imgHtml=n.imgB64
-        ?'<img src="data:'+(n.imgMime||'image/jpeg')+';base64,'+n.imgB64+'" style="width:100%;height:150px;object-fit:cover;display:block">'
-        :'<div style="width:100%;height:150px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" onclick="adicionarFotoNF(\''+n.id+'\')"><i class="ti ti-camera" style="font-size:28px;color:var(--t3)"></i><span style="font-size:11px;color:var(--t3)">Adicionar foto</span></div>';
-      return '<div style="background:var(--s1);border:1px solid var(--bdr);border-radius:10px;overflow:hidden">'
-        +imgHtml
-        +'<div style="padding:8px 10px">'
-          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
-            +'<span style="font-weight:700;font-size:11px;color:var(--acc)">NF '+(n.num||'—')+'</span>'
-            +'<span style="background:'+corFin+';color:'+txtFin+';border-radius:10px;padding:1px 7px;font-size:9px;font-weight:600">'+(n.finalidade||'')+'</span>'
-          +'</div>'
-          +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+(n.rs||'—')+'</div>'
-          +'<div style="display:flex;justify-content:space-between;margin-top:2px">'
-            +'<span style="font-size:10px;color:var(--t3)">'+(fmtD(n.data)||'—')+'</span>'
-            +'<span style="font-size:12px;font-weight:700;color:var(--t1)">'+fmt(n.valor||0)+'</span>'
-          +'</div>'
-        +'</div>'
-      +'</div>';
-    }).join('');
-    html+='<div style="border:1.5px dashed var(--bdr);border-radius:10px;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer" onclick="om(\'mAnexarNF\')">'
-      +'<div style="text-align:center;color:var(--t3)"><i class="ti ti-plus" style="font-size:28px"></i><div style="font-size:11px;margin-top:4px">Anexar NF</div></div>'
-    +'</div>';
-    grid.innerHTML=html;
   }
   // Lista finalidades (aba cfg)
   renderListaFinalidades();
 }
 
+// ══ CONCILIAÇÃO BANCÁRIA ══
+var _concLans = [];
+
+function concClassificar(desc, doc, valor){
+  var d=(desc+' '+doc).toUpperCase(); var v=parseFloat(valor)||0;
+  if(v>0) return 'entrada';
+  if(d.includes('RECEITA FEDERAL')||d.match(/\bDAS\b|\bGPS\b|\bDARF\b/)) return 'imposto';
+  if(d.includes('PRO LABORE')||d.includes('PRÓ LABORE')||d.includes('PROLABORE')) return 'prolabore';
+  if(d.match(/DIST.*LUCRO|LUCRO.*DIST/)||d.includes('CONTA PESSOA FISICA')||d.match(/\bPF\b/)) return 'distlucros';
+  if(d.includes('SALARIO')||d.includes('SALÁRIO')||d.includes('FOLHA')) return 'salario';
+  if(d.includes('HONORAR')||d.includes('CONTAB')) return 'honorarios';
+  return 'pagamento';
+}
+
+function concFinalidade(desc){
+  var d=desc.toUpperCase();
+  if(d.includes('COMBUST')||d.includes('POSTO')||d.includes('ABASTEC')) return 'Combustível';
+  if(d.includes('ALIMENT')||d.includes('RESTAUR')||d.includes('CHURRASCARIA')||d.includes('LANCHE')) return 'Alimentação';
+  if(d.includes('HOSPED')||d.includes('HOTEL')||d.includes('POUSADA')) return 'Hospedagem';
+  if(d.includes('PARCELA')||d.includes('AMORTIZ')||d.includes('PRONAMPE')) return 'Amortização';
+  if(d.includes('PLANO')||d.includes('SEGURO')||d.includes('CAPITAL')) return 'Encargos';
+  if(d.includes('TELEFONE')||d.includes('CLARO')||d.includes('VIVO')||d.includes('TIM')) return 'Comunicação';
+  return 'Diversos';
+}
+
+function concBuscarNFEntrada(desc){
+  var d=desc.toUpperCase();
+  // Tenta cruzar CNPJ com clientes
+  var cnpjM=d.match(/\b(\d{8}|\d{14})\b/);
+  if(cnpjM){
+    var cnpj=cnpjM[0];
+    var cli=(DB.clientes||[]).find(function(c){return (c.cnpj||'').replace(/\D/g,'').startsWith(cnpj);});
+    if(cli){
+      var ped=(DB.pedidos||[]).filter(function(p){return p.cliId===cli.id&&p.nf;}).sort(function(a,b){return (b.dt||'')>(a.dt||'')?1:-1;});
+      if(ped.length) return {nf:String(ped[0].nf),cliente:cli.rs,auto:true};
+      return {nf:'',cliente:cli.rs,auto:false};
+    }
+  }
+  // Tenta por palavras da razão social
+  var words=d.split(/\s+/).filter(function(w){return w.length>4;});
+  for(var i=0;i<(DB.clientes||[]).length;i++){
+    var c2=DB.clientes[i];
+    var rs=(c2.rs||'').toUpperCase();
+    if(words.some(function(w){return rs.includes(w);})){
+      var ped2=(DB.pedidos||[]).filter(function(p){return p.cliId===c2.id&&p.nf;}).sort(function(a,b){return (b.dt||'')>(a.dt||'')?1:-1;});
+      if(ped2.length) return {nf:String(ped2[0].nf),cliente:c2.rs,auto:true};
+      return {nf:'',cliente:c2.rs,auto:false};
+    }
+  }
+  return {nf:'',cliente:'',auto:false};
+}
+
+function concBuscarNFSaida(desc, valor){
+  var v=Math.abs(parseFloat(valor)||0);
+  var nf=(DB.fiscal||[]).find(function(n){
+    if(Math.abs((n.valor||0)-v)<0.05) return true;
+    var d=desc.toUpperCase(); var rs=(n.rs||'').toUpperCase();
+    return rs.length>3&&(d.includes(rs.substring(0,6))||rs.includes(d.substring(0,6)));
+  });
+  if(nf) return {nf:nf.num||'',fornecedor:nf.rs,auto:!!nf.num};
+  return {nf:'',fornecedor:'',auto:false};
+}
+
+function importarExtratoConc(input){
+  var file=input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+    _concLans=[];
+    rows.forEach(function(r){
+      var data=String(r[0]||'').trim();
+      var desc=String(r[1]||'').trim();
+      var doc =String(r[2]||'').trim();
+      // Valor pode estar na col 3 ou 4
+      var valStr=String(r[3]||'').replace(/\./g,'').replace(',','.');
+      var valor=parseFloat(valStr)||0;
+      if(!valor){ valStr=String(r[4]||'').replace(/\./g,'').replace(',','.'); valor=parseFloat(valStr)||0; }
+      if(!data||!desc||!valor||data.toLowerCase()==='data'||desc.toLowerCase()==='descrição') return;
+      var tipo=concClassificar(desc,doc,valor);
+      var nfInfo=valor>0?concBuscarNFEntrada(desc):concBuscarNFSaida(desc,valor);
+      var fin=valor<0?concFinalidade(desc):'';
+      _concLans.push({id:uid(),data:data,desc:desc,doc:doc,valor:valor,tipo:tipo,
+        nf:nfInfo.nf,nfAuto:nfInfo.auto,finalidade:fin,
+        cliente:nfInfo.cliente||nfInfo.fornecedor||''});
+    });
+    input.value='';
+    var ne=_concLans.filter(function(l){return l.valor>0;}).length;
+    var ns=_concLans.filter(function(l){return l.valor<0;}).length;
+    var na=_concLans.filter(function(l){return l.nfAuto;}).length;
+    document.getElementById('conc-status').textContent='✅ '+_concLans.length+' lançamentos · '+ne+' entradas · '+ns+' saídas · '+na+' NFs auto';
+    renderConcCards(); renderConcEntr(); renderConcSaid(); renderConcImp(); renderConcSal(); renderDRE();
+    toast('✅ Extrato importado e distribuído automaticamente!');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function nfInput(id,val,autoFill){
+  var cor=autoFill?'color:#185FA5;background:#E6F1FB44;font-weight:600':'';
+  var title=autoFill?'title="Preenchido automaticamente do CRM"':'';
+  return '<input type="text" value="'+val+'" placeholder="—" '+title+' style="width:80px;padding:2px 6px;font-size:11px;border:1px solid var(--bdr);border-radius:6px;text-align:center;'+cor+'" onchange="concAtuNF(\''+id+'\',this.value)">';
+}
+function concAtuNF(id,nf){ var l=_concLans.find(function(x){return x.id===id;}); if(l){l.nf=nf;l.nfAuto=false;} }
+function concAtuFin(id,fin){ var l=_concLans.find(function(x){return x.id===id;}); if(l) l.finalidade=fin; }
+
+function renderConcCards(){
+  var el=document.getElementById('conc-cards'); if(!el) return;
+  var entr=_concLans.filter(function(l){return l.valor>0;});
+  var said=_concLans.filter(function(l){return l.valor<0;});
+  var tE=entr.reduce(function(a,l){return a+l.valor;},0);
+  var tS=said.reduce(function(a,l){return a+Math.abs(l.valor);},0);
+  var res=tE-tS; var na=_concLans.filter(function(l){return l.nfAuto;}).length;
+  var sn=_concLans.filter(function(l){return !l.nf;}).length;
+  el.innerHTML=[
+    {l:'Recebimentos',v:fmt(tE),c:'var(--grn)',s:entr.length+' entradas'},
+    {l:'Pagamentos',  v:fmt(tS),c:'var(--red)', s:said.length+' saídas'},
+    {l:'Resultado',   v:(res>=0?'+':'')+fmt(res),c:res>=0?'var(--grn)':'var(--red)',s:res>=0?'superávit':'déficit'},
+    {l:'NFs auto ✓', v:String(na),c:'var(--acc)',s:'de '+_concLans.length+' lançamentos'},
+    {l:'Sem NF ⚠',   v:String(sn),c:'var(--org)',s:'preencha nas tabelas'}
+  ].map(function(mc){
+    return '<div class="mc"><div class="mcl">'+mc.l+'</div><div class="mcv" style="color:'+mc.c+'">'+mc.v+'</div><div class="mcs" style="font-size:10px;color:var(--t3)">'+mc.s+'</div></div>';
+  }).join('');
+}
+
+function renderConcEntr(){
+  var tb=document.getElementById('tb-conc-entr'); if(!tb) return;
+  var entr=_concLans.filter(function(l){return l.valor>0;});
+  if(!entr.length){tb.innerHTML='<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--t3)">Nenhuma entrada no extrato.</td></tr>';return;}
+  var total=entr.reduce(function(a,l){return a+l.valor;},0);
+  tb.innerHTML=entr.map(function(l){
+    var badge=l.nfAuto?'<span style="background:#E6F1FB;color:#0C447C;border-radius:8px;padding:1px 7px;font-size:9px;font-weight:600">auto CRM</span>':'<span style="background:var(--s2);color:var(--t3);border-radius:8px;padding:1px 7px;font-size:9px">manual</span>';
+    return '<tr style="border-bottom:1px solid var(--s3)">'
+      +'<td style="padding:6px 10px;color:var(--t3);white-space:nowrap;font-size:11px">'+l.data+'</td>'
+      +'<td style="padding:6px 10px"><div style="font-weight:500;color:var(--t1)">'+(l.cliente||l.desc)+'</div><div style="font-size:10px;color:var(--t3)">'+l.desc+'</div></td>'
+      +'<td style="padding:6px 10px;text-align:center;font-size:10px;color:var(--t3)">'+l.doc+'</td>'
+      +'<td style="padding:6px 10px;text-align:center">'+nfInput(l.id,l.nf,l.nfAuto)+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--grn)">'+fmt(l.valor)+'</td>'
+      +'<td style="padding:6px 10px;text-align:center">'+badge+'</td>'
+    +'</tr>';
+  }).join('')
+  +'<tr style="background:var(--s2);border-top:2px solid var(--bdr);font-weight:700"><td colspan="4" style="padding:6px 10px">Total — '+entr.length+' recebimento(s)</td><td style="padding:6px 10px;text-align:right;color:var(--grn);font-size:13px">'+fmt(total)+'</td><td></td></tr>';
+}
+
+function renderConcSaid(){
+  var tb=document.getElementById('tb-conc-said'); if(!tb) return;
+  var said=_concLans.filter(function(l){return l.valor<0&&l.tipo==='pagamento';});
+  if(!said.length){tb.innerHTML='<tr><td colspan="6" style="padding:14px;text-align:center;color:var(--t3)">Nenhum pagamento.</td></tr>';return;}
+  var total=said.reduce(function(a,l){return a+Math.abs(l.valor);},0);
+  tb.innerHTML=said.map(function(l){
+    var fins=(DB.finalidades||['Combustível','Alimentação','Hospedagem','Impostos','Diversos']).map(function(f){return '<option'+(f===l.finalidade?' selected':'')+'>'+f+'</option>';}).join('');
+    var nfBadge=l.nfAuto?' <span style="background:#FAEEDA;color:#633806;border-radius:8px;padding:1px 6px;font-size:9px;font-weight:600">auto NF</span>':'';
+    return '<tr style="border-bottom:1px solid var(--s3)">'
+      +'<td style="padding:6px 10px;color:var(--t3);white-space:nowrap;font-size:11px">'+l.data+'</td>'
+      +'<td style="padding:6px 10px;font-weight:500;color:var(--t1)">'+l.desc+'</td>'
+      +'<td style="padding:6px 10px;text-align:center;font-size:10px;color:var(--t3)">'+l.doc+'</td>'
+      +'<td style="padding:6px 10px;text-align:center">'+nfInput(l.id,l.nf,l.nfAuto)+nfBadge+'</td>'
+      +'<td style="padding:6px 10px;text-align:center"><select style="font-size:10px;padding:2px 4px;border:1px solid var(--bdr);border-radius:6px;background:var(--s1);color:var(--t1)" onchange="concAtuFin(\''+l.id+'\',this.value)">'+fins+'</select></td>'
+      +'<td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--red)">'+fmt(Math.abs(l.valor))+'</td>'
+    +'</tr>';
+  }).join('')
+  +'<tr style="background:var(--s2);border-top:2px solid var(--bdr);font-weight:700"><td colspan="5" style="padding:6px 10px">Total — '+said.length+' pagamento(s)</td><td style="padding:6px 10px;text-align:right;color:var(--red);font-size:13px">'+fmt(total)+'</td></tr>';
+}
+
+function renderConcImp(){
+  var tb=document.getElementById('tb-conc-imp'); if(!tb) return;
+  var imps=_concLans.filter(function(l){return l.tipo==='imposto';});
+  if(!imps.length){tb.innerHTML='<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--t3)">Nenhum imposto identificado.</td></tr>';return;}
+  var total=imps.reduce(function(a,l){return a+Math.abs(l.valor);},0);
+  tb.innerHTML=imps.map(function(l){
+    var nome=l.desc.includes('DAS')?'DAS Simples':l.desc.includes('GPS')?'GPS / INSS':l.desc.includes('DARF')?'DARF':'Imposto Federal';
+    return '<tr style="border-bottom:1px solid var(--s3)">'
+      +'<td style="padding:6px 10px;color:var(--t3)">'+l.data+'</td>'
+      +'<td style="padding:6px 10px;color:var(--t1)"><span style="background:#FCEBEB;color:#791F1F;border-radius:8px;padding:2px 10px;font-size:10px;font-weight:600;margin-right:6px">'+nome+'</span>'+l.desc+'</td>'
+      +'<td style="padding:6px 10px;text-align:center;color:var(--t3);font-size:10px">'+l.doc+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--red)">'+fmt(Math.abs(l.valor))+'</td>'
+    +'</tr>';
+  }).join('')
+  +'<tr style="background:var(--s2);border-top:2px solid var(--bdr);font-weight:700"><td colspan="3" style="padding:6px 10px">Total impostos</td><td style="padding:6px 10px;text-align:right;color:var(--red)">'+fmt(total)+'</td></tr>';
+}
+
+function renderConcSal(){
+  var tb=document.getElementById('tb-conc-sal'); if(!tb) return;
+  var sals=_concLans.filter(function(l){return l.tipo==='prolabore'||l.tipo==='salario'||l.tipo==='distlucros'||l.tipo==='honorarios';});
+  if(!sals.length){tb.innerHTML='<tr><td colspan="4" style="padding:14px;text-align:center;color:var(--t3)">Nenhum lançamento identificado.</td></tr>';return;}
+  var total=sals.reduce(function(a,l){return a+Math.abs(l.valor);},0);
+  var labels={prolabore:'Pró-labore',salario:'Salário',distlucros:'Dist. Lucros',honorarios:'Honorários'};
+  var cores={prolabore:'background:#EAF3DE;color:#27500A',salario:'background:#EEEDFE;color:#3C3489',distlucros:'background:#E6F1FB;color:#0C447C',honorarios:'background:#FAEEDA;color:#633806'};
+  tb.innerHTML=sals.map(function(l){
+    return '<tr style="border-bottom:1px solid var(--s3)">'
+      +'<td style="padding:6px 10px;color:var(--t3)">'+l.data+'</td>'
+      +'<td style="padding:6px 10px;font-weight:500;color:var(--t1)">'+l.desc+'</td>'
+      +'<td style="padding:6px 10px;text-align:center"><span style="'+(cores[l.tipo]||'')+';border-radius:8px;padding:2px 10px;font-size:10px;font-weight:600">'+(labels[l.tipo]||l.tipo)+'</span></td>'
+      +'<td style="padding:6px 10px;text-align:right;font-weight:700;color:var(--red)">'+fmt(Math.abs(l.valor))+'</td>'
+    +'</tr>';
+  }).join('')
+  +'<tr style="background:var(--s2);border-top:2px solid var(--bdr);font-weight:700"><td colspan="3" style="padding:6px 10px">Total</td><td style="padding:6px 10px;text-align:right;color:var(--red)">'+fmt(total)+'</td></tr>';
+}
+
+function renderDRE(){
+  var el=document.getElementById('conc-dre-content'); if(!el) return;
+  if(!_concLans.length){el.innerHTML='<div class="card" style="padding:14px;text-align:center;color:var(--t3)">Importe o extrato para ver o DRE.</div>';return;}
+  var entr=_concLans.filter(function(l){return l.valor>0;});
+  var said=_concLans.filter(function(l){return l.valor<0;});
+  var tE=entr.reduce(function(a,l){return a+l.valor;},0);
+  var tS=said.reduce(function(a,l){return a+Math.abs(l.valor);},0);
+  var res=tE-tS;
+  var porTipo={};
+  said.forEach(function(l){var k=l.tipo;porTipo[k]=(porTipo[k]||0)+Math.abs(l.valor);});
+  var tipoLabel={pagamento:'Pagamentos operacionais',imposto:'Impostos (DAS/GPS)',prolabore:'Pró-labore',distlucros:'Distribuição de lucros',salario:'Salários',honorarios:'Honorários contábeis'};
+  el.innerHTML='<div class="card" style="padding:16px">'
+    +'<div style="font-size:14px;font-weight:700;color:var(--t1);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--acc)"><i class="ti ti-chart-bar" style="color:var(--acc)"></i> DRE — Demonstrativo de Resultado</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">'
+    +'<div><div style="font-size:11px;font-weight:700;color:var(--grn);text-transform:uppercase;margin-bottom:8px">Receitas</div>'
+    +entr.map(function(l){return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--s3);font-size:11px"><span style="color:var(--t2)">'+(l.cliente||l.desc)+'</span><span style="color:var(--grn);font-weight:600">'+fmt(l.valor)+'</span></div>';}).join('')
+    +'<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:13px;margin-top:4px"><span>Total Receitas</span><span style="color:var(--grn)">'+fmt(tE)+'</span></div></div>'
+    +'<div><div style="font-size:11px;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:8px">Despesas</div>'
+    +Object.entries(porTipo).filter(function(e){return e[1]>0;}).map(function(e){return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--s3);font-size:11px"><span style="color:var(--t2)">'+(tipoLabel[e[0]]||e[0])+'</span><span style="color:var(--red);font-weight:600">'+fmt(e[1])+'</span></div>';}).join('')
+    +'<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;font-size:13px;margin-top:4px"><span>Total Despesas</span><span style="color:var(--red)">'+fmt(tS)+'</span></div></div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:space-between;padding:12px 16px;margin-top:14px;background:'+(res>=0?'rgba(59,109,17,.08)':'rgba(163,45,45,.08)')+';border-radius:8px;font-size:15px;font-weight:700">'
+    +'<span>Resultado Líquido</span><span style="color:'+(res>=0?'var(--grn)':'var(--red)')+'">'+(res>=0?'+':'')+fmt(res)+'</span></div>'
+  +'</div>';
+}
+
+function concTab(tab){
+  ['entr','said','imp','sal','dre'].forEach(function(t){
+    var p=document.getElementById('cpanel-'+t);
+    var b=document.getElementById('ctab-'+t);
+    if(p) p.style.display=t===tab?'block':'none';
+    if(b){
+      if(t===tab){b.style.background='var(--acc)';b.style.color='#fff';b.style.borderColor='var(--acc)';}
+      else{b.style.background='var(--s1)';b.style.color='var(--t2)';b.style.borderColor='var(--bdr)';}
+    }
+  });
+}
+
+function exportarConciliacaoExcel(){
+  if(!_concLans.length){toast('Importe o extrato primeiro');return;}
+  var wb=XLSX.utils.book_new();
+  var mes=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0');
+  var entr=_concLans.filter(function(l){return l.valor>0;});
+  var pag=_concLans.filter(function(l){return l.valor<0&&l.tipo==='pagamento';});
+  var hon=_concLans.filter(function(l){return l.tipo==='honorarios';});
+  var dist=_concLans.filter(function(l){return l.tipo==='distlucros'||l.tipo==='prolabore';});
+  var imps=_concLans.filter(function(l){return l.tipo==='imposto';});
+
+  var mkSheet=function(rows,cols){var ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=cols;return ws;};
+
+  XLSX.utils.book_append_sheet(wb, mkSheet(
+    [['BANCO','CLIENTE','DOC BANCÁRIO','DATA','Nº NF','VALOR BRUTO','VALOR LÍQUIDO','VALOR RECEBIDO']]
+    .concat(entr.map(function(l){return['SICREDI',l.cliente||l.desc,l.doc,l.data,l.nf||'',l.valor,'',l.valor];})),
+    [{wch:8},{wch:32},{wch:12},{wch:12},{wch:10},{wch:14},{wch:14},{wch:14}]
+  ),'RECEBIMENTOS');
+
+  XLSX.utils.book_append_sheet(wb, mkSheet(
+    [['DATA','BANCO','DOC','FINALIDADE','NOTA FISCAL','FORNECEDOR','VALOR BRUTO','VALOR PAGO']]
+    .concat(pag.map(function(l){return[l.data,'SICREDI',l.doc,l.finalidade,l.nf||'',l.desc,Math.abs(l.valor),Math.abs(l.valor)];})),
+    [{wch:12},{wch:8},{wch:10},{wch:16},{wch:12},{wch:30},{wch:14},{wch:14}]
+  ),'PAGAMENTOS');
+
+  XLSX.utils.book_append_sheet(wb, mkSheet(
+    [['DATA','BANCO','DOC','FINALIDADE','NOTA FISCAL','FORNECEDOR','VALOR']]
+    .concat(hon.map(function(l){return[l.data,'SICREDI',l.doc,'HONORÁRIOS',l.nf||'',l.desc,Math.abs(l.valor)];})),
+    [{wch:12},{wch:8},{wch:10},{wch:14},{wch:12},{wch:28},{wch:14}]
+  ),'Pagamentos Fornecedores');
+
+  XLSX.utils.book_append_sheet(wb, mkSheet(
+    [['DATA','BANCO','DOC','TIPO','VALOR']]
+    .concat(dist.map(function(l){return[l.data,'SICREDI',l.doc,l.tipo==='prolabore'?'PRÓ LABORE':'PIX PF',Math.abs(l.valor)];})),
+    [{wch:12},{wch:8},{wch:10},{wch:20},{wch:14}]
+  ),'DIST LUCROS');
+
+  XLSX.utils.book_append_sheet(wb, mkSheet(
+    [['DATA','BANCO','IMPOSTO','VALOR PAGO']]
+    .concat(imps.map(function(l){
+      var nm=l.desc.includes('DAS')?'DAS':l.desc.includes('GPS')?'GPS':'DARF';
+      return[l.data,'SICREDI',nm,Math.abs(l.valor)];
+    })),
+    [{wch:12},{wch:8},{wch:14},{wch:14}]
+  ),'Pagamentos impostos');
+
+  // DRE
+  var tE=entr.reduce(function(a,l){return a+l.valor;},0);
+  var tS=_concLans.filter(function(l){return l.valor<0;}).reduce(function(a,l){return a+Math.abs(l.valor);},0);
+  var porTipo={};
+  _concLans.filter(function(l){return l.valor<0;}).forEach(function(l){porTipo[l.tipo]=(porTipo[l.tipo]||0)+Math.abs(l.valor);});
+  var tLabel={pagamento:'Pagamentos operacionais',imposto:'Impostos',prolabore:'Pró-labore',distlucros:'Dist. Lucros',salario:'Salários',honorarios:'Honorários'};
+  var dreRows=[['DRE — '+mes],[''],['RECEITAS BRUTAS','',tE]];
+  entr.forEach(function(l){dreRows.push(['',l.cliente||l.desc,l.valor]);});
+  dreRows.push([''],['DESPESAS TOTAIS','',tS]);
+  Object.entries(porTipo).filter(function(e){return e[1]>0;}).forEach(function(e){dreRows.push(['',tLabel[e[0]]||e[0],e[1]]);});
+  dreRows.push([''],['RESULTADO LÍQUIDO','',tE-tS]);
+  XLSX.utils.book_append_sheet(wb, mkSheet(dreRows,[{wch:24},{wch:30},{wch:16}]),'DRE RESUMO');
+
+  XLSX.writeFile(wb,'conciliacao_'+mes+'.xlsx');
+  toast('✅ Excel exportado com '+wb.SheetNames.length+' abas!');
+}
+// ══ FIM CONCILIAÇÃO BANCÁRIA ══
+
+
+function _renderGridFotosNF(nfs, grid){
+  // Lê filtros
+  var fotoIni=document.getElementById('fil-foto-ini')?.value||'';
+  var fotoFim=document.getElementById('fil-foto-fim')?.value||'';
+  var fotoFin=document.getElementById('fil-foto-fin')?.value||'';
+  var fotoOrd=document.getElementById('fil-foto-ord')?.value||'data-desc';
+  var selFoto=document.getElementById('fil-foto-fin');
+  if(selFoto&&selFoto.options.length<=1){
+    (DB.finalidades||[]).forEach(function(f){var o=document.createElement('option');o.value=f;o.textContent=f;selFoto.appendChild(o);});
+  }
+  // Filtra
+  var nfsFilt=nfs.filter(function(n){
+    if(fotoIni&&n.data&&n.data<fotoIni) return false;
+    if(fotoFim&&n.data&&n.data>fotoFim) return false;
+    if(fotoFin&&n.finalidade!==fotoFin) return false;
+    return true;
+  });
+  // Ordena
+  nfsFilt.sort(function(a,b){
+    if(fotoOrd==='data-asc')  return (a.data||'')>(b.data||'')?1:-1;
+    if(fotoOrd==='val-desc')  return (b.valor||0)-(a.valor||0);
+    if(fotoOrd==='val-asc')   return (a.valor||0)-(b.valor||0);
+    return (b.data||'')>(a.data||'')?1:-1;
+  });
+  var countEl=document.getElementById('foto-count');
+  if(countEl) countEl.textContent=nfsFilt.length+' de '+nfs.length+' NF(s)';
+  var html=nfsFilt.map(function(n){
+    var corFin=fiscalBgFin(n.finalidade); var txtFin=fiscalTxtFin(n.finalidade);
+    var imgHtml=n.imgB64
+      ?'<img src="data:'+(n.imgMime||'image/jpeg')+';base64,'+n.imgB64+'" style="width:100%;height:150px;object-fit:cover;display:block">'
+      :'<div style="width:100%;height:150px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" onclick="adicionarFotoNF(\''+n.id+'\')" title="Adicionar foto"><i class="ti ti-camera" style="font-size:28px;color:var(--t3)"></i><span style="font-size:11px;color:var(--t3)">Adicionar foto</span></div>';
+    return '<div style="background:var(--s1);border:1px solid var(--bdr);border-radius:10px;overflow:hidden">'
+      +imgHtml
+      +'<div style="padding:8px 10px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
+          +'<span style="font-weight:700;font-size:11px;color:var(--acc)">NF '+(n.num||'—')+'</span>'
+          +'<span style="background:'+corFin+';color:'+txtFin+';border-radius:10px;padding:1px 7px;font-size:9px;font-weight:600">'+(n.finalidade||'')+'</span>'
+        +'</div>'
+        +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+(n.rs||'—')+'</div>'
+        +'<div style="display:flex;justify-content:space-between;margin-top:2px">'
+          +'<span style="font-size:10px;color:var(--t3)">'+(fmtD(n.data)||'—')+'</span>'
+          +'<span style="font-size:12px;font-weight:700;color:var(--t1)">'+fmt(n.valor||0)+'</span>'
+        +'</div>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+  html+='<div style="border:1.5px dashed var(--bdr);border-radius:10px;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer" onclick="om(\'mAnexarNF\')">'
+    +'<div style="text-align:center;color:var(--t3)"><i class="ti ti-plus" style="font-size:28px"></i><div style="font-size:11px;margin-top:4px">Anexar NF</div></div>'
+  +'</div>';
+  grid.innerHTML=html;
+}
 function renderListaFinalidades(){
   var el=document.getElementById('lista-finalidades'); if(!el) return;
   el.innerHTML=(DB.finalidades||[]).map(function(f,i){
@@ -12439,8 +12844,8 @@ function salvarNF(){
   if(!fin){ toast('Selecione a finalidade'); return; }
 
   var nfId=_nfEditId||uid();
-  // Salva imagem separada no localStorage
-  if(_nfImgB64){ try{localStorage.setItem('repcrm_nf_img_'+nfId, JSON.stringify({b64:_nfImgB64,mime:_nfImgMime}));}catch(e){console.warn('Img storage failed',e);} }
+  // Salva imagem no IndexedDB
+  if(_nfImgB64) salvarNFImg(nfId, _nfImgB64, _nfImgMime);
   var nf={
     id:nfId,
     data:data||new Date().toISOString().split('T')[0],
@@ -12838,7 +13243,7 @@ function adicionarFotoNF(id){
         // Salva na NF e no localStorage
         var nf=(DB.fiscal||[]).find(function(x){return x.id===id;});
         if(nf){ nf.imgB64=b64; nf.imgMime='image/jpeg'; }
-        try{ localStorage.setItem('repcrm_nf_img_'+id, JSON.stringify({b64:b64,mime:'image/jpeg'})); }catch(e){}
+        salvarNFImg(id, b64, 'image/jpeg');
         salvarDB();
         renderFiscal();
         toast('✅ Foto adicionada à NF!');
