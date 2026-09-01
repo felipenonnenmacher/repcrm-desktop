@@ -997,7 +997,7 @@ if('serviceWorker' in navigator){
       <span id="fiscal-mes-nav" style="font-size:13px;font-weight:600;color:var(--t1);min-width:110px;text-align:center;align-self:center"></span>
       <button class="btn bs" onclick="fiscalMesNav(1)"><i class="ti ti-chevron-right"></i></button>
       <button class="btn bs" style="color:#3B6D11;border-color:#3B6D11" onclick="imprimirFiscalA4()"><i class="ti ti-printer"></i> Imprimir A4</button>
-      <button class="btn bs" onclick="exportarFiscalPDF()"><i class="ti ti-file-export"></i> Exportar PDF</button>
+      <button class="btn bs" onclick="exportarFiscalPDF()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button>
       <button class="btn bp" onclick="om('mAnexarNF')"><i class="ti ti-plus"></i> Anexar NF</button>
     </div>
   </div>
@@ -1040,6 +1040,29 @@ if('serviceWorker' in navigator){
 
   <!-- Aba Fotos -->
   <div id="fpanel-fotos" style="display:none">
+    <div class="card" style="padding:10px 14px;margin-bottom:12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3)">
+          <i class="ti ti-calendar"></i> De:
+          <input type="date" class="fi" id="fil-foto-ini" style="padding:5px 8px;font-size:12px;width:140px" onchange="renderFiscal()">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3)">
+          Até:
+          <input type="date" class="fi" id="fil-foto-fim" style="padding:5px 8px;font-size:12px;width:140px" onchange="renderFiscal()">
+        </div>
+        <select class="fi" id="fil-foto-fin" style="width:160px;padding:5px 9px;font-size:12px" onchange="renderFiscal()">
+          <option value="">Todas finalidades</option>
+        </select>
+        <select class="fi" id="fil-foto-ord" style="width:150px;padding:5px 9px;font-size:12px" onchange="renderFiscal()">
+          <option value="data-desc">Data ↓ (mais recente)</option>
+          <option value="data-asc">Data ↑ (mais antiga)</option>
+          <option value="val-desc">Valor ↓</option>
+          <option value="val-asc">Valor ↑</option>
+        </select>
+        <button class="btn bs" style="font-size:11px;padding:4px 10px" onclick="limparFiltrosFotos()"><i class="ti ti-x"></i> Limpar</button>
+        <span id="foto-count" style="font-size:11px;color:var(--t3);margin-left:auto"></span>
+      </div>
+    </div>
     <div class="card" style="padding:14px">
       <div id="grid-fiscal-fotos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
     </div>
@@ -1072,12 +1095,16 @@ if('serviceWorker' in navigator){
     <span style="font-size:11px;color:var(--t3)">JPG, PNG, WEBP — até 10MB</span>
     <input type="file" accept="image/*" style="display:none" id="nf-img-input" onchange="nfPreview(this)">
   </label>
-  <div id="nf-preview-box" style="display:none;margin-bottom:14px;text-align:center">
-    <img id="nf-preview-img" style="max-height:200px;max-width:100%;border-radius:8px;border:1px solid var(--bdr)">
-    <div style="font-size:11px;color:var(--grn);margin-top:6px"><i class="ti ti-check"></i> Imagem carregada — pronta para leitura</div>
+  <div id="nf-preview-box" style="margin-bottom:14px;text-align:center">
+    <img id="nf-preview-img" style="max-height:180px;max-width:100%;border-radius:8px;border:1px solid var(--bdr);display:none">
+    <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:12px;color:var(--acc);border:1px solid var(--acc);border-radius:8px;padding:5px 14px;background:rgba(37,99,235,.05)">
+      <i class="ti ti-camera"></i> <span id="nf-foto-label">Adicionar foto</span>
+      <input type="file" accept="image/*" style="display:none" id="nf-img-confirmar" onchange="nfFotoConfirmar(this)">
+    </label>
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end">
     <button class="btn bs" onclick="cm('mAnexarNF')">Cancelar</button>
+    <button class="btn bs" onclick="preencherModalNF({});cm('mAnexarNF');om('mConfirmarNF')"><i class="ti ti-edit"></i> Preencher manualmente</button>
     <button class="btn bp" style="background:#185FA5;border-color:#185FA5" onclick="lerNFcomIA()" id="btn-ler-nf"><i class="ti ti-sparkles"></i> Ler com IA</button>
   </div>
 </div></div>
@@ -1904,6 +1931,8 @@ function sp(p) {
   if(p==='evendas') renderEmpVendas();
   if(p==='eorcam')  { renderEmpOrcam(); if(typeof renderTabelaProdutos==='function') renderTabelaProdutos(); }
   if(p==='produtos'){ document.getElementById('n-produtos')&&document.getElementById('n-produtos').classList.add('act'); renderPaginaProdutos(); }
+  
+  if(p==='fiscal'){document.getElementById('n-fiscal')&&document.getElementById('n-fiscal').classList.add('act');renderFiscal();}
   if(p==='lembretes') renderLembretes();
   if(p==='agenda') { document.getElementById('n-agenda').classList.add('act'); renderAgenda(); }
   if(p==='clidet') { /* already handled by abrirCli */ }
@@ -9348,6 +9377,8 @@ function sp(p) {
   if(p==='eped')  renderEmpPed();
   if(p==='ecom')  renderEmpCom();
   if(p==='evendas') renderEmpVendas();
+  
+  if(p==='fiscal'){document.getElementById('n-fiscal')&&document.getElementById('n-fiscal').classList.add('act');renderFiscal();}
   if(p==='lembretes') renderLembretes();
   if(p==='agenda') { document.getElementById('n-agenda').classList.add('act'); renderAgenda(); }
   if(p==='clidet') { /* already handled by abrirCli */ }
@@ -12225,11 +12256,43 @@ function renderFiscal(){
   // Grid fotos
   var grid=document.getElementById('grid-fiscal-fotos');
   if(grid){
-    var nfsFotos=nfs.filter(function(n){return n.imgB64;});
-    var html=nfsFotos.map(function(n){
+    // Preenche select finalidade do filtro de fotos
+    var selFoto=document.getElementById('fil-foto-fin');
+    if(selFoto && selFoto.options.length<=1){
+      (DB.finalidades||[]).forEach(function(f){ var o=document.createElement('option'); o.value=f; o.textContent=f; selFoto.appendChild(o); });
+    }
+    var fotoIni=document.getElementById('fil-foto-ini')?.value||'';
+    var fotoFim=document.getElementById('fil-foto-fim')?.value||'';
+    var fotoFin=document.getElementById('fil-foto-fin')?.value||'';
+    var fotoOrd=document.getElementById('fil-foto-ord')?.value||'data-desc';
+    // Restaura imagens faltando do localStorage
+    nfs.forEach(function(n){
+      if(!n.imgB64){
+        try{ var raw=localStorage.getItem('repcrm_nf_img_'+n.id); if(raw){var p=JSON.parse(raw);n.imgB64=p.b64;n.imgMime=p.mime||'image/jpeg';} }catch(e){}
+      }
+    });
+    // Aplica filtros
+    var nfsFilt=nfs.filter(function(n){
+      if(fotoIni && n.data && n.data<fotoIni) return false;
+      if(fotoFim && n.data && n.data>fotoFim) return false;
+      if(fotoFin && n.finalidade!==fotoFin) return false;
+      return true;
+    });
+    nfsFilt.sort(function(a,b){
+      if(fotoOrd==='data-asc')  return (a.data||'')>(b.data||'')?1:-1;
+      if(fotoOrd==='val-desc')  return (b.valor||0)-(a.valor||0);
+      if(fotoOrd==='val-asc')   return (a.valor||0)-(b.valor||0);
+      return (b.data||'')>(a.data||'')?1:-1;
+    });
+    var countEl=document.getElementById('foto-count');
+    if(countEl) countEl.textContent=nfsFilt.length+' de '+nfs.length+' NF(s)';
+    var html=nfsFilt.map(function(n){
       var corFin=fiscalBgFin(n.finalidade); var txtFin=fiscalTxtFin(n.finalidade);
+      var imgHtml=n.imgB64
+        ?'<img src="data:'+(n.imgMime||'image/jpeg')+';base64,'+n.imgB64+'" style="width:100%;height:150px;object-fit:cover;display:block">'
+        :'<div style="width:100%;height:150px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" onclick="adicionarFotoNF(\''+n.id+'\')"><i class="ti ti-camera" style="font-size:28px;color:var(--t3)"></i><span style="font-size:11px;color:var(--t3)">Adicionar foto</span></div>';
       return '<div style="background:var(--s1);border:1px solid var(--bdr);border-radius:10px;overflow:hidden">'
-        +'<img src="data:'+n.imgMime+';base64,'+n.imgB64+'" style="width:100%;height:150px;object-fit:cover;display:block">'
+        +imgHtml
         +'<div style="padding:8px 10px">'
           +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
             +'<span style="font-weight:700;font-size:11px;color:var(--acc)">NF '+(n.num||'—')+'</span>'
@@ -12248,7 +12311,6 @@ function renderFiscal(){
     +'</div>';
     grid.innerHTML=html;
   }
-
   // Lista finalidades (aba cfg)
   renderListaFinalidades();
 }
@@ -12416,81 +12478,103 @@ function excluirNF(id){
   salvarDB(); renderFiscal(); toast('NF removida!');
 }
 
-// ── Impressão A4 (3-4 NFs por folha) ──
+// ── Impressão A4 (fotos das NFs, 4 por folha) ──
 function imprimirFiscalA4(){
   var mesStr=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0');
-  var nfs=(DB.fiscal||[]).filter(function(n){return n.data&&n.data.startsWith(mesStr)&&n.imgB64;});
-  if(!nfs.length){ toast('Nenhuma NF com foto neste mês'); return; }
+  var nfs=(DB.fiscal||[]).filter(function(n){return n.data&&n.data.startsWith(mesStr);});
+  if(!nfs.length){ toast('Nenhuma NF registrada neste mês'); return; }
+
+  var nfsFotos = nfs.filter(function(n){ return n.imgB64; });
+  var nfsSemFoto = nfs.filter(function(n){ return !n.imgB64; });
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>NFs '+NOMES_MES_FISCAL[_fiscalMes]+'/'+_fiscalAno+'</title><style>'
     +'*{box-sizing:border-box;margin:0;padding:0}'
     +'body{font-family:Arial,sans-serif;background:#fff}'
-    +'@page{size:A4;margin:12mm}'
-    +'.page{page-break-after:always}'
-    +'.grid{display:grid;grid-template-columns:1fr 1fr;gap:8mm;height:100%}'
-    +'.nf-card{border:1px solid #ccc;border-radius:6px;overflow:hidden;display:flex;flex-direction:column}'
-    +'.nf-card img{width:100%;height:110mm;object-fit:contain;background:#f5f5f5}'
-    +'.nf-info{padding:4mm;border-top:1px solid #eee;font-size:10pt}'
-    +'.nf-titulo{font-weight:700;color:#185FA5;font-size:11pt}'
-    +'.nf-sub{color:#444;margin-top:1mm}'
-    +'.nf-val{font-weight:700;font-size:13pt;float:right}'
-    +'.mes-header{text-align:center;font-size:13pt;font-weight:700;color:#185FA5;margin-bottom:6mm;padding-bottom:3mm;border-bottom:1px solid #185FA5}'
+    +'@page{size:A4 portrait;margin:8mm}'
+    +'.page-header{text-align:center;font-size:12pt;font-weight:700;color:#185FA5;border-bottom:1.5px solid #185FA5;padding-bottom:4mm;margin-bottom:5mm}'
+    +'.grid{display:grid;grid-template-columns:1fr 1fr;gap:6mm}'
+    +'.nf-card{border:1px solid #ccc;border-radius:4px;overflow:hidden;page-break-inside:avoid}'
+    +'.nf-card img{width:100%;max-height:105mm;object-fit:contain;background:#f8f8f8;display:block}'
+    +'.nf-info{padding:3mm 4mm;border-top:1px solid #eee;font-size:8pt;line-height:1.5}'
+    +'.nf-titulo{font-weight:700;color:#185FA5;font-size:9pt}'
+    +'.nf-val{font-weight:700;float:right;color:#222}'
+    +'.sem-foto{display:flex;align-items:center;justify-content:center;height:80mm;background:#f5f5f5;color:#999;font-size:9pt;flex-direction:column;gap:4px}'
+    +'@media print{.no-print{display:none}}'
     +'</style></head><body>';
 
-  // Agrupa 4 por página
+  // Página de fotos (4 por folha)
   for(var i=0;i<nfs.length;i+=4){
     var grupo=nfs.slice(i,i+4);
-    html+='<div class="page"><div class="mes-header">'+NOMES_MES_FISCAL[_fiscalMes]+' / '+_fiscalAno+'</div><div class="grid">';
+    if(i>0) html+='<div style="page-break-before:always"></div>';
+    html+='<div class="page-header">'+NOMES_MES_FISCAL[_fiscalMes]+' / '+_fiscalAno+'</div>';
+    html+='<div class="grid">';
     grupo.forEach(function(n){
-      html+='<div class="nf-card"><img src="data:'+n.imgMime+';base64,'+n.imgB64+'">'
-        +'<div class="nf-info">'
-          +'<div class="nf-titulo">NF '+(n.num||'—')+'<span class="nf-val">'+fmt(n.valor||0)+'</span></div>'
-          +'<div class="nf-sub">'+(n.rs||'—')+'</div>'
-          +'<div class="nf-sub" style="color:#185FA5;font-size:9pt">'+(n.finalidade||'')+'</div>'
-          +'<div class="nf-sub" style="color:#888;font-size:9pt">'+(fmtD(n.data)||'—')+(n.cnpj?' · '+n.cnpj:'')+'</div>'
-        +'</div></div>';
+      html+='<div class="nf-card">';
+      if(n.imgB64){
+        html+='<img src="data:'+(n.imgMime||'image/jpeg')+';base64,'+n.imgB64+'">';
+      } else {
+        html+='<div class="sem-foto">📄<span>Sem foto</span><span style="font-size:8pt;color:#aaa">NF '+(n.num||'—')+'</span></div>';
+      }
+      html+='<div class="nf-info">'
+        +'<div class="nf-titulo">NF '+(n.num||'—')+'<span class="nf-val">'+fmt(n.valor||0)+'</span></div>'
+        +'<div style="color:#555">'+(n.rs||'—')+'</div>'
+        +'<div style="color:#888">'+(fmtD(n.data)||'—')+(n.finalidade?' · '+n.finalidade:'')+'</div>'
+        +(n.cnpj?'<div style="color:#aaa;font-size:7pt">'+n.cnpj+'</div>':'')
+      +'</div></div>';
     });
-    html+='</div></div>';
+    html+='</div>';
   }
+
   html+='</body></html>';
   var win=window.open('','_blank');
   win.document.write(html);
   win.document.close();
-  setTimeout(function(){win.print();},600);
+  setTimeout(function(){win.print();},800);
 }
 
-// ── Exportar PDF do extrato ──
+// ── Exportar extrato em Excel ──
 function exportarFiscalPDF(){
   var mesStr=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0');
   var nfs=(DB.fiscal||[]).filter(function(n){return n.data&&n.data.startsWith(mesStr);});
-  nfs.sort(function(a,b){return (b.data||'')>(a.data||'')?1:-1;});
+  nfs.sort(function(a,b){return (a.data||'')>(b.data||'')?1:-1;});
+
   var total=nfs.reduce(function(a,n){return a+(n.valor||0);},0);
+  var nomeMes=NOMES_MES_FISCAL[_fiscalMes]+' '+_fiscalAno;
 
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato Fiscal '+NOMES_MES_FISCAL[_fiscalMes]+'/'+_fiscalAno+'</title><style>'
-    +'*{box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:11pt;color:#222;margin:20mm}'
-    +'h1{font-size:16pt;color:#185FA5;border-bottom:2px solid #185FA5;padding-bottom:4mm;margin-bottom:6mm}'
-    +'table{width:100%;border-collapse:collapse;margin-bottom:8mm}'
-    +'thead tr{background:#185FA5;color:#fff}th{padding:5pt 8pt;text-align:left;font-weight:600}'
-    +'tbody tr:nth-child(even){background:#f0f4f8}td{padding:5pt 8pt;border-bottom:1px solid #ddd}'
-    +'.total{font-weight:700;font-size:13pt;text-align:right;color:#185FA5}'
-    +'@media print{button{display:none}}'
-    +'</style></head><body>'
-    +'<h1>Extrato de Gastos — '+NOMES_MES_FISCAL[_fiscalMes]+' / '+_fiscalAno+'</h1>'
-    +'<table><thead><tr><th>Data</th><th>Razão Social</th><th>CNPJ</th><th>Nº NF</th><th>Finalidade</th><th style="text-align:right">Valor</th></tr></thead><tbody>';
-
+  // Monta dados
+  var cab=['Data','Nº NF','Razão Social','CNPJ','Finalidade','Valor (R$)','Observação'];
+  var linhas=[cab];
   nfs.forEach(function(n){
-    html+='<tr><td>'+(fmtD(n.data)||'—')+'</td><td>'+( n.rs||'—')+'</td><td style="font-family:monospace;font-size:9pt">'+(n.cnpj||'—')+'</td><td style="font-weight:700;color:#185FA5">'+(n.num||'—')+'</td><td>'+(n.finalidade||'—')+'</td><td style="text-align:right;font-weight:600">'+fmt(n.valor||0)+'</td></tr>';
+    linhas.push([
+      fmtD(n.data)||'',
+      n.num||'',
+      n.rs||'',
+      n.cnpj||'',
+      n.finalidade||'',
+      n.valor||0,
+      n.obs||''
+    ]);
   });
+  // Linha total
+  linhas.push(['TOTAL','','',nfs.length+' nota(s)','',total,'']);
 
-  html+='</tbody></table><div class="total">Total: '+fmt(total)+'</div>'
-    +'<div style="margin-top:8mm;font-size:9pt;color:#888">'+nfs.length+' nota(s) fiscal(is) · RepCRM Pro</div>'
-    +'</body></html>';
+  var ws=XLSX.utils.aoa_to_sheet(linhas);
+  ws['!cols']=[{wch:12},{wch:10},{wch:30},{wch:20},{wch:14},{wch:14},{wch:22}];
 
-  var win=window.open('','_blank');
-  win.document.write(html);
-  win.document.close();
-  setTimeout(function(){win.print();},600);
+  // Estilo cabeçalho
+  var range=XLSX.utils.decode_range(ws['!ref']);
+  for(var C=range.s.c;C<=range.e.c;C++){
+    var cellRef=XLSX.utils.encode_cell({r:0,c:C});
+    if(!ws[cellRef]) continue;
+    ws[cellRef].s={fill:{fgColor:{rgb:'185FA5'}},font:{bold:true,color:{rgb:'FFFFFF'}}};
+  }
+
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Gastos '+nomeMes);
+  XLSX.writeFile(wb,'fiscal_'+mesStr+'.xlsx');
+  toast('✅ Excel exportado: fiscal_'+mesStr+'.xlsx');
 }
+
 // ══ FIM MÓDULO FISCAL ══
 var _iaItensReconhecidos = [];
 var _iaImagemBase64 = null;
@@ -12712,6 +12796,63 @@ function importarItensOrcamento(input){
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+function nfFotoConfirmar(input){
+  var file=input.files[0]; if(!file) return;
+  _nfImgMime='image/jpeg';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    // Comprime
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement('canvas');
+      var MAX=900; var ratio=Math.min(MAX/img.width,MAX/img.height,1);
+      canvas.width=Math.round(img.width*ratio); canvas.height=Math.round(img.height*ratio);
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      _nfImgB64=canvas.toDataURL('image/jpeg',0.75).split(',')[1];
+      var prev=document.getElementById('nf-preview-img');
+      if(prev){ prev.src=canvas.toDataURL('image/jpeg',0.75); prev.style.display='block'; }
+      var lbl=document.getElementById('nf-foto-label'); if(lbl) lbl.textContent='Alterar foto';
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function adicionarFotoNF(id){
+  // Abre seletor de arquivo e salva direto na NF
+  var input=document.createElement('input');
+  input.type='file'; input.accept='image/*';
+  input.onchange=function(){
+    var file=input.files[0]; if(!file) return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var canvas=document.createElement('canvas');
+        var MAX=900; var ratio=Math.min(MAX/img.width,MAX/img.height,1);
+        canvas.width=Math.round(img.width*ratio); canvas.height=Math.round(img.height*ratio);
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        var b64=canvas.toDataURL('image/jpeg',0.75).split(',')[1];
+        // Salva na NF e no localStorage
+        var nf=(DB.fiscal||[]).find(function(x){return x.id===id;});
+        if(nf){ nf.imgB64=b64; nf.imgMime='image/jpeg'; }
+        try{ localStorage.setItem('repcrm_nf_img_'+id, JSON.stringify({b64:b64,mime:'image/jpeg'})); }catch(e){}
+        salvarDB();
+        renderFiscal();
+        toast('✅ Foto adicionada à NF!');
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+function limparFiltrosFotos(){
+  var ids=['fil-foto-ini','fil-foto-fim','fil-foto-fin','fil-foto-ord'];
+  ids.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=id==='fil-foto-ord'?'data-desc':''; });
+  renderFiscal();
 }
 // ── fim importação itens ──
 
