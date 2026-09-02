@@ -5481,10 +5481,44 @@ function carregarCfgNuvem(){
 }
 
 function salvarCfgNuvem(){
-  const raw=document.getElementById('cfg-nuvem-json')?.value.trim();
-  const chave=document.getElementById('cfg-nuvem-chave')?.value.trim()||'repcrm';
-  if(raw){ localStorage.setItem('fb_config',raw); localStorage.setItem('fb_chave',chave); }
-  toast('Configuração salva! Recarregue para conectar.'); cm('mCfg');
+  // Existem duas telas que chamam essa função: o modal "Sincronização em
+  // Nuvem" (campos nuvem-cfg/nuvem-chave) e a aba Configurações (só
+  // cfg-nuvem-chave, sem campo de JSON). Essa versão atende as duas.
+  var campoJson  = document.getElementById('nuvem-cfg');
+  var campoChave = document.getElementById('nuvem-chave') || document.getElementById('cfg-nuvem-chave');
+  var raw = (campoJson ? campoJson.value.trim() : '') || localStorage.getItem('fb_config') || '';
+  if(!raw && typeof FB_CONFIG_PADRAO!=='undefined' && FB_CONFIG_PADRAO && FB_CONFIG_PADRAO.apiKey){
+    raw = JSON.stringify(FB_CONFIG_PADRAO);
+  }
+  var chave = (campoChave ? campoChave.value.trim() : '') || 'repcrm';
+  var s = document.getElementById('nuvem-status');
+  try {
+    var cfg = parseFbConfig(raw);
+    raw = JSON.stringify(cfg); // normaliza para JSON limpo antes de salvar
+  } catch(e) {
+    if(s){ s.textContent = '❌ JSON inválido — verifique as credenciais'; s.style.color='var(--red)'; }
+    else toast('❌ Firebase: credenciais inválidas');
+    return;
+  }
+  localStorage.setItem('fb_config', raw);
+  localStorage.setItem('fb_chave', chave);
+  if(s){ s.textContent = '🔄 Conectando...'; s.style.color='var(--org)'; }
+  initFirebase();
+  var tentativas = 0;
+  var check = setInterval(function(){
+    tentativas++;
+    if(fbDB){
+      if(s){ s.textContent='🟢 Conectado! Sincronizando...'; s.style.color='var(--grn)'; }
+      toast('✅ Conectado! Sincronizando...');
+      salvarNuvem();
+      clearInterval(check);
+    } else if(tentativas >= 10){
+      if(s){ s.textContent='❌ Não conectou — veja o toast para detalhes'; s.style.color='var(--red)'; }
+      else toast('❌ Não conectou — verifique as credenciais');
+      clearInterval(check);
+    }
+  }, 500);
+  if(document.getElementById('mCfg') && !campoJson) cm('mCfg');
 }
 
 // Modo noturno
@@ -13399,10 +13433,44 @@ function carregarCfgNuvem(){
 }
 
 function salvarCfgNuvem(){
-  const raw=document.getElementById('cfg-nuvem-json')?.value.trim();
-  const chave=document.getElementById('cfg-nuvem-chave')?.value.trim()||'repcrm';
-  if(raw){ localStorage.setItem('fb_config',raw); localStorage.setItem('fb_chave',chave); }
-  toast('Configuração salva! Recarregue para conectar.'); cm('mCfg');
+  // Existem duas telas que chamam essa função: o modal "Sincronização em
+  // Nuvem" (campos nuvem-cfg/nuvem-chave) e a aba Configurações (só
+  // cfg-nuvem-chave, sem campo de JSON). Essa versão atende as duas.
+  var campoJson  = document.getElementById('nuvem-cfg');
+  var campoChave = document.getElementById('nuvem-chave') || document.getElementById('cfg-nuvem-chave');
+  var raw = (campoJson ? campoJson.value.trim() : '') || localStorage.getItem('fb_config') || '';
+  if(!raw && typeof FB_CONFIG_PADRAO!=='undefined' && FB_CONFIG_PADRAO && FB_CONFIG_PADRAO.apiKey){
+    raw = JSON.stringify(FB_CONFIG_PADRAO);
+  }
+  var chave = (campoChave ? campoChave.value.trim() : '') || 'repcrm';
+  var s = document.getElementById('nuvem-status');
+  try {
+    var cfg = parseFbConfig(raw);
+    raw = JSON.stringify(cfg); // normaliza para JSON limpo antes de salvar
+  } catch(e) {
+    if(s){ s.textContent = '❌ JSON inválido — verifique as credenciais'; s.style.color='var(--red)'; }
+    else toast('❌ Firebase: credenciais inválidas');
+    return;
+  }
+  localStorage.setItem('fb_config', raw);
+  localStorage.setItem('fb_chave', chave);
+  if(s){ s.textContent = '🔄 Conectando...'; s.style.color='var(--org)'; }
+  initFirebase();
+  var tentativas = 0;
+  var check = setInterval(function(){
+    tentativas++;
+    if(fbDB){
+      if(s){ s.textContent='🟢 Conectado! Sincronizando...'; s.style.color='var(--grn)'; }
+      toast('✅ Conectado! Sincronizando...');
+      salvarNuvem();
+      clearInterval(check);
+    } else if(tentativas >= 10){
+      if(s){ s.textContent='❌ Não conectou — veja o toast para detalhes'; s.style.color='var(--red)'; }
+      else toast('❌ Não conectou — verifique as credenciais');
+      clearInterval(check);
+    }
+  }, 500);
+  if(document.getElementById('mCfg') && !campoJson) cm('mCfg');
 }
 
 // Modo noturno
