@@ -10,6 +10,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;font-size:var(--fs-sm)}
@@ -998,6 +1000,8 @@ if('serviceWorker' in navigator){
       <button class="btn bs" onclick="fiscalMesNav(1)"><i class="ti ti-chevron-right"></i></button>
       <button class="btn bs" style="color:#3B6D11;border-color:#3B6D11" onclick="imprimirFiscalA4()"><i class="ti ti-printer"></i> Imprimir A4</button>
       <button class="btn bs" onclick="exportarFiscalPDF()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button>
+      <button class="btn bs" style="color:#185FA5;border-color:#185FA5" onclick="atualizarVinculosPagamentos()" title="Re-tenta casar NFs de Gastos já cadastradas com os lançamentos de Pagamentos do card Geral"><i class="ti ti-refresh"></i> Atualizar Vínculos</button>
+      <button class="btn bs" style="color:#7C3AED;border-color:#7C3AED" onclick="exportarPacoteMensal()" title="Baixa um .zip com a planilha, a impressão das NF de Gastos e os PDFs anexados do mês"><i class="ti ti-package"></i> Pacote Mensal</button>
       <button class="btn bp" onclick="om('mAnexarNF')"><i class="ti ti-plus"></i> Anexar NF</button>
     </div>
   </div>
@@ -8172,6 +8176,8 @@ CTYPE html>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#e2e8f0;font-size:var(--fs-sm)}
@@ -12485,6 +12491,31 @@ function casarNFPagamento(dataISO, valorAbs){
   return null;
 }
 
+// Re-tenta casar cada lançamento do card Pagamentos com uma NF de Gastos —
+// útil pra quando o extrato foi importado ANTES de cadastrar a NF (foto/PDF)
+// correspondente em Gastos. Só preenche NF/Finalidade/Fornecedor que ainda
+// estão em branco — nunca sobrescreve algo que você já preencheu/corrigiu
+// manualmente, e só casa em data+valor exatos (mesma regra do import).
+function atualizarVinculosPagamentos(){
+  var linhas=(DB.geral && DB.geral.PAGAMENTOS)||[];
+  if(!linhas.length){ toast('Nenhum lançamento em Pagamentos ainda.'); return; }
+  var atualizados=0;
+  linhas.forEach(function(row){
+    if(row.nf) return; // já tem NF vinculada (seja do import ou manual) — não mexe
+    var m=casarNFPagamento(row.data, +row.valorPago||0);
+    if(m){
+      row.nf=m.num||'';
+      row.finalidade=m.finalidade||'';
+      row.fornecedor=m.rs||'';
+      atualizados++;
+    }
+  });
+  if(!atualizados){ toast('Nenhum vínculo novo encontrado — tudo já casado ou sem NF correspondente ainda.'); return; }
+  salvarGeralLocal();
+  renderFiscal();
+  toast('✅ '+atualizados+' lançamento(s) de Pagamentos atualizado(s) com a NF correspondente!');
+}
+
 function carregarGeral(){
   try{
     var raw = localStorage.getItem(DB_GERAL_KEY);
@@ -12695,15 +12726,15 @@ function importarExtratoGeral(input){
 
 // Exporta os cards da aba Geral em Excel, no mesmo formato (abas, colunas e
 // cabeçalhos) da planilha contábil que foi enviada como base do sistema.
-function exportarGeralExcel(){
-  var temDados=false;
-  for(var i=0;i<CARDS_GERAL.length;i++){ if((DB.geral[CARDS_GERAL[i].key]||[]).length){ temDados=true; break; } }
-  if(!temDados){ toast('Nenhum lançamento nos cards ainda — nada para exportar.'); return; }
-
+// Monta o workbook da aba Geral — mesFiltro é opcional ('YYYY-MM'); quando
+// omitido, exporta tudo (comportamento do botão "Exportar Excel" de sempre).
+function montarWorkbookGeral(mesFiltro){
   var wb=XLSX.utils.book_new();
   CARDS_GERAL.forEach(function(card){
     var linhas=[card.xlsxHeader];
-    var dados=DB.geral[card.key]||[];
+    var dados=(DB.geral[card.key]||[]).filter(function(row){
+      return !mesFiltro || (row.data && row.data.indexOf(mesFiltro)===0);
+    });
     dados.forEach(function(row){
       linhas.push(card.cols.map(function(c){
         var v=row[c.f];
@@ -12722,11 +12753,132 @@ function exportarGeralExcel(){
     }
     XLSX.utils.book_append_sheet(wb, ws, card.xlsxSheet);
   });
+  return wb;
+}
 
+function exportarGeralExcel(){
+  var temDados=false;
+  for(var i=0;i<CARDS_GERAL.length;i++){ if((DB.geral[CARDS_GERAL[i].key]||[]).length){ temDados=true; break; } }
+  if(!temDados){ toast('Nenhum lançamento nos cards ainda — nada para exportar.'); return; }
+
+  var wb=montarWorkbookGeral(null);
   var hoje=new Date();
   var nomeArq='geral_'+hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0')+'.xlsx';
   XLSX.writeFile(wb, nomeArq);
   toast('✅ Excel exportado: '+nomeArq);
+}
+
+function sanitizeNomeArquivo(s){
+  var t=String(s||'arquivo').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-zA-Z0-9_\- ]/g,'').trim().replace(/\s+/g,'_');
+  return t.slice(0,60) || 'arquivo';
+}
+
+// Gera um PDF (blob) com as fotos das NF de Gastos do mês — igual à
+// "Imprimir A4", mas como arquivo pra entrar no Pacote Mensal em vez de
+// abrir o diálogo de impressão do navegador. NFs anexadas como PDF (não
+// foto) não entram aqui — elas vão junto no pacote como arquivo à parte.
+async function gerarPdfGastos(nfs, nomeMesLabel){
+  if(typeof window.jspdf==='undefined') return null;
+  var jsPDFCtor=window.jspdf.jsPDF;
+  var doc=new jsPDFCtor({unit:'mm', format:'a4'});
+  var pageW=210, pageH=297, margin=12;
+  var perPage=2;
+  var cellH=(pageH-2*margin)/perPage;
+  var imgMaxH=cellH-24;
+
+  for(var i=0;i<nfs.length;i++){
+    var n=nfs[i];
+    var posInPage=i%perPage;
+    if(i>0 && posInPage===0) doc.addPage();
+    var yBase=margin+posInPage*cellH;
+    if(posInPage===0){
+      doc.setFontSize(11); doc.setTextColor(24,95,165);
+      doc.text('Notas Fiscais de Gastos — '+nomeMesLabel, pageW/2, yBase, {align:'center'});
+    }
+    var y=yBase+8;
+    try{
+      var src='data:'+(n.imgMime||'image/jpeg')+';base64,'+n.imgB64;
+      var props=doc.getImageProperties(src);
+      var ratio=Math.min((pageW-2*margin)/props.width, imgMaxH/props.height);
+      var w=props.width*ratio, h=props.height*ratio;
+      var x=(pageW-w)/2;
+      doc.addImage(src, 'JPEG', x, y, w, h);
+      y+=h+5;
+    }catch(e){ y+=5; }
+    doc.setFontSize(9); doc.setTextColor(20,20,20);
+    doc.text('NF '+(n.num||'—')+'   '+fmt(n.valor||0), margin, y);
+    doc.setFontSize(8); doc.setTextColor(90,90,90);
+    doc.text((n.rs||'—')+' — '+(fmtD(n.data)||'—')+(n.finalidade?' · '+n.finalidade:''), margin, y+5);
+  }
+  return doc.output('blob');
+}
+
+// ── Pacote Mensal: um .zip com a planilha da aba Geral (só o mês), a
+// impressão das NF de Gastos em PDF, e todos os PDFs de nota anexados
+// (Gastos + Recebimento) no mês — tudo o que foi registrado no período. ──
+async function exportarPacoteMensal(){
+  if(typeof JSZip==='undefined'){ toast('Não consegui carregar a biblioteca de compactação — verifique sua internet e recarregue a página.'); return; }
+  var mesStr=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0');
+  var nomeMes=NOMES_MES_FISCAL[_fiscalMes]+'_'+_fiscalAno;
+  var nomeMesLabel=NOMES_MES_FISCAL[_fiscalMes]+'/'+_fiscalAno;
+
+  toast('⏳ Montando o pacote mensal...');
+
+  var zip=new JSZip();
+
+  // 1) Planilha (aba Geral) filtrada pro mês
+  var wb=montarWorkbookGeral(mesStr);
+  var wbArray=XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  zip.file('planilha_'+nomeMes+'.xlsx', wbArray);
+
+  // 2) NFs de Gastos do mês — restaura fotos/PDFs faltando do localStorage
+  var nfsGastos=(DB.fiscal||[]).filter(function(n){return n.data&&n.data.startsWith(mesStr);});
+  nfsGastos.forEach(function(n){
+    if(!n.imgB64){
+      try{ var raw=localStorage.getItem('repcrm_nf_img_'+n.id); if(raw){var p=JSON.parse(raw); n.imgB64=p.b64; n.imgMime=p.mime||'image/jpeg';} }catch(e){}
+    }
+  });
+  var nfsFoto=nfsGastos.filter(function(n){ return n.imgB64 && n.imgMime!=='application/pdf'; });
+  var nfsPdf =nfsGastos.filter(function(n){ return n.imgB64 && n.imgMime==='application/pdf'; });
+
+  // 3) Impressão das NF de Gastos (fotos) em PDF
+  if(nfsFoto.length){
+    var blobGastos=await gerarPdfGastos(nfsFoto, nomeMesLabel);
+    if(blobGastos) zip.file('impressao_gastos_'+nomeMes+'.pdf', blobGastos);
+  }
+
+  // 4) PDFs anexados — Gastos + Recebimento, cada um como arquivo separado
+  var pastaPdfs=zip.folder('notas_pdf_'+nomeMes);
+  var qtdPdfs=0;
+  nfsPdf.forEach(function(n,i){
+    var nomeArq=sanitizeNomeArquivo('gasto_'+(n.num||i+1)+'_'+(n.rs||'nf'))+'.pdf';
+    pastaPdfs.file(nomeArq, n.imgB64, {base64:true});
+    qtdPdfs++;
+  });
+  var recebs=((DB.geral&&DB.geral.RECEBIMENTOS)||[]).filter(function(r){return r.data&&r.data.startsWith(mesStr);});
+  recebs.forEach(function(r){
+    if(!r.imgB64 && r.temAnexo){
+      try{ var raw=localStorage.getItem('repcrm_geral_anexo_'+r.id); if(raw){var p=JSON.parse(raw); r.imgB64=p.b64; r.imgMime=p.mime||'image/jpeg';} }catch(e){}
+    }
+  });
+  recebs.filter(function(r){ return r.imgB64 && r.imgMime==='application/pdf'; }).forEach(function(r,i){
+    var nomeArq=sanitizeNomeArquivo('recebimento_'+(r.nfe||i+1)+'_'+(r.cliente||'nf'))+'.pdf';
+    pastaPdfs.file(nomeArq, r.imgB64, {base64:true});
+    qtdPdfs++;
+  });
+
+  if(!nfsGastos.length && !recebs.length && !qtdPdfs){
+    toast('Nada registrado em '+nomeMesLabel+' ainda — pacote não gerado.');
+    return;
+  }
+
+  var blob=await zip.generateAsync({type:'blob'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download='pacote_fiscal_'+nomeMes+'.zip';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 8000);
+  toast('✅ Pacote mensal de '+nomeMesLabel+' baixado!');
 }
 
 function renderFiscal(){
