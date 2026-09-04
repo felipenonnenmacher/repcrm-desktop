@@ -1009,6 +1009,7 @@ if('serviceWorker' in navigator){
   <div style="display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:14px">
     <button id="ftab-gastos" onclick="fiscalTab('gastos')" class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px;font-weight:600;background:var(--acc);color:#fff;border-color:var(--acc)">Gastos do mês</button>
     <button id="ftab-fotos"  onclick="fiscalTab('fotos')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Fotos das NFs</button>
+    <button id="ftab-geral"  onclick="fiscalTab('geral')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Geral</button>
     <button id="ftab-cfg"    onclick="fiscalTab('cfg')"    class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Configurações</button>
   </div>
 
@@ -1066,6 +1067,23 @@ if('serviceWorker' in navigator){
     <div class="card" style="padding:14px">
       <div id="grid-fiscal-fotos" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
     </div>
+  </div>
+
+  <!-- Aba Geral (cards por planilha contábil + importação de extrato) -->
+  <div id="fpanel-geral" style="display:none">
+    <div class="card" style="padding:10px 14px;margin-bottom:12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+        <div style="font-size:12px;color:var(--t3);max-width:520px">
+          Esses cards são só um controle geral (recebimentos, pagamentos, fornecedores etc.) — não têm nenhum vínculo com empresas, clientes ou pedidos, e não sincronizam entre aparelhos: ficam só neste computador.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn bs" onclick="exportarGeralExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button>
+          <input type="file" id="input-extrato-geral" accept=".xls,.xlsx" style="display:none" onchange="importarExtratoGeral(this)">
+          <button class="btn bp" onclick="document.getElementById('input-extrato-geral').click()"><i class="ti ti-file-upload"></i> Importar extrato</button>
+        </div>
+      </div>
+    </div>
+    <div id="fpanel-geral-cards"></div>
   </div>
 
   <!-- Aba Configurações -->
@@ -1823,6 +1841,7 @@ document.querySelectorAll('.mbg').forEach(m => m.addEventListener('click', e => 
 // ══ INIT ══
 function init() {
   carregarDB();
+  carregarGeral();
   if(!DB.empresas.length) carregarDadosExemplo();
   const hoje = new Date();
   document.getElementById('ph-dt').textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -9335,6 +9354,7 @@ document.querySelectorAll('.mbg').forEach(m => m.addEventListener('click', e => 
 // ══ INIT ══
 function init() {
   carregarDB();
+  carregarGeral();
   if(!DB.empresas.length) carregarDadosExemplo();
   const hoje = new Date();
   document.getElementById('ph-dt').textContent = hoje.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -12266,7 +12286,7 @@ function fiscalMesNav(dir){
 
 function fiscalTab(tab){
   _fiscalTab=tab;
-  ['gastos','fotos','cfg'].forEach(function(t){
+  ['gastos','fotos','geral','cfg'].forEach(function(t){
     var p=document.getElementById('fpanel-'+t);
     var b=document.getElementById('ftab-'+t);
     if(p) p.style.display=t===tab?'block':'none';
@@ -12275,6 +12295,315 @@ function fiscalTab(tab){
       else { b.style.background='var(--s1)'; b.style.color='var(--t2)'; b.style.borderColor='var(--bdr)'; }
     }
   });
+  if(tab==='geral') renderGeral();
+}
+
+// ══ ABA GERAL — cards soltos por planilha contábil (RECEBIMENTOS, PAGAMENTOS,
+// Fornecedores, LUCROS, Impostos, Cheques, Salários) + importação de extrato
+// bancário. Propositalmente ISOLADO do resto do sistema: não usa DB.empresas/
+// DB.clientes/DB.pedidos, tem seu próprio armazenamento local (não sincroniza
+// pela nuvem), e as colunas de cada card espelham exatamente as abas da
+// planilha contábil original. ══
+var DB_GERAL_KEY = 'repcrm_geral';
+if(!DB.geral) DB.geral = {};
+var _geralColapsado = {};
+
+var CARDS_GERAL = [
+  { key:'RECEBIMENTOS', titulo:'Recebimentos', destinoTags:['RECEBIMENTO','RECEBIMENTOS'],
+    xlsxSheet:'RECEBIMENTOS',
+    xlsxHeader:['BANCO','CLIENTE - RAZÃO SOCIAL','DOC BANCÁRIO','DATA RECEBIMENTO ','Nº NFE','PARCELA','VALOR BRUTO ','ABATIMENTO','RETENÇÃO IR/CSLL','ACRESCIMO','VALOR LÍQUIDO','JUROS','MORA','MULTA','DESCONTO','OUTROS ACRESCIMO','VALOR RECEBIDO'],
+    cols:[
+      {f:'banco',label:'Banco'}, {f:'cliente',label:'Cliente'}, {f:'docBancario',label:'Doc. Bancário'},
+      {f:'data',label:'Data',tipo:'data'}, {f:'nfe',label:'Nº NFE'}, {f:'parcela',label:'Parcela'},
+      {f:'valorBruto',label:'Valor Bruto',tipo:'valor'}, {f:'abatimento',label:'Abatimento',tipo:'valor'},
+      {f:'retencao',label:'Retenção IR/CSLL',tipo:'valor'}, {f:'acrescimo',label:'Acréscimo',tipo:'valor'},
+      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor'}, {f:'juros',label:'Juros',tipo:'valor'},
+      {f:'mora',label:'Mora',tipo:'valor'}, {f:'multa',label:'Multa',tipo:'valor'},
+      {f:'desconto',label:'Desconto',tipo:'valor'}, {f:'outrosAcrescimo',label:'Outros Acréscimo',tipo:'valor'},
+      {f:'valorRecebido',label:'Valor Recebido',tipo:'valor'}
+    ],
+    importe:function(t){ return { banco:'SICREDI', docBancario:t.doc, data:t.data, valorBruto:t.valor, valorRecebido:t.valor }; }
+  },
+  { key:'Cheques', titulo:'Cheques', destinoTags:['CHEQUE','CHEQUES'],
+    xlsxSheet:'Cheques',
+    xlsxHeader:['DATA','BANCO','Nº CHEQUE','FINALIDADE','NOTA FISCAL','RAZÃO SOCIAL DO FORNECEDOR','VALOR BRUTO','RETENÇÕES','ABATIMENTO','ACRÉSCIMO','VALOR LÍQUIDO','VALOR PAGO'],
+    cols:[
+      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'numCheque',label:'Nº Cheque'},
+      {f:'finalidade',label:'Finalidade'}, {f:'nf',label:'Nota Fiscal'}, {f:'fornecedor',label:'Fornecedor'},
+      {f:'valorBruto',label:'Valor Bruto',tipo:'valor'}, {f:'retencoes',label:'Retenções',tipo:'valor'},
+      {f:'abatimento',label:'Abatimento',tipo:'valor'}, {f:'acrescimo',label:'Acréscimo',tipo:'valor'},
+      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor'}, {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+    ],
+    importe:function(t){ return { data:t.data, banco:'SICREDI', valorPago:t.valor }; }
+  },
+  { key:'Fornecedores', titulo:'Fornecedores', destinoTags:['FORNECEDOR','FORNECEDORES'],
+    xlsxSheet:'Fornecedores',
+    xlsxHeader:['DATA','BANCO','DOC BANCÁRIO','FINALIDADE','NOTA FISCAL','PARCELA','RAZÃO SOCIAL DO FORNECEDOR','VALOR BRUTO','RETENÇÕES','ABATIMENTO','ACRÉSCIMO','VALOR LÍQUIDO','VALOR PAGO'],
+    cols:[
+      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'docBancario',label:'Doc. Bancário'},
+      {f:'finalidade',label:'Finalidade'}, {f:'nf',label:'Nota Fiscal'}, {f:'parcela',label:'Parcela'},
+      {f:'fornecedor',label:'Fornecedor'}, {f:'valorBruto',label:'Valor Bruto',tipo:'valor'},
+      {f:'retencoes',label:'Retenções',tipo:'valor'}, {f:'abatimento',label:'Abatimento',tipo:'valor'},
+      {f:'acrescimo',label:'Acréscimo',tipo:'valor'}, {f:'valorLiquido',label:'Valor Líquido',tipo:'valor'},
+      {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+    ],
+    importe:function(t){ return { data:t.data, banco:'SICREDI', docBancario:t.doc, valorPago:t.valor }; }
+  },
+  { key:'LUCROS', titulo:'Distribuição de Lucros', destinoTags:['LUCRO','LUCROS'],
+    xlsxSheet:'LUCROS',
+    xlsxHeader:['DATA','BANCO','DOC BANCÁRIO','FINALIDADE','VALOR TRANSFERIDO'],
+    cols:[
+      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'docBancario',label:'Doc. Bancário'},
+      {f:'finalidade',label:'Finalidade'}, {f:'valorTransferido',label:'Valor Transferido',tipo:'valor'}
+    ],
+    importe:function(t){ return { data:t.data, banco:'SICREDI', docBancario:t.doc, valorTransferido:t.valor }; }
+  },
+  { key:'Impostos', titulo:'Impostos', destinoTags:['IMPOSTO','IMPOSTOS'],
+    xlsxSheet:'Impostos',
+    xlsxHeader:['DATA','BANCO','IMPOSTO','COMPETÊNCIA','VALOR','MULTA','JUROS','VALOR PAGO'],
+    cols:[
+      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'imposto',label:'Imposto'},
+      {f:'competencia',label:'Competência'}, {f:'valor',label:'Valor',tipo:'valor'}, {f:'multa',label:'Multa',tipo:'valor'},
+      {f:'juros',label:'Juros',tipo:'valor'}, {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+    ],
+    importe:function(t){ return { data:t.data, banco:'SICREDI', valorPago:t.valor }; }
+  },
+  { key:'Pagamentos de salários', titulo:'Pagamentos de Salários', destinoTags:['SALARIO','SALARIOS'],
+    xlsxSheet:'Pagamentos de salários',
+    xlsxHeader:['DATA','BANCO','DOC BANCÁRIO','FINALIDADE','VALOR RECIBO FOLHA','FUNCIONÁRIO','VALOR PAGO'],
+    cols:[
+      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'docBancario',label:'Doc. Bancário'},
+      {f:'finalidade',label:'Finalidade'}, {f:'valorRecibo',label:'Valor Recibo Folha',tipo:'valor'},
+      {f:'funcionario',label:'Funcionário'}, {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+    ],
+    importe:function(t){ return { data:t.data, banco:'SICREDI', docBancario:t.doc, valorPago:t.valor }; }
+  },
+  { key:'PAGAMENTOS', titulo:'Pagamentos', destinoTags:['PAGAMENTO','PAGAMENTOS'],
+    xlsxSheet:'PAGAMENTOS ',
+    xlsxHeader:['DATA','BANCO','DOC BANCÁRIO','FINALIDADE','NOTA FISCAL','RAZÃO SOCIAL DO FORNECEDOR','VALOR BRUTO','RETENÇÕES','ABATIMENTO','ACRÉSCIMO','VALOR LÍQUIDO','VALOR PAGO'],
+    cols:[
+      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'docBancario',label:'Doc. Bancário'},
+      {f:'finalidade',label:'Finalidade'}, {f:'nf',label:'Nota Fiscal'}, {f:'fornecedor',label:'Fornecedor'},
+      {f:'valorBruto',label:'Valor Bruto',tipo:'valor'}, {f:'retencoes',label:'Retenções',tipo:'valor'},
+      {f:'abatimento',label:'Abatimento',tipo:'valor'}, {f:'acrescimo',label:'Acréscimo',tipo:'valor'},
+      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor'}, {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+    ],
+    importe:function(t){
+      var linha = { data:t.data, banco:'SICREDI', docBancario:t.doc, valorPago:t.valor };
+      var m = casarNFPagamento(t.data, t.valor);
+      if(m){ linha.nf=m.num||''; linha.finalidade=m.finalidade||''; linha.fornecedor=m.rs||''; }
+      return linha;
+    }
+  }
+];
+
+// Casa um lançamento de PAGAMENTOS com uma NF já cadastrada na aba "Gastos"
+// (data e valor exatos — se não achar, deixa NF/Finalidade em branco pra
+// preenchimento manual, nunca "chuta" um vínculo incerto).
+function casarNFPagamento(dataISO, valorAbs){
+  var lista=(DB.fiscal||[]);
+  for(var i=0;i<lista.length;i++){
+    var n=lista[i];
+    if(n.data===dataISO && Math.abs((+n.valor||0)-valorAbs) < 0.01) return n;
+  }
+  return null;
+}
+
+function carregarGeral(){
+  try{
+    var raw = localStorage.getItem(DB_GERAL_KEY);
+    DB.geral = raw ? JSON.parse(raw) : {};
+  }catch(e){ DB.geral = {}; }
+  CARDS_GERAL.forEach(function(c){ if(!DB.geral[c.key]) DB.geral[c.key]=[]; });
+}
+function salvarGeralLocal(){
+  try{ localStorage.setItem(DB_GERAL_KEY, JSON.stringify(DB.geral)); }catch(e){ console.warn('Falha ao salvar Geral', e); toast('⚠️ Falha ao salvar (armazenamento cheio?)'); }
+}
+
+function toggleCardGeral(key){ _geralColapsado[key] = !_geralColapsado[key]; renderGeral(); }
+
+function addLinhaGeral(key){
+  if(!DB.geral[key]) DB.geral[key]=[];
+  DB.geral[key].push({id:uid()});
+  salvarGeralLocal();
+  _geralColapsado[key]=false;
+  renderGeral();
+}
+function excluirLinhaGeral(key, id){
+  if(!confirm('Excluir esta linha?')) return;
+  DB.geral[key]=(DB.geral[key]||[]).filter(function(r){return r.id!==id;});
+  salvarGeralLocal();
+  renderGeral();
+}
+function editarCelulaGeral(key, id, campo, valor, tipo){
+  var linha=(DB.geral[key]||[]).find(function(r){return r.id===id;});
+  if(!linha) return;
+  linha[campo] = tipo==='valor' ? (parseFloat(String(valor).replace(',','.'))||0) : valor;
+  salvarGeralLocal();
+}
+
+function renderGeral(){
+  var cont = document.getElementById('fpanel-geral-cards');
+  if(!cont) return;
+  var html='';
+  CARDS_GERAL.forEach(function(c){
+    var linhas = DB.geral[c.key]||[];
+    var campoTotal = c.cols.filter(function(col){return col.tipo==='valor';}).pop();
+    var total = linhas.reduce(function(a,r){ return a + (campoTotal ? (+r[campoTotal.f]||0) : 0); },0);
+    var colapsado = !!_geralColapsado[c.key];
+    html += '<div class="card" style="margin-bottom:14px">';
+    html += '<div class="ct" style="cursor:pointer" onclick="toggleCardGeral(\''+c.key+'\')">';
+    html += '<div class="ctl">'+(colapsado?'<i class="ti ti-chevron-right"></i>':'<i class="ti ti-chevron-down"></i>')+' '+c.titulo+' <span style="color:var(--t3);font-weight:400;font-size:12px">('+linhas.length+')</span></div>';
+    html += '<div style="display:flex;align-items:center;gap:10px">';
+    html += '<span style="font-size:12px;font-weight:700;color:var(--t2)">'+fmt(total)+'</span>';
+    html += '<button class="btn bs" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();addLinhaGeral(\''+c.key+'\')"><i class="ti ti-plus"></i> Linha</button>';
+    html += '</div></div>';
+    if(!colapsado){
+      html += '<div class="table-wrap"><table class="data"><thead><tr>';
+      c.cols.forEach(function(col){ html+='<th>'+col.label+'</th>'; });
+      html += '<th></th></tr></thead><tbody>';
+      if(!linhas.length){
+        html += '<tr><td colspan="'+(c.cols.length+1)+'" style="color:var(--t3);padding:14px;text-align:center">Nenhum lançamento — use "+ Linha" ou importe o extrato.</td></tr>';
+      } else {
+        linhas.forEach(function(r){
+          html += '<tr>';
+          c.cols.forEach(function(col){
+            var val = r[col.f];
+            if(col.tipo==='data'){
+              html += '<td><input type="date" value="'+(val||'')+'" style="border:none;background:transparent;font-size:12px;width:126px" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value)"></td>';
+            } else if(col.tipo==='valor'){
+              html += '<td><input type="text" inputmode="decimal" value="'+(val!==undefined&&val!==null&&val!==''?val:'')+'" style="border:none;background:transparent;font-size:12px;width:90px;text-align:right;font-family:\'IBM Plex Mono\',monospace" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value,\'valor\')"></td>';
+            } else {
+              html += '<td><input type="text" value="'+(val!==undefined&&val!==null?String(val).replace(/"/g,'&quot;'):'')+'" style="border:none;background:transparent;font-size:12px;width:120px" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value)"></td>';
+            }
+          });
+          html += '<td><button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirLinhaGeral(\''+c.key+'\',\''+r.id+'\')"><i class="ti ti-trash"></i></button></td>';
+          html += '</tr>';
+        });
+      }
+      html += '</tbody></table></div>';
+    }
+    html += '</div>';
+  });
+  cont.innerHTML = html;
+}
+
+// ── Importação do extrato bancário ──
+// Regra combinada com o Felipe: se qualquer linha de lançamento real tiver um
+// DESTINO que não corresponde a nenhum card, a importação INTEIRA é cancelada
+// (nada é salvo) e o erro aponta a linha exata do arquivo pra correção.
+function normalizarDestino(s){
+  return (s||'').toString().trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+}
+function encontrarCardGeralPorDestino(destinoNorm){
+  for(var i=0;i<CARDS_GERAL.length;i++){
+    var c=CARDS_GERAL[i];
+    for(var j=0;j<c.destinoTags.length;j++){
+      if(normalizarDestino(c.destinoTags[j])===destinoNorm) return c;
+    }
+  }
+  return null;
+}
+function parseDataBRparaISO(s){
+  if(typeof s !== 'string') return null;
+  var m = s.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(!m) return null;
+  return m[3]+'-'+m[2]+'-'+m[1];
+}
+
+function importarExtratoGeral(input){
+  var file = input.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      var data = new Uint8Array(e.target.result);
+      var wb = XLSX.read(data, {type:'array', cellDates:false});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var aoa = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+
+      var headerRow = -1;
+      for(var i=0;i<aoa.length;i++){
+        var row = aoa[i]; if(!row || !row.length) continue;
+        var last = row[row.length-1];
+        if(typeof last === 'string' && normalizarDestino(last)==='DESTINO'){ headerRow=i; break; }
+      }
+      if(headerRow===-1){ toast('❌ Não encontrei a coluna DESTINO nesse arquivo — confira se é o extrato certo (com a coluna de destino preenchida).'); return; }
+
+      var transacoes=[], erro=null, parou=false;
+      for(var i=headerRow+1; i<aoa.length && !parou; i++){
+        var row = aoa[i]||[];
+        var colA = row[0];
+        if(typeof colA === 'string' && /saldo da conta|lan[cç]amentos futuros/i.test(colA)){ break; }
+        var dataISO = parseDataBRparaISO(colA);
+        if(!dataISO) continue; // linha que não é lançamento (ex: "Saldo Anterior")
+        var valorRaw = row[3];
+        if(typeof valorRaw !== 'number') continue;
+        var destinoRaw = row[row.length-1];
+        var destinoNorm = normalizarDestino(destinoRaw);
+        if(!destinoNorm){ erro={linha:i+1, motivo:'coluna DESTINO em branco'}; break; }
+        var card = encontrarCardGeralPorDestino(destinoNorm);
+        if(!card){ erro={linha:i+1, motivo:'DESTINO "'+destinoRaw+'" não corresponde a nenhum card'}; break; }
+        transacoes.push({ card:card, data:dataISO, doc:row[2]||'', valor:Math.abs(valorRaw) });
+      }
+
+      if(erro){
+        toast('❌ Importação cancelada — linha '+erro.linha+' do arquivo: '+erro.motivo+'. Corrija a planilha e importe de novo.');
+        input.value=''; return;
+      }
+      if(!transacoes.length){ toast('Nenhum lançamento encontrado nesse arquivo.'); input.value=''; return; }
+
+      transacoes.forEach(function(t){
+        var linha = t.card.importe(t);
+        linha.id = uid();
+        if(!DB.geral[t.card.key]) DB.geral[t.card.key]=[];
+        DB.geral[t.card.key].push(linha);
+      });
+      salvarGeralLocal();
+      renderGeral();
+      toast('✅ '+transacoes.length+' lançamento(s) importado(s)!');
+    }catch(err){
+      console.error(err);
+      toast('❌ Erro ao ler o arquivo: '+err.message);
+    }
+    input.value='';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Exporta os cards da aba Geral em Excel, no mesmo formato (abas, colunas e
+// cabeçalhos) da planilha contábil que foi enviada como base do sistema.
+function exportarGeralExcel(){
+  var temDados=false;
+  for(var i=0;i<CARDS_GERAL.length;i++){ if((DB.geral[CARDS_GERAL[i].key]||[]).length){ temDados=true; break; } }
+  if(!temDados){ toast('Nenhum lançamento nos cards ainda — nada para exportar.'); return; }
+
+  var wb=XLSX.utils.book_new();
+  CARDS_GERAL.forEach(function(card){
+    var linhas=[card.xlsxHeader];
+    var dados=DB.geral[card.key]||[];
+    dados.forEach(function(row){
+      linhas.push(card.cols.map(function(c){
+        var v=row[c.f];
+        if(c.tipo==='data') return v?fmtD(v):'';
+        if(c.tipo==='valor') return v?(+v):'';
+        return v||'';
+      }));
+    });
+    var ws=XLSX.utils.aoa_to_sheet(linhas);
+    ws['!cols']=card.cols.map(function(){ return {wch:16}; });
+    var range=XLSX.utils.decode_range(ws['!ref']);
+    for(var C=range.s.c;C<=range.e.c;C++){
+      var cellRef=XLSX.utils.encode_cell({r:0,c:C});
+      if(!ws[cellRef]) continue;
+      ws[cellRef].s={fill:{fgColor:{rgb:'185FA5'}},font:{bold:true,color:{rgb:'FFFFFF'}}};
+    }
+    XLSX.utils.book_append_sheet(wb, ws, card.xlsxSheet);
+  });
+
+  var hoje=new Date();
+  var nomeArq='geral_'+hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0')+'-'+String(hoje.getDate()).padStart(2,'0')+'.xlsx';
+  XLSX.writeFile(wb, nomeArq);
+  toast('✅ Excel exportado: '+nomeArq);
 }
 
 function renderFiscal(){
@@ -12447,6 +12776,12 @@ function nfPreview(input){
       _nfImgB64=dataUrl.split(',')[1];
       document.getElementById('nf-preview-img').src=dataUrl;
       document.getElementById('nf-preview-box').style.display='block';
+      // Lê automaticamente com IA assim que a foto é selecionada — sem
+      // precisar clicar em "Ler com IA" (só dispara se houver uma chave
+      // configurada em Configurações → IA; senão fica como estava, à
+      // espera do clique manual ou do preenchimento manual).
+      var cfgAuto=typeof loadCfg==='function'?loadCfg():{};
+      if(cfgAuto.iakey) lerNFcomIA();
     };
     img.src=e.target.result;
   };
@@ -12456,36 +12791,60 @@ function nfPreview(input){
 async function lerNFcomIA(){
   if(!_nfImgB64){ toast('Selecione uma imagem primeiro'); return; }
   var cfg=typeof loadCfg==='function'?loadCfg():{};
-  var apiKey=cfg.iakey||'';
-  if(!apiKey){ toast('Configure a chave Gemini em Configurações → IA'); return; }
+  var apiKey=(cfg.iakey||'').trim();
+  if(!apiKey){ toast('Configure sua API Key em Configurações → IA (Gemini gratuito ou Claude)'); return; }
 
   var btn=document.getElementById('btn-ler-nf');
-  btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2 ti-spin"></i> Lendo...';
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2 ti-spin"></i> Lendo...'; }
 
   try{
+    var finList=JSON.stringify(DB.finalidades||[]);
     var prompt='Você é um leitor de notas fiscais. Analise a imagem e extraia os dados.\n\n'
       +'Responda APENAS com um objeto JSON puro, sem markdown, sem explicações, sem ```json, somente o JSON:\n'
-      +'{"data":"2026-08-31","num":"12345","rs":"Nome do Emitente","cnpj":"00.000.000/0000-00","valor":99.90}\n\n'
+      +'{"data":"2026-08-31","num":"12345","rs":"Nome do Emitente","cnpj":"00.000.000/0000-00","valor":99.90,"finalidade":"Alimentação","obs":"Descrição curta"}\n\n'
       +'Instruções:\n'
       +'- data: data de emissão no formato AAAA-MM-DD (ex: 2026-08-31)\n'
       +'- num: número da nota fiscal (só números)\n'
       +'- rs: razão social ou nome do estabelecimento emitente\n'
       +'- cnpj: CNPJ do emitente com formatação XX.XXX.XXX/XXXX-XX\n'
       +'- valor: valor total da nota como número decimal (ex: 118.80)\n'
+      +'- finalidade: classifique o gasto em UMA destas opções, escrita EXATAMENTE como aparece nesta lista: '+finList+'. Se nenhuma se encaixar bem, use ""\n'
+      +'- obs: descrição curta (até 6 palavras) do que foi comprado, com base nos itens da nota\n'
       +'- Se não encontrar um campo, use string vazia "" ou 0\n'
       +'- NÃO use markdown, NÃO use ```json, retorne SOMENTE o JSON puro';
 
-    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
-      body:JSON.stringify({
-        contents:[{parts:[{inline_data:{mime_type:_nfImgMime,data:_nfImgB64}},{text:prompt}]}],
-        generationConfig:{maxOutputTokens:500,temperature:0.1,responseMimeType:'application/json'}
-      })
-    });
-    if(!resp.ok){ var er=await resp.json(); throw new Error(er.error?.message||'Erro '+resp.status); }
-    var data=await resp.json();
-    var txt=(data.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+    var isGemini=apiKey.startsWith('AIza');
+    var txt;
+
+    if(isGemini){
+      var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+        body:JSON.stringify({
+          contents:[{parts:[{inline_data:{mime_type:_nfImgMime,data:_nfImgB64}},{text:prompt}]}],
+          generationConfig:{maxOutputTokens:500,temperature:0.1,responseMimeType:'application/json'}
+        })
+      });
+      if(!resp.ok){ var er=await resp.json(); throw new Error(er.error?.message||'Erro '+resp.status); }
+      var data=await resp.json();
+      txt=(data.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+    } else {
+      // Claude (Anthropic) — mesma chave/detecção usada no assistente de IA do CRM
+      var resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-6', max_tokens:500,
+          messages:[{role:'user',content:[
+            {type:'image',source:{type:'base64',media_type:_nfImgMime,data:_nfImgB64}},
+            {type:'text',text:prompt}
+          ]}]
+        })
+      });
+      var data=await resp.json();
+      if(data.error) throw new Error(data.error.message||'Erro da API Anthropic');
+      txt=((data.content&&data.content[0]&&data.content[0].text)||'').trim();
+    }
 
     // Parse robusto — tenta 3 estratégias
     var parsed=null;
@@ -12498,11 +12857,12 @@ async function lerNFcomIA(){
     cm('mAnexarNF');
     preencherModalNF(parsed);
     om('mConfirmarNF');
+    toast('✨ NF lida com IA — confira os dados antes de salvar');
 
   }catch(err){
     toast('Erro ao ler NF: '+err.message);
   }finally{
-    btn.disabled=false; btn.innerHTML='<i class="ti ti-sparkles"></i> Ler com IA';
+    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-sparkles"></i> Ler com IA'; }
   }
 }
 
@@ -12513,10 +12873,13 @@ function preencherModalNF(dados){
   document.getElementById('nf-rs').value=dados.rs||'';
   document.getElementById('nf-cnpj').value=dados.cnpj||'';
   document.getElementById('nf-val').value=dados.valor||'';
-  document.getElementById('nf-obs').value='';
-  // Preenche select de finalidade
+  document.getElementById('nf-obs').value=dados.obs||'';
+  // Preenche select de finalidade — se a IA sugeriu uma finalidade que
+  // existe na lista, já deixa selecionada; senão fica no padrão (em branco,
+  // pra você escolher) — nunca inventa uma finalidade fora da lista.
   var sel=document.getElementById('nf-finalidade');
   sel.innerHTML=(DB.finalidades||[]).map(function(f){ return '<option value="'+f+'">'+f+'</option>'; }).join('');
+  if(dados.finalidade && (DB.finalidades||[]).indexOf(dados.finalidade)!==-1) sel.value=dados.finalidade;
 }
 
 function editarNF(id){
