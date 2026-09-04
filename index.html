@@ -1008,7 +1008,8 @@ if('serviceWorker' in navigator){
   <!-- Tabs -->
   <div style="display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:14px">
     <button id="ftab-gastos" onclick="fiscalTab('gastos')" class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px;font-weight:600;background:var(--acc);color:#fff;border-color:var(--acc)">Gastos do mês</button>
-    <button id="ftab-fotos"  onclick="fiscalTab('fotos')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Fotos das NFs</button>
+    <button id="ftab-fotos"  onclick="fiscalTab('fotos')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">NF Gastos</button>
+    <button id="ftab-receb"  onclick="fiscalTab('receb')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">NF Recebimento</button>
     <button id="ftab-geral"  onclick="fiscalTab('geral')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Geral</button>
     <button id="ftab-cfg"    onclick="fiscalTab('cfg')"    class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Configurações</button>
   </div>
@@ -1069,6 +1070,36 @@ if('serviceWorker' in navigator){
     </div>
   </div>
 
+  <!-- Aba NF Recebimento (fotos/PDFs de notas de recebimento, ligadas ao card Recebimentos da aba Geral) -->
+  <div id="fpanel-receb" style="display:none">
+    <div class="card" style="padding:10px 14px;margin-bottom:12px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3)">
+          <i class="ti ti-calendar"></i> De:
+          <input type="date" class="fi" id="fil-receb-ini" style="padding:5px 8px;font-size:12px;width:140px" onchange="renderFiscal()">
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3)">
+          Até:
+          <input type="date" class="fi" id="fil-receb-fim" style="padding:5px 8px;font-size:12px;width:140px" onchange="renderFiscal()">
+        </div>
+        <select class="fi" id="fil-receb-ord" style="width:150px;padding:5px 9px;font-size:12px" onchange="renderFiscal()">
+          <option value="data-desc">Data ↓ (mais recente)</option>
+          <option value="data-asc">Data ↑ (mais antiga)</option>
+          <option value="val-desc">Valor ↓</option>
+          <option value="val-asc">Valor ↑</option>
+        </select>
+        <button class="btn bs" style="font-size:11px;padding:4px 10px" onclick="limparFiltrosReceb()"><i class="ti ti-x"></i> Limpar</button>
+        <span id="receb-count" style="font-size:11px;color:var(--t3);margin-left:auto"></span>
+      </div>
+    </div>
+    <div class="card" style="padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--t3)">
+      Notas de recebimento (fotos ou PDF) — ficam vinculadas ao card <b>Recebimentos</b> da aba Geral. Não têm vínculo com empresas/clientes/pedidos e não sincronizam pela nuvem.
+    </div>
+    <div class="card" style="padding:14px">
+      <div id="grid-fiscal-receb" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
+    </div>
+  </div>
+
   <!-- Aba Geral (cards por planilha contábil + importação de extrato) -->
   <div id="fpanel-geral" style="display:none">
     <div class="card" style="padding:10px 14px;margin-bottom:12px">
@@ -1109,15 +1140,16 @@ if('serviceWorker' in navigator){
   </div>
   <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed #185FA544;border-radius:10px;padding:28px;cursor:pointer;background:rgba(24,95,165,.03);gap:8px;margin-bottom:14px" id="nf-upload-label">
     <i class="ti ti-cloud-upload" style="font-size:36px;color:#185FA5"></i>
-    <span style="font-size:13px;font-weight:600;color:#185FA5">Clique para selecionar a foto da NF</span>
-    <span style="font-size:11px;color:var(--t3)">JPG, PNG, WEBP — até 10MB</span>
-    <input type="file" accept="image/*" style="display:none" id="nf-img-input" onchange="nfPreview(this)">
+    <span style="font-size:13px;font-weight:600;color:#185FA5">Clique para selecionar a foto ou o PDF da NF</span>
+    <span style="font-size:11px;color:var(--t3)">JPG, PNG, WEBP ou PDF — até 10MB</span>
+    <input type="file" accept="image/*,application/pdf" style="display:none" id="nf-img-input" onchange="nfPreview(this)">
   </label>
   <div id="nf-preview-box" style="margin-bottom:14px;text-align:center">
     <img id="nf-preview-img" style="max-height:180px;max-width:100%;border-radius:8px;border:1px solid var(--bdr);display:none">
+    <div id="nf-preview-pdf" style="display:none;align-items:center;justify-content:center;gap:8px;padding:14px;border:1px solid var(--bdr);border-radius:8px;background:var(--s2)"><i class="ti ti-file-type-pdf" style="font-size:24px;color:#d33"></i><span style="font-size:12px;color:var(--t1)">Arquivo PDF anexado</span></div>
     <label style="display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;font-size:12px;color:var(--acc);border:1px solid var(--acc);border-radius:8px;padding:5px 14px;background:rgba(37,99,235,.05)">
-      <i class="ti ti-camera"></i> <span id="nf-foto-label">Adicionar foto</span>
-      <input type="file" accept="image/*" style="display:none" id="nf-img-confirmar" onchange="nfFotoConfirmar(this)">
+      <i class="ti ti-camera"></i> <span id="nf-foto-label">Adicionar foto/PDF</span>
+      <input type="file" accept="image/*,application/pdf" style="display:none" id="nf-img-confirmar" onchange="nfFotoConfirmar(this)">
     </label>
   </div>
   <div style="display:flex;gap:8px;justify-content:flex-end">
@@ -1146,6 +1178,48 @@ if('serviceWorker' in navigator){
   <div style="display:flex;gap:8px;justify-content:flex-end">
     <button class="btn bs" onclick="cm('mConfirmarNF')">Cancelar</button>
     <button class="btn bp" onclick="salvarNF()"><i class="ti ti-check"></i> Salvar NF</button>
+  </div>
+</div></div>
+
+<!-- MODAL ANEXAR NF RECEBIMENTO -->
+<div class="mbg" id="mAnexarNFReceb"><div class="modal" style="max-width:520px">
+  <div class="mtt" style="background:linear-gradient(135deg,#0C7A4C,#18A570);color:#fff;border-radius:10px 10px 0 0;margin:-16px -16px 16px;padding:14px 16px">
+    <i class="ti ti-receipt-2"></i> Anexar Nota de Recebimento
+    <button class="xb" onclick="cm('mAnexarNFReceb')" style="color:#fff;opacity:.8"><i class="ti ti-x"></i></button>
+  </div>
+  <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed #18A57044;border-radius:10px;padding:28px;cursor:pointer;background:rgba(24,165,112,.03);gap:8px;margin-bottom:14px" id="receb-upload-label">
+    <i class="ti ti-cloud-upload" style="font-size:36px;color:#18A570"></i>
+    <span style="font-size:13px;font-weight:600;color:#18A570">Clique para selecionar a foto ou o PDF da nota</span>
+    <span style="font-size:11px;color:var(--t3)">JPG, PNG, WEBP ou PDF — até 10MB</span>
+    <input type="file" accept="image/*,application/pdf" style="display:none" id="receb-img-input" onchange="nfPreviewR(this)">
+  </label>
+  <div id="receb-preview-box" style="margin-bottom:14px;text-align:center">
+    <img id="receb-preview-img" style="max-height:180px;max-width:100%;border-radius:8px;border:1px solid var(--bdr);display:none">
+    <div id="receb-preview-pdf" style="display:none;align-items:center;justify-content:center;gap:8px;padding:14px;border:1px solid var(--bdr);border-radius:8px;background:var(--s2)"><i class="ti ti-file-type-pdf" style="font-size:24px;color:#d33"></i><span style="font-size:12px;color:var(--t1)">Arquivo PDF anexado</span></div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn bs" onclick="cm('mAnexarNFReceb')">Cancelar</button>
+    <button class="btn bs" onclick="preencherModalNFR({});cm('mAnexarNFReceb');om('mConfirmarNFReceb')"><i class="ti ti-edit"></i> Preencher manualmente</button>
+    <button class="btn bp" style="background:#18A570;border-color:#18A570" onclick="lerNFcomIAR()" id="btn-ler-nf-receb"><i class="ti ti-sparkles"></i> Ler com IA</button>
+  </div>
+</div></div>
+
+<!-- MODAL CONFIRMAR NF RECEBIMENTO -->
+<div class="mbg" id="mConfirmarNFReceb"><div class="modal" style="max-width:500px">
+  <div class="mtt"><i class="ti ti-receipt" style="color:#18A570"></i> Confirmar dados do recebimento
+    <button class="xb" onclick="cm('mConfirmarNFReceb')"><i class="ti ti-x"></i></button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="fg"><label class="fl">Data</label><input class="fi" id="receb-data" type="date"></div>
+    <div class="fg"><label class="fl">Nº NFE</label><input class="fi" id="receb-nfe" placeholder="Ex: 56"></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Cliente *</label><input class="fi" id="receb-cliente" placeholder="Nome do cliente pagador"></div>
+    <div class="fg"><label class="fl">Doc. Bancário</label><input class="fi" id="receb-doc" placeholder="Ex: PIX_CRED"></div>
+    <div class="fg"><label class="fl">Valor Bruto (R$) *</label><input class="fi" id="receb-valbruto" type="number" step="0.01" min="0" placeholder="0,00"></div>
+    <div class="fg" style="grid-column:span 2"><label class="fl">Valor Recebido (R$)</label><input class="fi" id="receb-valrecebido" type="number" step="0.01" min="0" placeholder="Se vazio, usa o Valor Bruto"></div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn bs" onclick="cm('mConfirmarNFReceb')">Cancelar</button>
+    <button class="btn bp" style="background:#18A570;border-color:#18A570" onclick="salvarNFReceb()"><i class="ti ti-check"></i> Salvar Recebimento</button>
   </div>
 </div></div>
 
@@ -12251,6 +12325,8 @@ var _fiscalTab  = 'gastos';
 var _nfImgB64   = null;
 var _nfImgMime  = 'image/jpeg';
 var _nfEditId   = null;
+var _recebImgB64  = null;
+var _recebImgMime = 'image/jpeg';
 
 const NOMES_MES_FISCAL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const CORES_FIN = ['#EF9F27','#97C459','#85B7EB','#F09595','#B4B2A9','#5DCAA5','#7F77DD','#F0997B'];
@@ -12286,7 +12362,7 @@ function fiscalMesNav(dir){
 
 function fiscalTab(tab){
   _fiscalTab=tab;
-  ['gastos','fotos','geral','cfg'].forEach(function(t){
+  ['gastos','fotos','receb','geral','cfg'].forEach(function(t){
     var p=document.getElementById('fpanel-'+t);
     var b=document.getElementById('ftab-'+t);
     if(p) p.style.display=t===tab?'block':'none';
@@ -12417,14 +12493,32 @@ function carregarGeral(){
   CARDS_GERAL.forEach(function(c){ if(!DB.geral[c.key]) DB.geral[c.key]=[]; });
 }
 function salvarGeralLocal(){
-  try{ localStorage.setItem(DB_GERAL_KEY, JSON.stringify(DB.geral)); }catch(e){ console.warn('Falha ao salvar Geral', e); toast('⚠️ Falha ao salvar (armazenamento cheio?)'); }
+  try{
+    // As fotos/PDFs de recebimento ficam em chaves separadas do localStorage
+    // (repcrm_geral_anexo_<id>) pra não inchar este blob principal — aqui
+    // salvamos só os dados "leves" de cada linha, sem o arquivo em si.
+    var leve={};
+    Object.keys(DB.geral).forEach(function(k){
+      leve[k]=(DB.geral[k]||[]).map(function(r){
+        if(r.imgB64){ var cp=Object.assign({},r); delete cp.imgB64; delete cp.imgMime; return cp; }
+        return r;
+      });
+    });
+    localStorage.setItem(DB_GERAL_KEY, JSON.stringify(leve));
+  }catch(e){ console.warn('Falha ao salvar Geral', e); toast('⚠️ Falha ao salvar (armazenamento cheio?)'); }
+}
+function salvarAnexoRecebLocal(rowId, b64, mime){
+  try{ localStorage.setItem('repcrm_geral_anexo_'+rowId, JSON.stringify({b64:b64, mime:mime})); }catch(e){ console.warn('Falha ao salvar anexo de recebimento', e); }
 }
 
 function toggleCardGeral(key){ _geralColapsado[key] = !_geralColapsado[key]; renderGeral(); }
 
 function addLinhaGeral(key){
   if(!DB.geral[key]) DB.geral[key]=[];
-  DB.geral[key].push({id:uid()});
+  // Nasce já com a data do mês que está sendo visualizado (dia 1) — senão a
+  // linha some na hora, já que os cards agora só mostram o mês selecionado.
+  var dataIni=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0')+'-01';
+  DB.geral[key].push({id:uid(), data:dataIni});
   salvarGeralLocal();
   _geralColapsado[key]=false;
   renderGeral();
@@ -12432,8 +12526,11 @@ function addLinhaGeral(key){
 function excluirLinhaGeral(key, id){
   if(!confirm('Excluir esta linha?')) return;
   DB.geral[key]=(DB.geral[key]||[]).filter(function(r){return r.id!==id;});
+  try{ localStorage.removeItem('repcrm_geral_anexo_'+id); }catch(e){}
   salvarGeralLocal();
-  renderGeral();
+  // renderFiscal() já chama renderGeral() no final — atualiza também a grade
+  // de NF Recebimento (se a linha excluída tinha foto/PDF anexado)
+  if(typeof renderFiscal==='function') renderFiscal(); else renderGeral();
 }
 function editarCelulaGeral(key, id, campo, valor, tipo){
   var linha=(DB.geral[key]||[]).find(function(r){return r.id===id;});
@@ -12456,8 +12553,12 @@ function renderGeral(){
   var cont = document.getElementById('fpanel-geral-cards');
   if(!cont) return;
   var html='';
+  // Mesmo filtro de mês usado em Gastos do mês / Fotos das NFs — os cards da
+  // aba Geral mostram só os lançamentos cuja data cai no mês selecionado
+  // no topo do módulo Fiscal (setas ao lado do nome do mês).
+  var mesStrGeral=_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0');
   CARDS_GERAL.forEach(function(c){
-    var linhas = DB.geral[c.key]||[];
+    var linhas = (DB.geral[c.key]||[]).filter(function(r){ return r.data && r.data.indexOf(mesStrGeral)===0; });
     var campoTotal = c.cols.filter(function(col){return col.tipo==='valor';}).pop();
     var total = linhas.reduce(function(a,r){ return a + (campoTotal ? (+r[campoTotal.f]||0) : 0); },0);
     var colapsado = !!_geralColapsado[c.key];
@@ -12573,8 +12674,16 @@ function importarExtratoGeral(input){
         DB.geral[t.card.key].push(linha);
       });
       salvarGeralLocal();
-      renderGeral();
-      toast('✅ '+transacoes.length+' lançamento(s) importado(s)!');
+      // Navega o mês do módulo Fiscal pro mês do 1º lançamento importado —
+      // senão os cards (agora filtrados por mês) ficam mostrando o mês
+      // antigo e parece que nada foi importado.
+      var primeiraData=transacoes[0].data;
+      if(primeiraData){
+        _fiscalAno=parseInt(primeiraData.slice(0,4),10);
+        _fiscalMes=parseInt(primeiraData.slice(5,7),10)-1;
+      }
+      renderFiscal();
+      toast('✅ '+transacoes.length+' lançamento(s) importado(s) em '+NOMES_MES_FISCAL[_fiscalMes]+'/'+_fiscalAno+'!');
     }catch(err){
       console.error(err);
       toast('❌ Erro ao ler o arquivo: '+err.message);
@@ -12721,9 +12830,14 @@ function renderFiscal(){
     if(countEl) countEl.textContent=nfsFilt.length+' de '+nfs.length+' NF(s)';
     var html=nfsFilt.map(function(n){
       var corFin=fiscalBgFin(n.finalidade); var txtFin=fiscalTxtFin(n.finalidade);
-      var imgHtml=n.imgB64
-        ?'<img src="data:'+(n.imgMime||'image/jpeg')+';base64,'+n.imgB64+'" style="width:100%;height:150px;object-fit:cover;display:block">'
-        :'<div style="width:100%;height:150px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" onclick="adicionarFotoNF(\''+n.id+'\')"><i class="ti ti-camera" style="font-size:28px;color:var(--t3)"></i><span style="font-size:11px;color:var(--t3)">Adicionar foto</span></div>';
+      var imgHtml;
+      if(n.imgB64 && n.imgMime==='application/pdf'){
+        imgHtml='<div style="width:100%;height:150px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" onclick="abrirAnexoGastoPDF(\''+n.id+'\')"><i class="ti ti-file-type-pdf" style="font-size:34px;color:#d33"></i><span style="font-size:11px;color:var(--t3)">Ver PDF</span></div>';
+      } else if(n.imgB64){
+        imgHtml='<img src="data:'+(n.imgMime||'image/jpeg')+';base64,'+n.imgB64+'" style="width:100%;height:150px;object-fit:cover;display:block">';
+      } else {
+        imgHtml='<div style="width:100%;height:150px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" onclick="adicionarFotoNF(\''+n.id+'\')"><i class="ti ti-camera" style="font-size:28px;color:var(--t3)"></i><span style="font-size:11px;color:var(--t3)">Adicionar foto/PDF</span></div>';
+      }
       return '<div style="background:var(--s1);border:1px solid var(--bdr);border-radius:10px;overflow:hidden">'
         +imgHtml
         +'<div style="padding:8px 10px">'
@@ -12744,8 +12858,68 @@ function renderFiscal(){
     +'</div>';
     grid.innerHTML=html;
   }
+
+  // Grid NF Recebimento (fotos/PDFs ligadas ao card Recebimentos da aba Geral)
+  var gridReceb=document.getElementById('grid-fiscal-receb');
+  if(gridReceb){
+    if(!DB.geral) DB.geral={};
+    var recebs=DB.geral.RECEBIMENTOS||[];
+    // Restaura anexos faltando do localStorage (bytes ficam fora do blob principal)
+    recebs.forEach(function(r){
+      if(!r.imgB64 && r.temAnexo){
+        try{ var raw=localStorage.getItem('repcrm_geral_anexo_'+r.id); if(raw){var p=JSON.parse(raw);r.imgB64=p.b64;r.imgMime=p.mime||'image/jpeg';} }catch(e){}
+      }
+    });
+    var recebIni=document.getElementById('fil-receb-ini')?.value||'';
+    var recebFim=document.getElementById('fil-receb-fim')?.value||'';
+    var recebOrd=document.getElementById('fil-receb-ord')?.value||'data-desc';
+    var recebsFilt=recebs.filter(function(r){
+      if(recebIni && r.data && r.data<recebIni) return false;
+      if(recebFim && r.data && r.data>recebFim) return false;
+      return true;
+    });
+    var campoValReceb='valorRecebido';
+    recebsFilt.sort(function(a,b){
+      if(recebOrd==='data-asc')  return (a.data||'')>(b.data||'')?1:-1;
+      if(recebOrd==='val-desc')  return (b[campoValReceb]||0)-(a[campoValReceb]||0);
+      if(recebOrd==='val-asc')   return (a[campoValReceb]||0)-(b[campoValReceb]||0);
+      return (b.data||'')>(a.data||'')?1:-1;
+    });
+    var countRecebEl=document.getElementById('receb-count');
+    if(countRecebEl) countRecebEl.textContent=recebsFilt.length+' de '+recebs.length+' recebimento(s)';
+    var htmlReceb=recebsFilt.map(function(r){
+      var anexoHtml;
+      if(r.imgB64 && r.imgMime==='application/pdf'){
+        anexoHtml='<div style="width:100%;height:150px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" onclick="abrirAnexoRecebPDF(\''+r.id+'\')"><i class="ti ti-file-type-pdf" style="font-size:34px;color:#d33"></i><span style="font-size:11px;color:var(--t3)">Ver PDF</span></div>';
+      } else if(r.imgB64){
+        anexoHtml='<img src="data:'+(r.imgMime||'image/jpeg')+';base64,'+r.imgB64+'" style="width:100%;height:150px;object-fit:cover;display:block">';
+      } else {
+        anexoHtml='<div style="width:100%;height:150px;background:var(--s2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer" onclick="adicionarFotoNFReceb(\''+r.id+'\')"><i class="ti ti-camera" style="font-size:28px;color:var(--t3)"></i><span style="font-size:11px;color:var(--t3)">Adicionar foto/PDF</span></div>';
+      }
+      return '<div style="background:var(--s1);border:1px solid var(--bdr);border-radius:10px;overflow:hidden">'
+        +anexoHtml
+        +'<div style="padding:8px 10px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">'
+            +'<span style="font-weight:700;font-size:11px;color:#18A570">NFE '+(r.nfe||'—')+'</span>'
+          +'</div>'
+          +'<div style="font-size:12px;font-weight:500;color:var(--t1)">'+(r.cliente||'—')+'</div>'
+          +'<div style="display:flex;justify-content:space-between;margin-top:2px">'
+            +'<span style="font-size:10px;color:var(--t3)">'+(fmtD(r.data)||'—')+'</span>'
+            +'<span style="font-size:12px;font-weight:700;color:var(--t1)">'+fmt(r.valorRecebido||r.valorBruto||0)+'</span>'
+          +'</div>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+    htmlReceb+='<div style="border:1.5px dashed var(--bdr);border-radius:10px;display:flex;align-items:center;justify-content:center;min-height:120px;cursor:pointer" onclick="om(\'mAnexarNFReceb\')">'
+      +'<div style="text-align:center;color:var(--t3)"><i class="ti ti-plus" style="font-size:28px"></i><div style="font-size:11px;margin-top:4px">Anexar NF</div></div>'
+    +'</div>';
+    gridReceb.innerHTML=htmlReceb;
+  }
+
   // Lista finalidades (aba cfg)
   renderListaFinalidades();
+  // Cards da aba Geral também acompanham o mês selecionado (igual Gastos/Fotos)
+  if(typeof renderGeral==='function') renderGeral();
 }
 
 function renderListaFinalidades(){
@@ -12774,6 +12948,21 @@ function removerFinalidade(i){
 // ── Upload e leitura IA ──
 function nfPreview(input){
   var file=input.files[0]; if(!file) return;
+  var ehPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name||'');
+  if(ehPdf){
+    _nfImgMime='application/pdf';
+    var readerPdf=new FileReader();
+    readerPdf.onload=function(e){
+      _nfImgB64=String(e.target.result).split(',')[1];
+      var imgEl=document.getElementById('nf-preview-img'); if(imgEl) imgEl.style.display='none';
+      var pdfEl=document.getElementById('nf-preview-pdf'); if(pdfEl) pdfEl.style.display='flex';
+      document.getElementById('nf-preview-box').style.display='block';
+      var cfgAuto=typeof loadCfg==='function'?loadCfg():{};
+      if(cfgAuto.iakey) lerNFcomIA();
+    };
+    readerPdf.readAsDataURL(file);
+    return;
+  }
   _nfImgMime='image/jpeg';
   var reader=new FileReader();
   reader.onload=function(e){
@@ -12788,7 +12977,8 @@ function nfPreview(input){
       canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
       var dataUrl=canvas.toDataURL('image/jpeg',0.75);
       _nfImgB64=dataUrl.split(',')[1];
-      document.getElementById('nf-preview-img').src=dataUrl;
+      var pdfEl=document.getElementById('nf-preview-pdf'); if(pdfEl) pdfEl.style.display='none';
+      var imgEl=document.getElementById('nf-preview-img'); imgEl.style.display='block'; imgEl.src=dataUrl;
       document.getElementById('nf-preview-box').style.display='block';
       // Lê automaticamente com IA assim que a foto é selecionada — sem
       // precisar clicar em "Ler com IA" (só dispara se houver uma chave
@@ -12803,7 +12993,7 @@ function nfPreview(input){
 }
 
 async function lerNFcomIA(){
-  if(!_nfImgB64){ toast('Selecione uma imagem primeiro'); return; }
+  if(!_nfImgB64){ toast('Selecione uma imagem ou PDF primeiro'); return; }
   var cfg=typeof loadCfg==='function'?loadCfg():{};
   var apiKey=(cfg.iakey||'').trim();
   if(!apiKey){ toast('Configure sua API Key em Configurações → IA (Gemini gratuito ou Claude)'); return; }
@@ -12813,7 +13003,7 @@ async function lerNFcomIA(){
 
   try{
     var finList=JSON.stringify(DB.finalidades||[]);
-    var prompt='Você é um leitor de notas fiscais. Analise a imagem e extraia os dados.\n\n'
+    var prompt='Você é um leitor de notas fiscais. Analise a imagem ou o PDF anexado e extraia os dados.\n\n'
       +'Responda APENAS com um objeto JSON puro, sem markdown, sem explicações, sem ```json, somente o JSON:\n'
       +'{"data":"2026-08-31","num":"12345","rs":"Nome do Emitente","cnpj":"00.000.000/0000-00","valor":99.90,"finalidade":"Alimentação","obs":"Descrição curta"}\n\n'
       +'Instruções:\n'
@@ -12827,6 +13017,7 @@ async function lerNFcomIA(){
       +'- Se não encontrar um campo, use string vazia "" ou 0\n'
       +'- NÃO use markdown, NÃO use ```json, retorne SOMENTE o JSON puro';
 
+    var ehPdf=_nfImgMime==='application/pdf';
     var isGemini=!apiKey.startsWith('sk-ant-');
     var txt;
 
@@ -12847,16 +13038,17 @@ async function lerNFcomIA(){
       var partsG=data.candidates?.[0]?.content?.parts||[];
       txt=partsG.map(function(p){return p.text||'';}).join('').trim();
     } else {
-      // Claude (Anthropic) — mesma chave/detecção usada no assistente de IA do CRM
+      // Claude (Anthropic) — mesma chave/detecção usada no assistente de IA do CRM.
+      // PDF vai como bloco "document"; foto vai como bloco "image".
+      var conteudo = ehPdf
+        ? {type:'document',source:{type:'base64',media_type:'application/pdf',data:_nfImgB64}}
+        : {type:'image',source:{type:'base64',media_type:_nfImgMime,data:_nfImgB64}};
       var resp=await fetch('https://api.anthropic.com/v1/messages',{
         method:'POST',
         headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
         body:JSON.stringify({
           model:'claude-sonnet-4-6', max_tokens:500,
-          messages:[{role:'user',content:[
-            {type:'image',source:{type:'base64',media_type:_nfImgMime,data:_nfImgB64}},
-            {type:'text',text:prompt}
-          ]}]
+          messages:[{role:'user',content:[ conteudo, {type:'text',text:prompt} ]}]
         })
       });
       var data=await resp.json();
@@ -12965,6 +13157,218 @@ function excluirNF(id){
   try{ localStorage.removeItem('repcrm_nf_img_'+id); }catch(e){}
   if(fbRefImgs){ fbRefImgs.child(id).remove().catch(function(e){ console.warn('Falha ao remover foto da NF na nuvem', e); }); }
   salvarDB(); renderFiscal(); toast('NF removida!');
+}
+
+// ══ NF RECEBIMENTO — anexa foto/PDF de nota de recebimento, ligada ao card
+// Recebimentos da aba Geral. Mesmo espírito do fluxo de NF de Gastos, mas
+// isolado: não usa DB.fiscal nem sincroniza pela nuvem — vive dentro de
+// DB.geral.RECEBIMENTOS, igual ao resto da aba Geral. ══
+function nfPreviewR(input){
+  var file=input.files[0]; if(!file) return;
+  var ehPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name||'');
+  if(ehPdf){
+    _recebImgMime='application/pdf';
+    var readerPdf=new FileReader();
+    readerPdf.onload=function(e){
+      _recebImgB64=String(e.target.result).split(',')[1];
+      var imgEl=document.getElementById('receb-preview-img'); if(imgEl) imgEl.style.display='none';
+      var pdfEl=document.getElementById('receb-preview-pdf'); if(pdfEl) pdfEl.style.display='flex';
+      document.getElementById('receb-preview-box').style.display='block';
+      var cfgAuto=typeof loadCfg==='function'?loadCfg():{};
+      if(cfgAuto.iakey) lerNFcomIAR();
+    };
+    readerPdf.readAsDataURL(file);
+    return;
+  }
+  _recebImgMime='image/jpeg';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var canvas=document.createElement('canvas');
+      var MAX=900; var ratio=Math.min(MAX/img.width,MAX/img.height,1);
+      canvas.width=Math.round(img.width*ratio); canvas.height=Math.round(img.height*ratio);
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      var dataUrl=canvas.toDataURL('image/jpeg',0.75);
+      _recebImgB64=dataUrl.split(',')[1];
+      var pdfEl=document.getElementById('receb-preview-pdf'); if(pdfEl) pdfEl.style.display='none';
+      var imgEl=document.getElementById('receb-preview-img'); imgEl.style.display='block'; imgEl.src=dataUrl;
+      document.getElementById('receb-preview-box').style.display='block';
+      var cfgAuto=typeof loadCfg==='function'?loadCfg():{};
+      if(cfgAuto.iakey) lerNFcomIAR();
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function lerNFcomIAR(){
+  if(!_recebImgB64){ toast('Selecione uma imagem ou PDF primeiro'); return; }
+  var cfg=typeof loadCfg==='function'?loadCfg():{};
+  var apiKey=(cfg.iakey||'').trim();
+  if(!apiKey){ toast('Configure sua API Key em Configurações → IA (Gemini gratuito ou Claude)'); return; }
+
+  var btn=document.getElementById('btn-ler-nf-receb');
+  if(btn){ btn.disabled=true; btn.innerHTML='<i class="ti ti-loader-2 ti-spin"></i> Lendo...'; }
+
+  try{
+    var prompt='Você é um leitor de notas fiscais de RECEBIMENTO (o dinheiro entrou, não saiu). Analise a imagem ou o PDF anexado e extraia os dados.\n\n'
+      +'Responda APENAS com um objeto JSON puro, sem markdown, sem explicações, sem ```json, somente o JSON:\n'
+      +'{"data":"2026-08-31","nfe":"56","cliente":"Nome do Cliente Pagador","docBancario":"PIX_CRED","valorBruto":99.90,"valorRecebido":99.90}\n\n'
+      +'Instruções:\n'
+      +'- data: data do recebimento no formato AAAA-MM-DD (ex: 2026-08-31)\n'
+      +'- nfe: número da nota fiscal, se houver (só números)\n'
+      +'- cliente: nome/razão social de quem pagou (o cliente, não a sua empresa)\n'
+      +'- docBancario: identificação do lançamento bancário, se houver (ex: PIX_CRED, DOC, TED)\n'
+      +'- valorBruto: valor total antes de qualquer desconto/retenção, como número decimal\n'
+      +'- valorRecebido: valor líquido efetivamente recebido, como número decimal (geralmente igual ao valorBruto se não houver retenção)\n'
+      +'- Se não encontrar um campo, use string vazia "" ou 0\n'
+      +'- NÃO use markdown, NÃO use ```json, retorne SOMENTE o JSON puro';
+
+    var ehPdf=_recebImgMime==='application/pdf';
+    var isGemini=!apiKey.startsWith('sk-ant-');
+    var txt;
+
+    if(isGemini){
+      var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+        body:JSON.stringify({
+          contents:[{parts:[{inline_data:{mime_type:_recebImgMime,data:_recebImgB64}},{text:prompt}]}],
+          generationConfig:{maxOutputTokens:2048,temperature:0.1,responseMimeType:'application/json',thinkingConfig:{thinkingBudget:0}}
+        })
+      });
+      if(!resp.ok){ var er=await resp.json(); throw new Error(er.error?.message||'Erro '+resp.status); }
+      var data=await resp.json();
+      var partsG=data.candidates?.[0]?.content?.parts||[];
+      txt=partsG.map(function(p){return p.text||'';}).join('').trim();
+    } else {
+      var conteudo = ehPdf
+        ? {type:'document',source:{type:'base64',media_type:'application/pdf',data:_recebImgB64}}
+        : {type:'image',source:{type:'base64',media_type:_recebImgMime,data:_recebImgB64}};
+      var resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-6', max_tokens:500,
+          messages:[{role:'user',content:[ conteudo, {type:'text',text:prompt} ]}]
+        })
+      });
+      var data=await resp.json();
+      if(data.error) throw new Error(data.error.message||'Erro da API Anthropic');
+      txt=((data.content&&data.content[0]&&data.content[0].text)||'').trim();
+    }
+
+    var parsed=null;
+    try{ parsed=JSON.parse(txt); } catch(e){}
+    if(!parsed){ var jm=txt.match(/\{[\s\S]*?\}/); if(jm) try{ parsed=JSON.parse(jm[0]); }catch(e){} }
+    if(!parsed){ var cl=txt.replace(/```json/gi,'').replace(/```/g,'').trim(); try{ parsed=JSON.parse(cl); }catch(e){} }
+    if(!parsed) throw new Error('IA não retornou JSON. Resposta: '+txt.slice(0,120));
+
+    cm('mAnexarNFReceb');
+    preencherModalNFR(parsed);
+    om('mConfirmarNFReceb');
+    toast('✨ Nota lida com IA — confira os dados antes de salvar');
+
+  }catch(err){
+    toast('Erro ao ler nota: '+err.message);
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML='<i class="ti ti-sparkles"></i> Ler com IA'; }
+  }
+}
+
+function preencherModalNFR(dados){
+  document.getElementById('receb-data').value=dados.data||new Date().toISOString().split('T')[0];
+  document.getElementById('receb-nfe').value=dados.nfe||'';
+  document.getElementById('receb-cliente').value=dados.cliente||'';
+  document.getElementById('receb-doc').value=dados.docBancario||'';
+  document.getElementById('receb-valbruto').value=dados.valorBruto||'';
+  document.getElementById('receb-valrecebido').value=dados.valorRecebido||'';
+}
+
+function salvarNFReceb(){
+  var data=document.getElementById('receb-data').value;
+  var cliente=document.getElementById('receb-cliente').value.trim();
+  var valBruto=parseFloat(document.getElementById('receb-valbruto').value)||0;
+  var valRecebido=parseFloat(document.getElementById('receb-valrecebido').value)||0;
+  if(!cliente){ toast('Informe o cliente'); return; }
+  if(!valBruto){ toast('Informe o valor bruto'); return; }
+
+  if(!DB.geral) DB.geral={};
+  if(!DB.geral.RECEBIMENTOS) DB.geral.RECEBIMENTOS=[];
+
+  var rowId=uid();
+  var row={
+    id:rowId,
+    banco:'SICREDI',
+    data:data||new Date().toISOString().split('T')[0],
+    cliente:cliente,
+    docBancario:document.getElementById('receb-doc').value.trim(),
+    nfe:document.getElementById('receb-nfe').value.trim(),
+    valorBruto:valBruto,
+    valorRecebido:valRecebido||valBruto
+  };
+
+  if(_recebImgB64){
+    row.temAnexo=true;
+    row.anexoMime=_recebImgMime;
+    row.imgB64=_recebImgB64;   // fica só na memória — salvarGeralLocal() tira antes de persistir
+    row.imgMime=_recebImgMime;
+    salvarAnexoRecebLocal(rowId, _recebImgB64, _recebImgMime);
+  }
+
+  DB.geral.RECEBIMENTOS.push(row);
+  salvarGeralLocal();
+
+  cm('mConfirmarNFReceb');
+  _recebImgB64=null;
+  // Navega pro mês do recebimento, igual ao fluxo de Gastos
+  if(row.data){ _fiscalMes=parseInt(row.data.slice(5,7),10)-1; _fiscalAno=parseInt(row.data.slice(0,4),10); }
+  renderFiscal();
+  toast('✅ Recebimento salvo!');
+}
+
+function adicionarFotoNFReceb(id){
+  var input=document.createElement('input');
+  input.type='file'; input.accept='image/*,application/pdf';
+  input.onchange=function(){
+    var file=input.files[0]; if(!file) return;
+    var ehPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name||'');
+    var row=(DB.geral.RECEBIMENTOS||[]).find(function(x){return x.id===id;});
+    if(!row) return;
+    if(ehPdf){
+      var readerPdf=new FileReader();
+      readerPdf.onload=function(e){
+        var b64pdf=String(e.target.result).split(',')[1];
+        row.temAnexo=true; row.anexoMime='application/pdf'; row.imgB64=b64pdf; row.imgMime='application/pdf';
+        salvarAnexoRecebLocal(id, b64pdf, 'application/pdf');
+        salvarGeralLocal();
+        renderFiscal();
+        toast('✅ PDF adicionado ao recebimento!');
+      };
+      readerPdf.readAsDataURL(file);
+      return;
+    }
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var canvas=document.createElement('canvas');
+        var MAX=900; var ratio=Math.min(MAX/img.width,MAX/img.height,1);
+        canvas.width=Math.round(img.width*ratio); canvas.height=Math.round(img.height*ratio);
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        var b64=canvas.toDataURL('image/jpeg',0.75).split(',')[1];
+        row.temAnexo=true; row.anexoMime='image/jpeg'; row.imgB64=b64; row.imgMime='image/jpeg';
+        salvarAnexoRecebLocal(id, b64, 'image/jpeg');
+        salvarGeralLocal();
+        renderFiscal();
+        toast('✅ Foto adicionada ao recebimento!');
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
 }
 
 // ── Impressão A4 (fotos das NFs, 4 por folha) ──
@@ -13289,6 +13693,19 @@ function importarItensOrcamento(input){
 
 function nfFotoConfirmar(input){
   var file=input.files[0]; if(!file) return;
+  var ehPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name||'');
+  if(ehPdf){
+    _nfImgMime='application/pdf';
+    var readerPdf=new FileReader();
+    readerPdf.onload=function(e){
+      _nfImgB64=String(e.target.result).split(',')[1];
+      var imgEl=document.getElementById('nf-preview-img'); if(imgEl) imgEl.style.display='none';
+      var pdfEl=document.getElementById('nf-preview-pdf'); if(pdfEl) pdfEl.style.display='flex';
+      var lbl=document.getElementById('nf-foto-label'); if(lbl) lbl.textContent='Alterar foto/PDF';
+    };
+    readerPdf.readAsDataURL(file);
+    return;
+  }
   _nfImgMime='image/jpeg';
   var reader=new FileReader();
   reader.onload=function(e){
@@ -13300,9 +13717,10 @@ function nfFotoConfirmar(input){
       canvas.width=Math.round(img.width*ratio); canvas.height=Math.round(img.height*ratio);
       canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
       _nfImgB64=canvas.toDataURL('image/jpeg',0.75).split(',')[1];
+      var pdfEl=document.getElementById('nf-preview-pdf'); if(pdfEl) pdfEl.style.display='none';
       var prev=document.getElementById('nf-preview-img');
       if(prev){ prev.src=canvas.toDataURL('image/jpeg',0.75); prev.style.display='block'; }
-      var lbl=document.getElementById('nf-foto-label'); if(lbl) lbl.textContent='Alterar foto';
+      var lbl=document.getElementById('nf-foto-label'); if(lbl) lbl.textContent='Alterar foto/PDF';
     };
     img.src=e.target.result;
   };
@@ -13310,11 +13728,27 @@ function nfFotoConfirmar(input){
 }
 
 function adicionarFotoNF(id){
-  // Abre seletor de arquivo e salva direto na NF
+  // Abre seletor de arquivo e salva direto na NF (foto ou PDF)
   var input=document.createElement('input');
-  input.type='file'; input.accept='image/*';
+  input.type='file'; input.accept='image/*,application/pdf';
   input.onchange=function(){
     var file=input.files[0]; if(!file) return;
+    var ehPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name||'');
+    if(ehPdf){
+      var readerPdf=new FileReader();
+      readerPdf.onload=function(e){
+        var b64pdf=String(e.target.result).split(',')[1];
+        var nf=(DB.fiscal||[]).find(function(x){return x.id===id;});
+        if(nf){ nf.imgB64=b64pdf; nf.imgMime='application/pdf'; }
+        try{ localStorage.setItem('repcrm_nf_img_'+id, JSON.stringify({b64:b64pdf,mime:'application/pdf'})); }catch(e){}
+        if(fbRefImgs){ fbRefImgs.child(id).set({b64:b64pdf, mime:'application/pdf'}).catch(function(e){ console.warn('Falha ao sincronizar PDF da NF', e); }); }
+        salvarDB();
+        renderFiscal();
+        toast('✅ PDF adicionado à NF!');
+      };
+      readerPdf.readAsDataURL(file);
+      return;
+    }
     var reader=new FileReader();
     reader.onload=function(e){
       var img=new Image();
@@ -13344,6 +13778,23 @@ function limparFiltrosFotos(){
   var ids=['fil-foto-ini','fil-foto-fim','fil-foto-fin','fil-foto-ord'];
   ids.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=id==='fil-foto-ord'?'data-desc':''; });
   renderFiscal();
+}
+function limparFiltrosReceb(){
+  var ids=['fil-receb-ini','fil-receb-fim','fil-receb-ord'];
+  ids.forEach(function(id){ var el=document.getElementById(id); if(el) el.value=id==='fil-receb-ord'?'data-desc':''; });
+  renderFiscal();
+}
+function abrirAnexoGastoPDF(id){
+  var n=(DB.fiscal||[]).find(function(x){return x.id===id;});
+  if(!n||!n.imgB64||n.imgMime!=='application/pdf'){ toast('PDF não encontrado'); return; }
+  var w=window.open('', '_blank');
+  if(w){ w.document.write('<title>NF '+(n.num||'')+'</title><iframe src="data:application/pdf;base64,'+n.imgB64+'" style="position:fixed;inset:0;width:100%;height:100%;border:none"></iframe>'); }
+}
+function abrirAnexoRecebPDF(id){
+  var n=(DB.geral.RECEBIMENTOS||[]).find(function(x){return x.id===id;});
+  if(!n||!n.imgB64||n.imgMime!=='application/pdf'){ toast('PDF não encontrado'); return; }
+  var w=window.open('', '_blank');
+  if(w){ w.document.write('<title>Recebimento '+(n.cliente||'')+'</title><iframe src="data:application/pdf;base64,'+n.imgB64+'" style="position:fixed;inset:0;width:100%;height:100%;border:none"></iframe>'); }
 }
 // ── fim importação itens ──
 
