@@ -5901,7 +5901,7 @@ async function iaClaude(prompt, contexto, maxTokens=800){
   const cfg=loadCfg();
   if(!cfg.iakey) return null;
   const key=cfg.iakey.trim();
-  const isGemini=key.startsWith('AIza');
+  const isGemini=!key.startsWith('sk-ant-');
 
   if(isGemini){
     // Gemini API (gratuita)
@@ -12813,7 +12813,7 @@ async function lerNFcomIA(){
       +'- Se não encontrar um campo, use string vazia "" ou 0\n'
       +'- NÃO use markdown, NÃO use ```json, retorne SOMENTE o JSON puro';
 
-    var isGemini=apiKey.startsWith('AIza');
+    var isGemini=!apiKey.startsWith('sk-ant-');
     var txt;
 
     if(isGemini){
@@ -14197,7 +14197,7 @@ async function iaClaude(prompt, contexto, maxTokens=800){
   const cfg=loadCfg();
   if(!cfg.iakey) return null;
   const key=cfg.iakey.trim();
-  const isGemini=key.startsWith('AIza');
+  const isGemini=!key.startsWith('sk-ant-');
 
   if(isGemini){
     // Gemini API (gratuita)
