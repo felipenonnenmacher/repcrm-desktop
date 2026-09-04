@@ -12313,14 +12313,14 @@ var CARDS_GERAL = [
     xlsxSheet:'RECEBIMENTOS',
     xlsxHeader:['BANCO','CLIENTE - RAZÃO SOCIAL','DOC BANCÁRIO','DATA RECEBIMENTO ','Nº NFE','PARCELA','VALOR BRUTO ','ABATIMENTO','RETENÇÃO IR/CSLL','ACRESCIMO','VALOR LÍQUIDO','JUROS','MORA','MULTA','DESCONTO','OUTROS ACRESCIMO','VALOR RECEBIDO'],
     cols:[
-      {f:'banco',label:'Banco'}, {f:'cliente',label:'Cliente'}, {f:'docBancario',label:'Doc. Bancário'},
-      {f:'data',label:'Data',tipo:'data'}, {f:'nfe',label:'Nº NFE'}, {f:'parcela',label:'Parcela'},
-      {f:'valorBruto',label:'Valor Bruto',tipo:'valor'}, {f:'abatimento',label:'Abatimento',tipo:'valor'},
-      {f:'retencao',label:'Retenção IR/CSLL',tipo:'valor'}, {f:'acrescimo',label:'Acréscimo',tipo:'valor'},
-      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor'}, {f:'juros',label:'Juros',tipo:'valor'},
-      {f:'mora',label:'Mora',tipo:'valor'}, {f:'multa',label:'Multa',tipo:'valor'},
-      {f:'desconto',label:'Desconto',tipo:'valor'}, {f:'outrosAcrescimo',label:'Outros Acréscimo',tipo:'valor'},
-      {f:'valorRecebido',label:'Valor Recebido',tipo:'valor'}
+      {f:'banco',label:'Banco',w:64}, {f:'cliente',label:'Cliente',w:170}, {f:'docBancario',label:'Doc. Bancário',w:90},
+      {f:'data',label:'Data',tipo:'data',w:92}, {f:'nfe',label:'Nº NFE',w:58}, {f:'parcela',label:'Parcela',w:58},
+      {f:'valorBruto',label:'Valor Bruto',tipo:'valor',w:78}, {f:'abatimento',label:'Abatimento',tipo:'valor',w:72},
+      {f:'retencao',label:'Retenção IR/CSLL',tipo:'valor',w:72}, {f:'acrescimo',label:'Acréscimo',tipo:'valor',w:72},
+      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor',w:78}, {f:'juros',label:'Juros',tipo:'valor',w:64},
+      {f:'mora',label:'Mora',tipo:'valor',w:64}, {f:'multa',label:'Multa',tipo:'valor',w:64},
+      {f:'desconto',label:'Desconto',tipo:'valor',w:64}, {f:'outrosAcrescimo',label:'Outros Acréscimo',tipo:'valor',w:78},
+      {f:'valorRecebido',label:'Valor Recebido',tipo:'valor',w:82}
     ],
     importe:function(t){ return { banco:'SICREDI', docBancario:t.doc, data:t.data, valorBruto:t.valor, valorRecebido:t.valor }; }
   },
@@ -12328,11 +12328,11 @@ var CARDS_GERAL = [
     xlsxSheet:'Cheques',
     xlsxHeader:['DATA','BANCO','Nº CHEQUE','FINALIDADE','NOTA FISCAL','RAZÃO SOCIAL DO FORNECEDOR','VALOR BRUTO','RETENÇÕES','ABATIMENTO','ACRÉSCIMO','VALOR LÍQUIDO','VALOR PAGO'],
     cols:[
-      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'numCheque',label:'Nº Cheque'},
-      {f:'finalidade',label:'Finalidade'}, {f:'nf',label:'Nota Fiscal'}, {f:'fornecedor',label:'Fornecedor'},
-      {f:'valorBruto',label:'Valor Bruto',tipo:'valor'}, {f:'retencoes',label:'Retenções',tipo:'valor'},
-      {f:'abatimento',label:'Abatimento',tipo:'valor'}, {f:'acrescimo',label:'Acréscimo',tipo:'valor'},
-      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor'}, {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+      {f:'data',label:'Data',tipo:'data',w:92}, {f:'banco',label:'Banco',w:64}, {f:'numCheque',label:'Nº Cheque',w:70},
+      {f:'finalidade',label:'Finalidade',w:140}, {f:'nf',label:'Nota Fiscal',w:80}, {f:'fornecedor',label:'Fornecedor',w:170},
+      {f:'valorBruto',label:'Valor Bruto',tipo:'valor',w:78}, {f:'retencoes',label:'Retenções',tipo:'valor',w:72},
+      {f:'abatimento',label:'Abatimento',tipo:'valor',w:72}, {f:'acrescimo',label:'Acréscimo',tipo:'valor',w:72},
+      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor',w:78}, {f:'valorPago',label:'Valor Pago',tipo:'valor',w:82}
     ],
     importe:function(t){ return { data:t.data, banco:'SICREDI', valorPago:t.valor }; }
   },
@@ -12340,12 +12340,12 @@ var CARDS_GERAL = [
     xlsxSheet:'Fornecedores',
     xlsxHeader:['DATA','BANCO','DOC BANCÁRIO','FINALIDADE','NOTA FISCAL','PARCELA','RAZÃO SOCIAL DO FORNECEDOR','VALOR BRUTO','RETENÇÕES','ABATIMENTO','ACRÉSCIMO','VALOR LÍQUIDO','VALOR PAGO'],
     cols:[
-      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'docBancario',label:'Doc. Bancário'},
-      {f:'finalidade',label:'Finalidade'}, {f:'nf',label:'Nota Fiscal'}, {f:'parcela',label:'Parcela'},
-      {f:'fornecedor',label:'Fornecedor'}, {f:'valorBruto',label:'Valor Bruto',tipo:'valor'},
-      {f:'retencoes',label:'Retenções',tipo:'valor'}, {f:'abatimento',label:'Abatimento',tipo:'valor'},
-      {f:'acrescimo',label:'Acréscimo',tipo:'valor'}, {f:'valorLiquido',label:'Valor Líquido',tipo:'valor'},
-      {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+      {f:'data',label:'Data',tipo:'data',w:92}, {f:'banco',label:'Banco',w:64}, {f:'docBancario',label:'Doc. Bancário',w:90},
+      {f:'finalidade',label:'Finalidade',w:150}, {f:'nf',label:'Nota Fiscal',w:80}, {f:'parcela',label:'Parcela',w:58},
+      {f:'fornecedor',label:'Fornecedor',w:170}, {f:'valorBruto',label:'Valor Bruto',tipo:'valor',w:78},
+      {f:'retencoes',label:'Retenções',tipo:'valor',w:72}, {f:'abatimento',label:'Abatimento',tipo:'valor',w:72},
+      {f:'acrescimo',label:'Acréscimo',tipo:'valor',w:72}, {f:'valorLiquido',label:'Valor Líquido',tipo:'valor',w:78},
+      {f:'valorPago',label:'Valor Pago',tipo:'valor',w:82}
     ],
     importe:function(t){ return { data:t.data, banco:'SICREDI', docBancario:t.doc, valorPago:t.valor }; }
   },
@@ -12353,8 +12353,8 @@ var CARDS_GERAL = [
     xlsxSheet:'LUCROS',
     xlsxHeader:['DATA','BANCO','DOC BANCÁRIO','FINALIDADE','VALOR TRANSFERIDO'],
     cols:[
-      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'docBancario',label:'Doc. Bancário'},
-      {f:'finalidade',label:'Finalidade'}, {f:'valorTransferido',label:'Valor Transferido',tipo:'valor'}
+      {f:'data',label:'Data',tipo:'data',w:92}, {f:'banco',label:'Banco',w:64}, {f:'docBancario',label:'Doc. Bancário',w:90},
+      {f:'finalidade',label:'Finalidade',w:190}, {f:'valorTransferido',label:'Valor Transferido',tipo:'valor',w:92}
     ],
     importe:function(t){ return { data:t.data, banco:'SICREDI', docBancario:t.doc, valorTransferido:t.valor }; }
   },
@@ -12362,9 +12362,9 @@ var CARDS_GERAL = [
     xlsxSheet:'Impostos',
     xlsxHeader:['DATA','BANCO','IMPOSTO','COMPETÊNCIA','VALOR','MULTA','JUROS','VALOR PAGO'],
     cols:[
-      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'imposto',label:'Imposto'},
-      {f:'competencia',label:'Competência'}, {f:'valor',label:'Valor',tipo:'valor'}, {f:'multa',label:'Multa',tipo:'valor'},
-      {f:'juros',label:'Juros',tipo:'valor'}, {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+      {f:'data',label:'Data',tipo:'data',w:92}, {f:'banco',label:'Banco',w:64}, {f:'imposto',label:'Imposto',w:70},
+      {f:'competencia',label:'Competência',w:92}, {f:'valor',label:'Valor',tipo:'valor',w:78}, {f:'multa',label:'Multa',tipo:'valor',w:64},
+      {f:'juros',label:'Juros',tipo:'valor',w:64}, {f:'valorPago',label:'Valor Pago',tipo:'valor',w:82}
     ],
     importe:function(t){ return { data:t.data, banco:'SICREDI', valorPago:t.valor }; }
   },
@@ -12372,9 +12372,9 @@ var CARDS_GERAL = [
     xlsxSheet:'Pagamentos de salários',
     xlsxHeader:['DATA','BANCO','DOC BANCÁRIO','FINALIDADE','VALOR RECIBO FOLHA','FUNCIONÁRIO','VALOR PAGO'],
     cols:[
-      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'docBancario',label:'Doc. Bancário'},
-      {f:'finalidade',label:'Finalidade'}, {f:'valorRecibo',label:'Valor Recibo Folha',tipo:'valor'},
-      {f:'funcionario',label:'Funcionário'}, {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+      {f:'data',label:'Data',tipo:'data',w:92}, {f:'banco',label:'Banco',w:64}, {f:'docBancario',label:'Doc. Bancário',w:90},
+      {f:'finalidade',label:'Finalidade',w:140}, {f:'valorRecibo',label:'Valor Recibo Folha',tipo:'valor',w:100},
+      {f:'funcionario',label:'Funcionário',w:170}, {f:'valorPago',label:'Valor Pago',tipo:'valor',w:82}
     ],
     importe:function(t){ return { data:t.data, banco:'SICREDI', docBancario:t.doc, valorPago:t.valor }; }
   },
@@ -12382,11 +12382,11 @@ var CARDS_GERAL = [
     xlsxSheet:'PAGAMENTOS ',
     xlsxHeader:['DATA','BANCO','DOC BANCÁRIO','FINALIDADE','NOTA FISCAL','RAZÃO SOCIAL DO FORNECEDOR','VALOR BRUTO','RETENÇÕES','ABATIMENTO','ACRÉSCIMO','VALOR LÍQUIDO','VALOR PAGO'],
     cols:[
-      {f:'data',label:'Data',tipo:'data'}, {f:'banco',label:'Banco'}, {f:'docBancario',label:'Doc. Bancário'},
-      {f:'finalidade',label:'Finalidade'}, {f:'nf',label:'Nota Fiscal'}, {f:'fornecedor',label:'Fornecedor'},
-      {f:'valorBruto',label:'Valor Bruto',tipo:'valor'}, {f:'retencoes',label:'Retenções',tipo:'valor'},
-      {f:'abatimento',label:'Abatimento',tipo:'valor'}, {f:'acrescimo',label:'Acréscimo',tipo:'valor'},
-      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor'}, {f:'valorPago',label:'Valor Pago',tipo:'valor'}
+      {f:'data',label:'Data',tipo:'data',w:92}, {f:'banco',label:'Banco',w:64}, {f:'docBancario',label:'Doc. Bancário',w:100},
+      {f:'finalidade',label:'Finalidade',w:130}, {f:'nf',label:'Nota Fiscal',w:80}, {f:'fornecedor',label:'Fornecedor',w:170},
+      {f:'valorBruto',label:'Valor Bruto',tipo:'valor',w:78}, {f:'retencoes',label:'Retenções',tipo:'valor',w:72},
+      {f:'abatimento',label:'Abatimento',tipo:'valor',w:72}, {f:'acrescimo',label:'Acréscimo',tipo:'valor',w:72},
+      {f:'valorLiquido',label:'Valor Líquido',tipo:'valor',w:78}, {f:'valorPago',label:'Valor Pago',tipo:'valor',w:82}
     ],
     importe:function(t){
       var linha = { data:t.data, banco:'SICREDI', docBancario:t.doc, valorPago:t.valor };
@@ -12442,6 +12442,16 @@ function editarCelulaGeral(key, id, campo, valor, tipo){
   salvarGeralLocal();
 }
 
+// Largura de coluna de cada card da aba Geral — usa a largura definida em
+// col.w quando existe; senão cai num padrão por tipo (data/valor mais
+// estreitos, texto mais largo, já que costuma ter nomes/descrições).
+function colGeralWidth(col){
+  if(col.w) return col.w;
+  if(col.tipo==='data') return 92;
+  if(col.tipo==='valor') return 72;
+  return 110;
+}
+
 function renderGeral(){
   var cont = document.getElementById('fpanel-geral-cards');
   if(!cont) return;
@@ -12459,25 +12469,29 @@ function renderGeral(){
     html += '<button class="btn bs" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation();addLinhaGeral(\''+c.key+'\')"><i class="ti ti-plus"></i> Linha</button>';
     html += '</div></div>';
     if(!colapsado){
-      html += '<div class="table-wrap"><table class="data"><thead><tr>';
-      c.cols.forEach(function(col){ html+='<th>'+col.label+'</th>'; });
-      html += '<th></th></tr></thead><tbody>';
+      html += '<div class="table-wrap" style="overflow-x:auto"><table class="data" style="font-size:11px;table-layout:fixed"><thead><tr>';
+      c.cols.forEach(function(col){
+        var w=colGeralWidth(col);
+        html+='<th style="padding:3px 5px;font-size:9px;white-space:normal;line-height:1.2;width:'+w+'px">'+col.label+'</th>';
+      });
+      html += '<th style="padding:3px 5px;width:30px"></th></tr></thead><tbody>';
       if(!linhas.length){
-        html += '<tr><td colspan="'+(c.cols.length+1)+'" style="color:var(--t3);padding:14px;text-align:center">Nenhum lançamento — use "+ Linha" ou importe o extrato.</td></tr>';
+        html += '<tr><td colspan="'+(c.cols.length+1)+'" style="color:var(--t3);padding:10px;text-align:center;font-size:11px">Nenhum lançamento — use "+ Linha" ou importe o extrato.</td></tr>';
       } else {
         linhas.forEach(function(r){
           html += '<tr>';
           c.cols.forEach(function(col){
             var val = r[col.f];
+            var w=colGeralWidth(col)-10;
             if(col.tipo==='data'){
-              html += '<td><input type="date" value="'+(val||'')+'" style="border:none;background:transparent;font-size:12px;width:126px" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value)"></td>';
+              html += '<td style="padding:1px 4px"><input type="date" value="'+(val||'')+'" style="border:none;background:transparent;font-size:10px;width:'+w+'px;padding:2px 0" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value)"></td>';
             } else if(col.tipo==='valor'){
-              html += '<td><input type="text" inputmode="decimal" value="'+(val!==undefined&&val!==null&&val!==''?val:'')+'" style="border:none;background:transparent;font-size:12px;width:90px;text-align:right;font-family:\'IBM Plex Mono\',monospace" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value,\'valor\')"></td>';
+              html += '<td style="padding:1px 4px"><input type="text" inputmode="decimal" value="'+(val!==undefined&&val!==null&&val!==''?val:'')+'" style="border:none;background:transparent;font-size:10px;width:'+w+'px;padding:2px 0;text-align:right;font-family:\'IBM Plex Mono\',monospace" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value,\'valor\')"></td>';
             } else {
-              html += '<td><input type="text" value="'+(val!==undefined&&val!==null?String(val).replace(/"/g,'&quot;'):'')+'" style="border:none;background:transparent;font-size:12px;width:120px" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value)"></td>';
+              html += '<td style="padding:1px 4px"><input type="text" value="'+(val!==undefined&&val!==null?String(val).replace(/"/g,'&quot;'):'')+'" style="border:none;background:transparent;font-size:10px;width:'+w+'px;padding:2px 0" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value)"></td>';
             }
           });
-          html += '<td><button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirLinhaGeral(\''+c.key+'\',\''+r.id+'\')"><i class="ti ti-trash"></i></button></td>';
+          html += '<td style="padding:1px 4px"><button class="btn bs" style="padding:1px 5px;font-size:9px;color:var(--red);border-color:var(--red)" onclick="excluirLinhaGeral(\''+c.key+'\',\''+r.id+'\')"><i class="ti ti-trash"></i></button></td>';
           html += '</tr>';
         });
       }
@@ -12822,12 +12836,16 @@ async function lerNFcomIA(){
         headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
         body:JSON.stringify({
           contents:[{parts:[{inline_data:{mime_type:_nfImgMime,data:_nfImgB64}},{text:prompt}]}],
-          generationConfig:{maxOutputTokens:500,temperature:0.1,responseMimeType:'application/json'}
+          generationConfig:{maxOutputTokens:2048,temperature:0.1,responseMimeType:'application/json',thinkingConfig:{thinkingBudget:0}}
         })
       });
       if(!resp.ok){ var er=await resp.json(); throw new Error(er.error?.message||'Erro '+resp.status); }
       var data=await resp.json();
-      txt=(data.candidates?.[0]?.content?.parts?.[0]?.text||'').trim();
+      // Concatena todas as partes de texto (modelos com "thinking" podem
+      // devolver mais de uma parte) — pegar só a parte [0] às vezes vinha
+      // truncado.
+      var partsG=data.candidates?.[0]?.content?.parts||[];
+      txt=partsG.map(function(p){return p.text||'';}).join('').trim();
     } else {
       // Claude (Anthropic) — mesma chave/detecção usada no assistente de IA do CRM
       var resp=await fetch('https://api.anthropic.com/v1/messages',{
