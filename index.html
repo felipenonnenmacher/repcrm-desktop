@@ -3156,11 +3156,16 @@ function renderEmpPed(){
   const totFat=ps.filter(p=>p.dtFat).reduce((a,p)=>a+(p.valfat||0),0);
   const totAberto=ps.filter(p=>!p.dtFat).length;
   const totCard=document.getElementById('ped-totais-card');
-  if(totCard) totCard.innerHTML=
+  // Guarda o resumo geral (não-selecionado) num cache simples, pra
+  // bulkAtualizarBarra() poder devolvê-lo quando a seleção for limpa sem
+  // precisar chamar renderEmpPed() de novo (isso causava recursão infinita:
+  // renderEmpPed → bulkLimparSelecao → bulkAtualizarBarra → renderEmpPed → ...).
+  _pedTotaisGeralHTML=
     `<span style="color:var(--t3)">${anoF==='todos'?'Todos os anos':anoF} · <b style="color:var(--t1)">${totPed}</b> pedido${totPed!==1?'s':''}</span>`+
     `<span style="border-left:1px solid var(--bdr);padding-left:16px">Valor total: <b style="color:var(--t1)">${fmt(totVal)}</b></span>`+
     `<span style="border-left:1px solid var(--bdr);padding-left:16px">Faturado: <b style="color:var(--grn)">${fmt(totFat)}</b></span>`+
     `<span style="border-left:1px solid var(--bdr);padding-left:16px">Em aberto: <b style="color:var(--org)">${totAberto}</b></span>`;
+  if(totCard) totCard.innerHTML=_pedTotaisGeralHTML;
 
   document.getElementById('tb-eped').innerHTML=buildPedTabela(ps,false);
   atualizarBadgesSidebar();
@@ -3262,6 +3267,9 @@ var colVisivel = {
   ped: {Desconto:true,Parcelas:true,'Comissão%':true,'Data Fat.':true,NF:true,'Vl. Faturado':true,'Faturado com NF':true,Origem:true,Transportadora:true},
   com: {'Vl. Faturado':true,'Com%':true,'Total a Receber':true,Parcelas:true,Status:true}
 };
+// Cache do resumo geral (não-selecionado) do card de totais de Pedidos —
+// ver comentário em renderEmpPed()/bulkAtualizarBarra().
+var _pedTotaisGeralHTML='';
 var colMenuAberto = null;
 function toggleColMenu(id){
   var el=document.getElementById(id);
@@ -10588,11 +10596,16 @@ function renderEmpPed(){
   const totFat=ps.filter(p=>p.dtFat).reduce((a,p)=>a+(p.valfat||0),0);
   const totAberto=ps.filter(p=>!p.dtFat).length;
   const totCard=document.getElementById('ped-totais-card');
-  if(totCard) totCard.innerHTML=
+  // Guarda o resumo geral (não-selecionado) num cache simples, pra
+  // bulkAtualizarBarra() poder devolvê-lo quando a seleção for limpa sem
+  // precisar chamar renderEmpPed() de novo (isso causava recursão infinita:
+  // renderEmpPed → bulkLimparSelecao → bulkAtualizarBarra → renderEmpPed → ...).
+  _pedTotaisGeralHTML=
     `<span style="color:var(--t3)">${anoF==='todos'?'Todos os anos':anoF} · <b style="color:var(--t1)">${totPed}</b> pedido${totPed!==1?'s':''}</span>`+
     `<span style="border-left:1px solid var(--bdr);padding-left:16px">Valor total: <b style="color:var(--t1)">${fmt(totVal)}</b></span>`+
     `<span style="border-left:1px solid var(--bdr);padding-left:16px">Faturado: <b style="color:var(--grn)">${fmt(totFat)}</b></span>`+
     `<span style="border-left:1px solid var(--bdr);padding-left:16px">Em aberto: <b style="color:var(--org)">${totAberto}</b></span>`;
+  if(totCard) totCard.innerHTML=_pedTotaisGeralHTML;
 
   document.getElementById('tb-eped').innerHTML=buildPedTabela(ps,false);
   atualizarBadgesSidebar();
@@ -10706,6 +10719,9 @@ var colVisivel = {
   ped: {Desconto:true,Parcelas:true,'Comissão%':true,'Data Fat.':true,NF:true,'Vl. Faturado':true,'Faturado com NF':true,Origem:true,Transportadora:true},
   com: {'Vl. Faturado':true,'Com%':true,'Total a Receber':true,Parcelas:true,Status:true}
 };
+// Cache do resumo geral (não-selecionado) do card de totais de Pedidos —
+// ver comentário em renderEmpPed()/bulkAtualizarBarra().
+var _pedTotaisGeralHTML='';
 var colMenuAberto = null;
 function toggleColMenu(id){
   var el=document.getElementById(id);
@@ -17054,9 +17070,13 @@ function bulkAtualizarBarra(){
       ' &nbsp;|&nbsp; <span style="color:var(--t3)">Pedidos selecionados:</span> <b style="color:var(--acc)">'+sel.length+'</b>';
   } else {
     bar.style.display = 'none';
-    // Sem nada marcado, volta a mostrar o resumo geral do card (recalcula
-    // chamando renderEmpPed em vez de deixar em branco).
-    if(typeof renderEmpPed==='function') renderEmpPed();
+    // Sem nada marcado, volta a mostrar o resumo geral do card — usa o
+    // HTML já calculado por renderEmpPed() (cache em _pedTotaisGeralHTML)
+    // em vez de chamar renderEmpPed() de novo aqui: renderEmpPed() termina
+    // chamando bulkLimparSelecao(), que chama esta função — se esta função
+    // chamasse renderEmpPed() de volta, virava recursão infinita e travava
+    // a aba (foi exatamente esse o bug da versão anterior).
+    if(totCard) totCard.innerHTML=_pedTotaisGeralHTML;
   }
 }
 
