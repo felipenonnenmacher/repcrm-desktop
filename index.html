@@ -491,17 +491,17 @@ if('serviceWorker' in navigator){
       <button class="btn bp" onclick="om('mPed')"><i class="ti ti-plus"></i> Novo</button>
     </div>
     <div id="col-menu-ped" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t1)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Comissão%',this.checked)"> Comissão%</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Data Fat.',this.checked)"> Data Fat.</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('NF',this.checked)"> NF</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Vl. Faturado',this.checked)"> Vl. Faturado</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Faturado com NF',this.checked)"> Faturado com NF</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Origem',this.checked)"> Origem</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Transportadora',this.checked)"> Transportadora</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Comissão%',this.checked)"> Comissão%</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Data Fat.',this.checked)"> Data Fat.</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('NF',this.checked)"> NF</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Vl. Faturado',this.checked)"> Vl. Faturado</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Faturado com NF',this.checked)"> Faturado com NF</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Origem',this.checked)"> Origem</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Transportadora',this.checked)"> Transportadora</label>
       </div>
     </div>
   </div>
@@ -519,7 +519,7 @@ if('serviceWorker' in navigator){
       <div style="flex:3;background:rgba(16,185,129,.08);padding:3px 0;text-align:center;font-size:10px;font-weight:700;color:var(--grn)">FATURAMENTO</div>
       <div style="flex:6;background:rgba(139,92,246,.08);border-radius:0 6px 6px 0;padding:3px 0;text-align:center;font-size:10px;font-weight:700;color:var(--acc2)">PAGAMENTOS</div>
     </div>
-    <table><thead><tr><th><input type="checkbox" id="ped-cb-all" onchange="bulkSelTodos(this)"></th><th class="th-sort" onclick="ordenar('eped','dt')">Data <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','num')">Nº <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','cliente')">Cliente <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','val')">Valor <i class="ti ti-arrows-sort sort-ic"></i></th><th>Desc%</th><th>Parc</th><th>Com%</th><th class="th-sort" onclick="ordenar('eped','dtFat')">Dt.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','nf')">NF <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','valfat')">Vl.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th>Fat?</th><th class="th-sort" onclick="ordenar('eped','tipo')">Tipo <i class="ti ti-arrows-sort sort-ic"></i></th><th style="max-width:130px">OBS</th><th style="text-align:center">Transp.</th><th></th></tr></thead><tbody id="tb-eped"></tbody></table>
+    <table><thead><tr><th><input type="checkbox" id="ped-cb-all" onchange="bulkSelTodos(this)"></th><th class="th-sort" onclick="ordenar('eped','dt')">Data <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','num')">Nº <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','cliente')">Cliente <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','val')">Valor <i class="ti ti-arrows-sort sort-ic"></i></th><th class="col-ped-Desconto">Desc%</th><th class="col-ped-Parcelas">Parc</th><th class="col-ped-Comissao">Com%</th><th class="th-sort col-ped-DataFat" onclick="ordenar('eped','dtFat')">Dt.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-NF" onclick="ordenar('eped','nf')">NF <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-VlFaturado" onclick="ordenar('eped','valfat')">Vl.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th title="Valor do pedido menos valor já faturado">Diferença</th><th class="col-ped-FaturadoNF">Fat?</th><th class="th-sort col-ped-Origem" onclick="ordenar('eped','tipo')">Tipo <i class="ti ti-arrows-sort sort-ic"></i></th><th style="max-width:130px">OBS</th><th class="col-ped-Transportadora" style="text-align:center">Transp.</th><th></th></tr></thead><tbody id="tb-eped"></tbody></table>
     <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--bdr);display:flex;gap:14px;font-size:11px;flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:rgba(16,185,129,.2);border:1px solid var(--grn);display:inline-block"></span>Pago</span>
       <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:rgba(245,158,11,.2);border:1px solid var(--org);display:inline-block"></span>Atenção</span>
@@ -1224,6 +1224,18 @@ if('serviceWorker' in navigator){
   <div style="display:flex;gap:8px;justify-content:flex-end">
     <button class="btn bs" onclick="cm('mConfirmarNFReceb')">Cancelar</button>
     <button class="btn bp" style="background:#18A570;border-color:#18A570" onclick="salvarNFReceb()"><i class="ti ti-check"></i> Salvar Recebimento</button>
+  </div>
+</div></div>
+
+<!-- MODAL VINCULAR NF MANUALMENTE (Pagamentos que não casaram sozinhos com a NF) -->
+<div class="mbg" id="mVincularNF"><div class="modal" style="max-width:560px">
+  <div class="mtt"><i class="ti ti-link" style="color:#185FA5"></i> Vincular Nota Fiscal
+    <button class="xb" onclick="cm('mVincularNF')"><i class="ti ti-x"></i></button>
+  </div>
+  <div id="vincular-nf-resumo" style="font-size:12px;color:var(--t3);margin-bottom:10px"></div>
+  <div id="vincular-nf-lista" style="max-height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+    <button class="btn bs" onclick="cm('mVincularNF')">Cancelar</button>
   </div>
 </div></div>
 
@@ -3269,7 +3281,18 @@ function aplicarColunasCLI(){
     document.querySelectorAll('.'+cls).forEach(el=>{ el.style.display=colVisivel.cli[col]===false?'none':''; });
   });
 }
-function toggleColPed(col,vis){ colVisivel.ped[col]=vis; renderEmpPed(); }
+function toggleColPed(col,vis){
+  colVisivel.ped[col]=vis;
+  // Além de re-renderizar o corpo da tabela (que já omite a célula da coluna
+  // desmarcada), esconde também o cabeçalho correspondente — sem isso, o
+  // <th> ficava sempre visível e as colunas desalinhavam quando uma era
+  // ocultada. É o mesmo padrão já usado em toggleColCom().
+  var mapaPed={'Desconto':'col-ped-Desconto','Parcelas':'col-ped-Parcelas','Comissão%':'col-ped-Comissao','Data Fat.':'col-ped-DataFat','NF':'col-ped-NF','Vl. Faturado':'col-ped-VlFaturado','Faturado com NF':'col-ped-FaturadoNF','Origem':'col-ped-Origem','Transportadora':'col-ped-Transportadora'};
+  if(mapaPed[col]){
+    document.querySelectorAll('.'+mapaPed[col]).forEach(function(el){ el.style.display=vis?'':'none'; });
+  }
+  renderEmpPed();
+}
 function toggleColCom(col,vis){
   colVisivel.com[col]=vis;
   const mapa={'Vl. Faturado':'col-com-Vl-Faturado','Com%':'col-com-Com','Total a Receber':'col-com-Total-Receber','Parcelas':'col-com-Parcelas','Status':'col-com-Status'};
@@ -8598,17 +8621,17 @@ if('serviceWorker' in navigator){
       <button class="btn bp" onclick="om('mPed')"><i class="ti ti-plus"></i> Novo</button>
     </div>
     <div id="col-menu-ped" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t2)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t1)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Comissão%',this.checked)"> Comissão%</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Data Fat.',this.checked)"> Data Fat.</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('NF',this.checked)"> NF</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Vl. Faturado',this.checked)"> Vl. Faturado</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Faturado com NF',this.checked)"> Faturado com NF</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Origem',this.checked)"> Origem</label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer"><input type="checkbox" checked onchange="toggleColPed('Transportadora',this.checked)"> Transportadora</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Comissão%',this.checked)"> Comissão%</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Data Fat.',this.checked)"> Data Fat.</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('NF',this.checked)"> NF</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Vl. Faturado',this.checked)"> Vl. Faturado</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Faturado com NF',this.checked)"> Faturado com NF</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Origem',this.checked)"> Origem</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Transportadora',this.checked)"> Transportadora</label>
       </div>
     </div>
   </div>
@@ -10237,9 +10260,17 @@ function renderEmpDash(){
   const cur=fatMes, met=metaFatMes, pct=pctFat;
   const mf=document.getElementById('meta-fill');
   mf.style.width=pct+'%'; mf.style.background=pct>=100?'var(--grn)':pct>=70?'var(--org)':'var(--red)';
-  document.getElementById('meta-lbl').textContent=`${pct}% atingido`;
+  document.getElementById('meta-lbl').textContent=`Fat: ${pct}% · Venda: ${pctVenda}%`;
   document.getElementById('m-cur').textContent=fmt(cur);
-  document.getElementById('m-tot').textContent='Meta: '+fmt(met);
+  document.getElementById('m-tot').textContent='Meta Fat: '+fmt(met);
+  // Barra de progresso da meta de VENDA (mesmo card "Progresso da meta") —
+  // essa parte estava faltando aqui: os elementos existem no HTML mas nunca
+  // eram atualizados, então a barra de Venda ficava sempre parada/zerada
+  // mesmo quando a meta de Faturamento atualizava normalmente.
+  const mfv=document.getElementById('meta-fill-venda');
+  if(mfv){ mfv.style.width=Math.min(100,pctVenda)+'%'; mfv.style.background=pctVenda>=100?'var(--grn)':pctVenda>=70?'var(--org)':'var(--red)'; }
+  const mVendaCur=document.getElementById('m-venda-cur'); if(mVendaCur) mVendaCur.textContent=fmt(vendaMes);
+  const mVendaTot=document.getElementById('m-venda-tot'); if(mVendaTot) mVendaTot.textContent='Meta V: '+fmt(metaVendaMes);
   const cliEmp=clientesDaEmpresa(empAtual);
   const top=cliEmp.map(c=>({...c,tot:DB.pedidos.filter(p=>p.cliId===c.id).reduce((a,p)=>a+(p.valfat||p.val||0),0)})).sort((a,b)=>b.tot-a.tot).slice(0,8);
   const mx=top[0]?.tot||1;
@@ -10639,17 +10670,30 @@ function buildPedTabela(ps,mini){
     });
     while(pCells.length<6) pCells.push('<td></td>');
     const tIcon=p.transp==='Correios'?'📮':'🔵';
+    // Colunas que o modal "Colunas visíveis" pode ligar/desligar — usa o
+    // mesmo padrão de colVisivel[...] já usado nas tabelas de Clientes e
+    // Comissões: cada <td> só entra na linha se a coluna estiver marcada,
+    // e o <th> correspondente é escondido via classe (toggleColPed) —
+    // assim cabeçalho e corpo desalinhavam.
+    const cv=colVisivel.ped||{};
+    const dif=(+p.val||0)-(+p.valfat||0);
     return`<tr>
       ${mini?'':`<td><input type="checkbox" class="ped-cb" data-pedid="${p.id}" onchange="bulkAtualizarBarra()"></td>`}
       <td>${fmtD(p.dt)}</td><td><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.num||'—'}</span></td>
       <td><span class="lnk" onclick="abrirCli('${p.cliId}','${mini?'clidet':'eped'}')">${c?.rs||'—'}</span></td>
-      <td>${fmt(p.val)}</td><td>${p.desc||0}%</td><td>${p.parc||1}x</td>
-      ${mini?'':`<td>${p.com||3}%</td>`}
-      <td>${fmtD(p.dtFat)}</td><td style="font-size:11px">${p.nf||'—'}</td><td>${fmt(p.valfat)}</td>
-      ${mini?'':`<td><span class="b ${fatSim?'b-g':'b-o'}" style="font-size:9px">${fatSim?'Sim':'Não'}</span></td>`}
-      ${mini?'':`<td>${p.tipo?`<span class="b b-p" style="font-size:9px" title="${p.tipo}">${p.tipo.length>12?p.tipo.substring(0,12)+'...':p.tipo}</span>`:'<span style="color:var(--t3)">—</span>'}</td>`}
+      <td>${fmt(p.val)}</td>
+      ${mini||cv['Desconto']===false?'':`<td>${p.desc||0}%</td>`}
+      ${mini||cv['Parcelas']===false?'':`<td>${p.parc||1}x</td>`}
+      ${mini||cv['Comissão%']===false?'':`<td>${p.com||3}%</td>`}
+      ${mini||cv['Data Fat.']===false?'':`<td>${fmtD(p.dtFat)}</td>`}
+      ${mini||cv['NF']===false?'':`<td style="font-size:11px">${p.nf||'—'}</td>`}
+      ${mini||cv['Vl. Faturado']===false?'':`<td>${fmt(p.valfat)}</td>`}
+      ${mini?'':`<td style="font-weight:600;color:${dif>0?'var(--org)':dif<0?'var(--grn)':'var(--t2)'}" title="Valor do pedido menos valor já faturado">${fmt(dif)}</td>`}
+      ${mini||cv['Faturado com NF']===false?'':`<td><span class="b ${fatSim?'b-g':'b-o'}" style="font-size:9px">${fatSim?'Sim':'Não'}</span></td>`}
+      ${mini||cv['Origem']===false?'':`<td>${p.tipo?`<span class="b b-p" style="font-size:9px" title="${p.tipo}">${p.tipo.length>12?p.tipo.substring(0,12)+'...':p.tipo}</span>`:'<span style="color:var(--t3)">—</span>'}</td>`}
+      ${mini?'':`<td style="max-width:130px">${p.obs?`<span style="font-size:9px;color:var(--org);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.obs}"><i class="ti ti-note" style="font-size:10px"></i> ${p.obs}</span>`:'<span style="color:var(--t3);font-size:10px">—</span>'}</td>`}
       ${mini?pCells.join(''):''}
-      ${mini?'':`<td style="text-align:center"><input type="checkbox" ${p.naTransp?"checked":""} onchange="toggleTransp('${p.id}',this)" title="${p.naTransp?'Na transportadora desde '+p.naTranspData:'Marcar como enviado para transportadora'}" style="width:16px;height:16px;cursor:pointer;accent-color:var(--cyn)"></td>`}
+      ${mini||cv['Transportadora']===false?'':`<td style="text-align:center"><input type="checkbox" ${p.naTransp?"checked":""} onchange="toggleTransp('${p.id}',this)" title="${p.naTransp?'Na transportadora desde '+p.naTranspData:'Marcar como enviado para transportadora'}" style="width:16px;height:16px;cursor:pointer;accent-color:var(--cyn)"></td>`}
       ${mini?'':`<td style="white-space:nowrap"><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc);border-color:var(--acc)" onclick="enviarSAC('${p.id}')" title="Enviar e-mail para o SAC"><i class="ti ti-headset"></i> SAC</button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirPedido('${p.id}')" title="Excluir pedido"><i class="ti ti-trash"></i></button></td>`}
       ${mini?`<td><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar"><i class="ti ti-pencil"></i></button></td>`:''}
     </tr>`;
@@ -10681,7 +10725,18 @@ function aplicarColunasCLI(){
     document.querySelectorAll('.'+cls).forEach(el=>{ el.style.display=colVisivel.cli[col]===false?'none':''; });
   });
 }
-function toggleColPed(col,vis){ colVisivel.ped[col]=vis; renderEmpPed(); }
+function toggleColPed(col,vis){
+  colVisivel.ped[col]=vis;
+  // Além de re-renderizar o corpo da tabela (que já omite a célula da coluna
+  // desmarcada), esconde também o cabeçalho correspondente — sem isso, o
+  // <th> ficava sempre visível e as colunas desalinhavam quando uma era
+  // ocultada. É o mesmo padrão já usado em toggleColCom().
+  var mapaPed={'Desconto':'col-ped-Desconto','Parcelas':'col-ped-Parcelas','Comissão%':'col-ped-Comissao','Data Fat.':'col-ped-DataFat','NF':'col-ped-NF','Vl. Faturado':'col-ped-VlFaturado','Faturado com NF':'col-ped-FaturadoNF','Origem':'col-ped-Origem','Transportadora':'col-ped-Transportadora'};
+  if(mapaPed[col]){
+    document.querySelectorAll('.'+mapaPed[col]).forEach(function(el){ el.style.display=vis?'':'none'; });
+  }
+  renderEmpPed();
+}
 function toggleColCom(col,vis){
   colVisivel.com[col]=vis;
   const mapa={'Vl. Faturado':'col-com-Vl-Faturado','Com%':'col-com-Com','Total a Receber':'col-com-Total-Receber','Parcelas':'col-com-Parcelas','Status':'col-com-Status'};
@@ -12479,23 +12534,93 @@ var CARDS_GERAL = [
   }
 ];
 
-// Casa um lançamento de PAGAMENTOS com uma NF já cadastrada na aba "Gastos"
-// (data e valor exatos — se não achar, deixa NF/Finalidade em branco pra
-// preenchimento manual, nunca "chuta" um vínculo incerto).
-function casarNFPagamento(dataISO, valorAbs){
+// Casa um lançamento de PAGAMENTOS com uma NF já cadastrada na aba "Gastos".
+// Regra: valor tem que bater EXATO (nunca aproxima valor). Na data, aceita
+// até JANELA_DIAS_NF_PAGAMENTO dias de diferença — o lançamento bancário
+// (compensação, fim de semana, etc.) raramente cai no exato dia de emissão
+// da nota. Só casa sozinho quando existe UMA única NF mais próxima da data;
+// se houver duas notas do mesmo valor "empatadas" na mesma distância de
+// dias, fica ambíguo e não arrisca — deixa em branco pro vínculo manual
+// (botão "Vincular NF" na linha do Pagamento).
+var JANELA_DIAS_NF_PAGAMENTO = 3;
+function diasEntreDatasISO(d1, d2){
+  if(!d1 || !d2) return Infinity;
+  var a=new Date(d1+'T12:00'), b=new Date(d2+'T12:00');
+  if(isNaN(a.getTime())||isNaN(b.getTime())) return Infinity;
+  return Math.round(Math.abs(a-b)/86400000);
+}
+// Lista as NFs de Gastos com valor exatamente igual, dentro da janela de
+// dias em torno de dataISO — ordenadas da mais próxima pra mais distante.
+// Usada tanto pelo casamento automático quanto pelo modal de vínculo manual.
+function buscarNFsCandidatas(dataISO, valorAbs, janelaDias){
   var lista=(DB.fiscal||[]);
+  var candidatas=[];
   for(var i=0;i<lista.length;i++){
     var n=lista[i];
-    if(n.data===dataISO && Math.abs((+n.valor||0)-valorAbs) < 0.01) return n;
+    if(Math.abs((+n.valor||0)-valorAbs) >= 0.01) continue;
+    var dif=diasEntreDatasISO(n.data, dataISO);
+    if(dif<=janelaDias) candidatas.push({nf:n, dif:dif});
   }
+  candidatas.sort(function(a,b){ return a.dif-b.dif; });
+  return candidatas;
+}
+function casarNFPagamento(dataISO, valorAbs){
+  var candidatas = buscarNFsCandidatas(dataISO, valorAbs, JANELA_DIAS_NF_PAGAMENTO);
+  if(!candidatas.length) return null;
+  if(candidatas.length===1) return candidatas[0].nf;
+  // Mais de uma candidata do mesmo valor — só resolve sozinho se a mais
+  // próxima da data for única (sem empate de distância em dias).
+  if(candidatas[0].dif < candidatas[1].dif) return candidatas[0].nf;
   return null;
+}
+
+// ── Vínculo manual de NF em Pagamentos (quando o automático não resolve) ──
+var _vincularRowId=null;
+function abrirVincularNF(rowId){
+  var row=(DB.geral&&DB.geral.PAGAMENTOS||[]).find(function(x){return x.id===rowId;});
+  if(!row){ toast('Lançamento não encontrado'); return; }
+  _vincularRowId=rowId;
+  var resumo=document.getElementById('vincular-nf-resumo');
+  resumo.innerHTML='Pagamento de <b>'+fmt(+row.valorPago||0)+'</b> em <b>'+fmtD(row.data)+'</b>'+(row.docBancario?' — doc. '+row.docBancario:'');
+  // Candidatas com o MESMO valor do pagamento, numa janela mais larga (30
+  // dias) só pra listar no modal — aqui é escolha manual, então mostramos
+  // mais opções do que o casamento automático aceitaria sozinho.
+  var candidatas=buscarNFsCandidatas(row.data, +row.valorPago||0, 30);
+  var listaEl=document.getElementById('vincular-nf-lista');
+  if(!candidatas.length){
+    listaEl.innerHTML='<div style="color:var(--t3);font-size:12px;padding:10px;text-align:center">Nenhuma NF de Gastos com esse valor exato encontrada. Cadastre a nota em "NF Gastos" primeiro, ou ajuste o valor do pagamento.</div>';
+  } else {
+    listaEl.innerHTML=candidatas.map(function(c){
+      var n=c.nf;
+      var difLabel = c.dif===0 ? 'mesma data' : (c.dif+' dia'+(c.dif>1?'s':'')+' de diferença');
+      return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--bdr);border-radius:8px;padding:8px 10px">'
+        +'<div style="min-width:0">'
+          +'<div style="font-size:12px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(n.rs||'(sem razão social)')+'</div>'
+          +'<div style="font-size:11px;color:var(--t3)">NF '+(n.num||'—')+' • '+fmtD(n.data)+' • '+fmt(+n.valor||0)+' • '+difLabel+'</div>'
+        +'</div>'
+        +'<button class="btn bp" style="padding:5px 12px;font-size:11px;flex-shrink:0" onclick="vincularNFManual(\''+n.id+'\')"><i class="ti ti-link"></i> Vincular</button>'
+      +'</div>';
+    }).join('');
+  }
+  om('mVincularNF');
+}
+function vincularNFManual(nfId){
+  var row=(DB.geral&&DB.geral.PAGAMENTOS||[]).find(function(x){return x.id===_vincularRowId;});
+  var n=(DB.fiscal||[]).find(function(x){return x.id===nfId;});
+  if(!row||!n){ toast('Erro ao vincular'); return; }
+  row.nf=n.num||''; row.finalidade=n.finalidade||''; row.fornecedor=n.rs||'';
+  salvarGeralLocal();
+  cm('mVincularNF');
+  renderFiscal();
+  toast('✅ NF vinculada ao pagamento!');
 }
 
 // Re-tenta casar cada lançamento do card Pagamentos com uma NF de Gastos —
 // útil pra quando o extrato foi importado ANTES de cadastrar a NF (foto/PDF)
 // correspondente em Gastos. Só preenche NF/Finalidade/Fornecedor que ainda
 // estão em branco — nunca sobrescreve algo que você já preencheu/corrigiu
-// manualmente, e só casa em data+valor exatos (mesma regra do import).
+// manualmente, e usa a mesma regra de casarNFPagamento (valor exato + até
+// 3 dias de diferença na data, só quando não houver ambiguidade).
 function atualizarVinculosPagamentos(){
   var linhas=(DB.geral && DB.geral.PAGAMENTOS)||[];
   if(!linhas.length){ toast('Nenhum lançamento em Pagamentos ainda.'); return; }
@@ -12619,6 +12744,11 @@ function renderGeral(){
               html += '<td style="padding:1px 4px"><input type="date" value="'+(val||'')+'" style="border:none;background:transparent;font-size:10px;width:'+w+'px;padding:2px 0" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value)"></td>';
             } else if(col.tipo==='valor'){
               html += '<td style="padding:1px 4px"><input type="text" inputmode="decimal" value="'+(val!==undefined&&val!==null&&val!==''?val:'')+'" style="border:none;background:transparent;font-size:10px;width:'+w+'px;padding:2px 0;text-align:right;font-family:\'IBM Plex Mono\',monospace" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value,\'valor\')"></td>';
+            } else if(c.key==='PAGAMENTOS' && col.f==='nf' && !val){
+              // Pagamento sem NF vinculada ainda — em vez do campo de texto vazio,
+              // mostra um botão pra escolher a nota manualmente (o casamento
+              // automático já tentou e não achou uma correspondência sem ambiguidade).
+              html += '<td style="padding:1px 4px"><button class="btn bs" style="padding:2px 6px;font-size:9px;white-space:nowrap" onclick="abrirVincularNF(\''+r.id+'\')"><i class="ti ti-link"></i> Vincular NF</button></td>';
             } else {
               html += '<td style="padding:1px 4px"><input type="text" value="'+(val!==undefined&&val!==null?String(val).replace(/"/g,'&quot;'):'')+'" style="border:none;background:transparent;font-size:10px;width:'+w+'px;padding:2px 0" onchange="editarCelulaGeral(\''+c.key+'\',\''+r.id+'\',\''+col.f+'\',this.value)"></td>';
             }
@@ -13172,23 +13302,35 @@ async function lerNFcomIA(){
     var ehPdf=_nfImgMime==='application/pdf';
     var isGemini=!apiKey.startsWith('sk-ant-');
     var txt;
+    var _finishReason='';
 
     if(isGemini){
-      var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
-        body:JSON.stringify({
-          contents:[{parts:[{inline_data:{mime_type:_nfImgMime,data:_nfImgB64}},{text:prompt}]}],
-          generationConfig:{maxOutputTokens:2048,temperature:0.1,responseMimeType:'application/json',thinkingConfig:{thinkingBudget:0}}
-        })
-      });
-      if(!resp.ok){ var er=await resp.json(); throw new Error(er.error?.message||'Erro '+resp.status); }
-      var data=await resp.json();
-      // Concatena todas as partes de texto (modelos com "thinking" podem
-      // devolver mais de uma parte) — pegar só a parte [0] às vezes vinha
-      // truncado.
-      var partsG=data.candidates?.[0]?.content?.parts||[];
-      txt=partsG.map(function(p){return p.text||'';}).join('').trim();
+      var callGemini=async function(maxTok){
+        var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+          body:JSON.stringify({
+            contents:[{parts:[{inline_data:{mime_type:_nfImgMime,data:_nfImgB64}},{text:prompt}]}],
+            generationConfig:{maxOutputTokens:maxTok,responseMimeType:'application/json',thinkingConfig:{thinkingLevel:'low'}}
+          })
+        });
+        if(!r.ok){ var er=await r.json(); throw new Error(er.error?.message||'Erro '+r.status); }
+        var d=await r.json();
+        // Concatena todas as partes de texto (modelos com "thinking" podem
+        // devolver mais de uma parte) — pegar só a parte [0] às vezes vinha
+        // truncado.
+        var partsG=d.candidates?.[0]?.content?.parts||[];
+        return { txt:partsG.map(function(p){return p.text||'';}).join('').trim(), finishReason:d.candidates?.[0]?.finishReason||'' };
+      };
+      var g=await callGemini(3072);
+      // Se voltou vazio/curto demais e o motivo foi limite de tokens, o
+      // "thinking" do modelo pode estar consumindo o orçamento mesmo com
+      // thinkingBudget:0 — tenta de novo com um teto bem maior antes de desistir.
+      if((!g.txt || g.txt.length<15) && g.finishReason==='MAX_TOKENS'){
+        g=await callGemini(8192);
+      }
+      txt=g.txt;
+      _finishReason=g.finishReason;
     } else {
       // Claude (Anthropic) — mesma chave/detecção usada no assistente de IA do CRM.
       // PDF vai como bloco "document"; foto vai como bloco "image".
@@ -13295,8 +13437,11 @@ function salvarNF(){
   }
 
   salvarDB();
-  // Fecha modal e atualiza mês
-  var mConfEl=document.getElementById('mConfirmarNF'); if(mConfEl) mConfEl.style.display='none';
+  // Fecha modal e atualiza mês — usa cm() (remove a classe 'open') em vez de
+  // mexer no style inline direto: setar style.display='none' na mão deixava
+  // um estilo inline "grudado" no modal que a classe 'open' não conseguia
+  // mais desfazer depois, travando o cadastro da 2ª NF em diante.
+  cm('mConfirmarNF');
   _nfImgB64=null; _nfEditId=null;
   if(nf.data){ _fiscalMes=parseInt(nf.data.slice(5,7))-1; _fiscalAno=parseInt(nf.data.slice(0,4)); }
   renderFiscal();
@@ -13380,20 +13525,29 @@ async function lerNFcomIAR(){
     var ehPdf=_recebImgMime==='application/pdf';
     var isGemini=!apiKey.startsWith('sk-ant-');
     var txt;
+    var _finishReason='';
 
     if(isGemini){
-      var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',{
-        method:'POST',
-        headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
-        body:JSON.stringify({
-          contents:[{parts:[{inline_data:{mime_type:_recebImgMime,data:_recebImgB64}},{text:prompt}]}],
-          generationConfig:{maxOutputTokens:2048,temperature:0.1,responseMimeType:'application/json',thinkingConfig:{thinkingBudget:0}}
-        })
-      });
-      if(!resp.ok){ var er=await resp.json(); throw new Error(er.error?.message||'Erro '+resp.status); }
-      var data=await resp.json();
-      var partsG=data.candidates?.[0]?.content?.parts||[];
-      txt=partsG.map(function(p){return p.text||'';}).join('').trim();
+      var callGeminiR=async function(maxTok){
+        var r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','x-goog-api-key':apiKey},
+          body:JSON.stringify({
+            contents:[{parts:[{inline_data:{mime_type:_recebImgMime,data:_recebImgB64}},{text:prompt}]}],
+            generationConfig:{maxOutputTokens:maxTok,responseMimeType:'application/json',thinkingConfig:{thinkingLevel:'low'}}
+          })
+        });
+        if(!r.ok){ var er=await r.json(); throw new Error(er.error?.message||'Erro '+r.status); }
+        var d=await r.json();
+        var partsG=d.candidates?.[0]?.content?.parts||[];
+        return { txt:partsG.map(function(p){return p.text||'';}).join('').trim(), finishReason:d.candidates?.[0]?.finishReason||'' };
+      };
+      var g=await callGeminiR(3072);
+      if((!g.txt || g.txt.length<15) && g.finishReason==='MAX_TOKENS'){
+        g=await callGeminiR(8192);
+      }
+      txt=g.txt;
+      _finishReason=g.finishReason;
     } else {
       var conteudo = ehPdf
         ? {type:'document',source:{type:'base64',media_type:'application/pdf',data:_recebImgB64}}
@@ -13415,7 +13569,7 @@ async function lerNFcomIAR(){
     try{ parsed=JSON.parse(txt); } catch(e){}
     if(!parsed){ var jm=txt.match(/\{[\s\S]*?\}/); if(jm) try{ parsed=JSON.parse(jm[0]); }catch(e){} }
     if(!parsed){ var cl=txt.replace(/```json/gi,'').replace(/```/g,'').trim(); try{ parsed=JSON.parse(cl); }catch(e){} }
-    if(!parsed) throw new Error('IA não retornou JSON. Resposta: '+txt.slice(0,120));
+    if(!parsed) throw new Error('IA não retornou JSON'+(_finishReason?(' (motivo: '+_finishReason+')'):'')+'. Resposta: '+(txt||'(vazia)').slice(0,150));
 
     cm('mAnexarNFReceb');
     preencherModalNFR(parsed);
@@ -16882,11 +17036,27 @@ function bulkAtualizarBarra(){
   var bar = document.getElementById('ped-bulk-bar');
   var cnt = document.getElementById('ped-bulk-count');
   if(!bar) return;
+  var totCard=document.getElementById('ped-totais-card');
   if(sel.length > 0){
     bar.style.display = 'flex';
     if(cnt) cnt.textContent = sel.length + ' selecionado' + (sel.length>1?'s':'');
+    // Soma só os pedidos MARCADOS — antes essa parte não existia aqui (só
+    // no código morto/duplicado do arquivo), então o card de totais nunca
+    // era atualizado ao selecionar checkboxes e continuava mostrando a
+    // soma de TODOS os pedidos do card, calculada por renderEmpPed().
+    var ids=[]; sel.forEach(function(c){ ids.push(c.dataset.pedid); });
+    var pedsSel=DB.pedidos.filter(function(p){ return ids.indexOf(p.id)!==-1; });
+    var somaVal=pedsSel.reduce(function(a,p){ return a+(p.val||0); },0);
+    var somaFat=pedsSel.reduce(function(a,p){ return a+(p.valfat||0); },0);
+    if(totCard) totCard.innerHTML=
+      '<span style="color:var(--t3)">Venda:</span> <b style="color:var(--t1)">'+fmt(somaVal)+'</b>'+
+      ' &nbsp;|&nbsp; <span style="color:var(--t3)">Faturado:</span> <b style="color:var(--grn)">'+fmt(somaFat)+'</b>'+
+      ' &nbsp;|&nbsp; <span style="color:var(--t3)">Pedidos selecionados:</span> <b style="color:var(--acc)">'+sel.length+'</b>';
   } else {
     bar.style.display = 'none';
+    // Sem nada marcado, volta a mostrar o resumo geral do card (recalcula
+    // chamando renderEmpPed em vez de deixar em branco).
+    if(typeof renderEmpPed==='function') renderEmpPed();
   }
 }
 
