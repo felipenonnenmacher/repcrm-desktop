@@ -218,6 +218,34 @@ if('serviceWorker' in navigator){
   </div>
   <div class="mg" id="mg-dash"></div>
 
+  <!-- Briefing do Dia -->
+  <div class="card" style="margin-bottom:14px;border-left:3px solid #7c3aed" id="card-briefing-dia">
+    <div class="ct">
+      <div class="ctl"><i class="ti ti-sun-2" style="color:#f59e0b"></i>Briefing do Dia</div>
+      <span id="briefing-dia-data" style="font-size:11px;color:var(--t3);text-transform:capitalize"></span>
+    </div>
+    <div id="briefing-dia-body" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+  </div>
+
+  <!-- Assistente IA -->
+  <div class="card" style="margin-bottom:14px" id="card-ia-assistente">
+    <div class="ct">
+      <div class="ctl"><i class="ti ti-sparkles" style="color:#7c3aed"></i>Assistente IA</div>
+      <span style="font-size:11px;color:var(--t3)">pergunte sobre seus clientes, pedidos ou vendas</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn bs" style="font-size:11px" onclick="iaAnalisarCompleto()"><i class="ti ti-report-analytics"></i> Análise completa</button>
+      <button class="btn bs" style="font-size:11px" onclick="iaGerarLembretes()"><i class="ti ti-calendar-time"></i> Lembretes por ciclo</button>
+      <button class="btn bs" style="font-size:11px" onclick="iaLembretesRisco()"><i class="ti ti-alert-triangle"></i> Clientes em risco</button>
+      <button class="btn bs" style="font-size:11px" onclick="iaEmailReativacao()"><i class="ti ti-mail"></i> E-mails de reativação</button>
+    </div>
+    <div class="ia-msgs" id="ia-msgs-box" style="max-height:320px;min-height:44px;border:1px solid var(--bdr);border-radius:8px;margin-bottom:8px"></div>
+    <div style="display:flex;gap:8px">
+      <input class="fi" id="ia-pergunta-input" style="flex:1" placeholder="Ex: quais clientes do segmento Pet não compram há mais de 60 dias?" onkeydown="if(event.key==='Enter')iaPerguntarLivre()">
+      <button class="btn bp" onclick="iaPerguntarLivre()"><i class="ti ti-send"></i> Perguntar</button>
+    </div>
+  </div>
+
   <!-- Alertas de Ciclo de Compra -->
   <div class="card" style="margin-bottom:14px" id="card-alertas-ciclo">
     <div class="ct">
@@ -246,7 +274,7 @@ if('serviceWorker' in navigator){
     </table>
   </div>
 
-  <div class="card" style="border-left:3px solid var(--org);margin-bottom:14px">;margin-bottom:14px">
+  <div class="card" style="border-left:3px solid var(--org);margin-bottom:14px">
     <div class="ct"><div class="ctl"><i class="ti ti-clock-exclamation" style="color:var(--org)"></i>Pedidos sem NF — aguardando faturamento</div><span id="lbl-sem-nf" style="font-size:11px;color:var(--t3)"></span></div>
     <div id="lista-sem-nf"></div>
   </div>
@@ -293,6 +321,7 @@ if('serviceWorker' in navigator){
       <select class="fi" id="fil-emp-cli" style="width:140px;padding:5px 9px;font-size:12px" onchange="renderCli()"></select>
       <button class="btn bs" onclick="emailLote()"><i class="ti ti-mail"></i> E-mail lote</button>
       <button class="btn bs" onclick="mapsLote()"><i class="ti ti-map-pin"></i> Mapa em lote</button>
+      <button class="btn bs" onclick="exportarClientesMapa()" title="Gera um arquivo para importar em mymaps.google.com com todos os clientes juntos no mapa"><i class="ti ti-file-spreadsheet"></i> Exportar p/ Google Maps</button>
       <button class="btn bs" style="color:var(--red);border-color:var(--red)" onclick="excluirClientesLote()"><i class="ti ti-trash"></i> Excluir selecionados</button>
       <button class="btn bs" onclick="toggleColMenu('col-menu-cli')" title="Escolher colunas"><i class="ti ti-columns"></i></button>
       <button class="btn bp" onclick="om('mCli')"><i class="ti ti-plus"></i> Novo</button>
@@ -6019,17 +6048,21 @@ async function iaClaude(prompt, contexto, maxTokens=800){
   const isGemini=!key.startsWith('sk-ant-');
 
   if(isGemini){
-    // Gemini API (gratuita)
-    const model='gemini-1.5-flash'; // modelo mais rápido e gratuito
-    const url=`https://generativelanguage.googleapis.com/v1beta/interactions`;
+    // Gemini API (gratuita) — endpoint generateContent (NÃO /v1beta/interactions, que
+    // usa um formato de corpo totalmente diferente: {model, input, generation_config}
+    // em vez de {contents, generationConfig}, e por isso a chamada nunca funcionava).
+    // Modelo atualizado para gemini-3.6-flash (gemini-1.5-flash foi descontinuado) e
+    // thinkingConfig.thinkingLevel no lugar do antigo thinkingBudget, que os modelos
+    // Gemini 3.x rejeitam com erro "invalid argument".
+    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent';
     const body={
       contents:[{parts:[{text:`Você é um assistente especializado em análise de CRM para representantes comerciais. Responda sempre em português, de forma objetiva e prática. Use emojis para facilitar a leitura.\n\nDados do CRM:\n${JSON.stringify(contexto,null,2)}\n\n${prompt}`}]}],
-      generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}
+      generationConfig:{maxOutputTokens:maxTokens,thinkingConfig:{thinkingLevel:'low'}}
     };
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)});
     const d=await r.json();
     if(d.error) throw new Error(d.error.message||'Erro da API Gemini');
-    return d.candidates?.[0]?.content?.parts?.[0]?.text||d.steps?.find(s=>s.model_output)?.model_output?.parts?.[0]?.text||'Sem resposta.';
+    return d.candidates?.[0]?.content?.parts?.[0]?.text||'Sem resposta.';
   } else {
     // Claude API (Anthropic)
     const r=await fetch('https://api.anthropic.com/v1/messages',{
@@ -8458,6 +8491,7 @@ if('serviceWorker' in navigator){
       <select class="fi" id="fil-emp-cli" style="width:140px;padding:5px 9px;font-size:12px" onchange="renderCli()"></select>
       <button class="btn bs" onclick="emailLote()"><i class="ti ti-mail"></i> E-mail lote</button>
       <button class="btn bs" onclick="mapsLote()"><i class="ti ti-map-pin"></i> Mapa em lote</button>
+      <button class="btn bs" onclick="exportarClientesMapa()" title="Gera um arquivo para importar em mymaps.google.com com todos os clientes juntos no mapa"><i class="ti ti-file-spreadsheet"></i> Exportar p/ Google Maps</button>
       <button class="btn bs" style="color:var(--red);border-color:var(--red)" onclick="excluirClientesLote()"><i class="ti ti-trash"></i> Excluir selecionados</button>
       <button class="btn bs" onclick="toggleColMenu('col-menu-cli')" title="Escolher colunas"><i class="ti ti-columns"></i></button>
       <button class="btn bp" onclick="om('mCli')"><i class="ti ti-plus"></i> Novo</button>
@@ -9654,6 +9688,12 @@ function buildDash() {
   renderTarefasPendentes();
   // Agenda no dashboard
   renderAgendaDash();
+  // Tabela Vendas por Empresa
+  renderVendasEmpresaDash();
+  // Alertas de Ciclo de Compra (roda com pequeno atraso pois depende de todo DB.pedidos)
+  setTimeout(renderAlertasCiclo, 300);
+  // Briefing do Dia
+  renderBriefingDia();
 }
 
 // ══ TAREFAS PENDENTES ══
@@ -10146,6 +10186,34 @@ function mapsLote(){
     const q=encodeURIComponent(enderecoCliente(c));
     setTimeout(()=>{window.open(`https://www.google.com/maps/search/?api=1&query=${q}`,'_blank');},i*700);
   });
+}
+// Exporta clientes para um arquivo CSV pronto para importar em mymaps.google.com
+// (Criar mapa -> Importar -> escolher este arquivo -> coluna "Endereco" como local
+// e "Situacao" como coluna de estilo, para colorir os alfinetes por Ativo/Inativo).
+// CSV (nao .xlsx) de proposito: e o formato nativo tanto do Google My Maps quanto
+// do Excel, sem precisar carregar uma biblioteca inteira de planilhas so para isso.
+function exportarClientesMapa(){
+  const marcados=[...document.querySelectorAll('.cli-cb:checked')].map(cb=>cb.dataset.cliid);
+  const lista = marcados.length
+    ? marcados.map(id=>DB.clientes.find(x=>x.id===id)).filter(Boolean)
+    : DB.clientes.filter(c=>!c.encerrado);
+  if(!lista.length){ toast('Nenhum cliente para exportar.'); return; }
+  const linhas=[['Razão Social','Endereço','Situação','Última compra 1','Última compra 2','Última compra 3']];
+  lista.forEach(c=>{
+    const e=DB.empresas.find(x=>x.id===c.empId);
+    const sit=getSit(c, e?.risco);
+    const peds=DB.pedidos.filter(p=>p.cliId===c.id&&!p.cancelado&&p.dt).sort((a,b)=>b.dt.localeCompare(a.dt)).slice(0,3);
+    const compra=i=>peds[i]?fmtD(peds[i].dt)+' - '+fmt(peds[i].val):'';
+    linhas.push([c.rs||'', enderecoCliente(c), sit, compra(0), compra(1), compra(2)]);
+  });
+  const csv='\uFEFF'+linhas.map(row=>row.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='clientes_mapa_'+new Date().toISOString().split('T')[0]+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(lista.length+' cliente(s) exportado(s)! Importe em mymaps.google.com -> Criar mapa -> Importar.');
 }
 function selTodosEcli(cb){document.querySelectorAll('.ecli-cb').forEach(c=>c.checked=cb.checked);}
 function mapsLoteEcli(){
@@ -15004,17 +15072,21 @@ async function iaClaude(prompt, contexto, maxTokens=800){
   const isGemini=!key.startsWith('sk-ant-');
 
   if(isGemini){
-    // Gemini API (gratuita)
-    const model='gemini-1.5-flash'; // modelo mais rápido e gratuito
-    const url=`https://generativelanguage.googleapis.com/v1beta/interactions`;
+    // Gemini API (gratuita) — endpoint generateContent (NÃO /v1beta/interactions, que
+    // usa um formato de corpo totalmente diferente: {model, input, generation_config}
+    // em vez de {contents, generationConfig}, e por isso a chamada nunca funcionava).
+    // Modelo atualizado para gemini-3.6-flash (gemini-1.5-flash foi descontinuado) e
+    // thinkingConfig.thinkingLevel no lugar do antigo thinkingBudget, que os modelos
+    // Gemini 3.x rejeitam com erro "invalid argument".
+    const url='https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent';
     const body={
       contents:[{parts:[{text:`Você é um assistente especializado em análise de CRM para representantes comerciais. Responda sempre em português, de forma objetiva e prática. Use emojis para facilitar a leitura.\n\nDados do CRM:\n${JSON.stringify(contexto,null,2)}\n\n${prompt}`}]}],
-      generationConfig:{maxOutputTokens:maxTokens,temperature:0.7}
+      generationConfig:{maxOutputTokens:maxTokens,thinkingConfig:{thinkingLevel:'low'}}
     };
     const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify(body)});
     const d=await r.json();
     if(d.error) throw new Error(d.error.message||'Erro da API Gemini');
-    return d.candidates?.[0]?.content?.parts?.[0]?.text||d.steps?.find(s=>s.model_output)?.model_output?.parts?.[0]?.text||'Sem resposta.';
+    return d.candidates?.[0]?.content?.parts?.[0]?.text||'Sem resposta.';
   } else {
     // Claude API (Anthropic)
     const r=await fetch('https://api.anthropic.com/v1/messages',{
@@ -15120,6 +15192,250 @@ async function iaEmailReativacao(){
     iaMsgStream('<div class="ia-msg ai">'+txt.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')+'</div>');
   } catch(e){ document.getElementById('ia-typing')?.remove(); iaMsgStream('<div class="ia-msg ai">❌ '+e.message+'<br><small style="color:var(--t3)">Verifique sua API Key em Configurações → IA (Gemini: AIza... | Claude: sk-ant-...)</small></div>'); }
 }
+
+
+// ══ CAIXA DE PERGUNTAS — ASSISTENTE IA (Dia a Dia) ══
+// iaMsgStream() era chamada pelas 4 funções acima (iaAnalisarCompleto, iaGerarLembretes,
+// iaLembretesRisco, iaEmailReativacao) mas nunca tinha sido definida em lugar nenhum do
+// arquivo — ou seja, essas 4 funções de IA já existiam prontas mas quebravam com
+// "iaMsgStream is not defined" assim que eram chamadas, e nem havia botão em nenhuma
+// tela para chamá-las. Aqui a caixa de chat é criada de verdade, com essas 4 opções
+// prontas mais um campo de pergunta livre.
+function iaMsgStream(html){
+  const box=document.getElementById('ia-msgs-box');
+  if(!box) return;
+  box.insertAdjacentHTML('beforeend', html);
+  box.scrollTop=box.scrollHeight;
+}
+async function iaPerguntarLivre(){
+  const inp=document.getElementById('ia-pergunta-input');
+  const pergunta=(inp?.value||'').trim();
+  if(!pergunta){ toast('Digite uma pergunta.'); return; }
+  const cfg=loadCfg();
+  if(!cfg.iakey){ iaMsgStream('<div class="ia-msg ai">⚠️ Configure sua API Key em <b>Configurações → IA</b>.<br><small>Gratuito: aistudio.google.com (Gemini) | Pago: console.anthropic.com (Claude)</small></div>'); return; }
+  const perguntaSeg=pergunta.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  iaMsgStream('<div class="ia-msg usr">'+perguntaSeg+'</div><div class="ia-msg ai" id="ia-typing">🔄 Pensando...</div>');
+  if(inp) inp.value='';
+  try{
+    const ctx=iaContextoCompleto();
+    const txt=await iaClaude(pergunta, ctx, 900);
+    document.getElementById('ia-typing')?.remove();
+    iaMsgStream('<div class="ia-msg ai">'+txt.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>')+'</div>');
+  }catch(e){
+    document.getElementById('ia-typing')?.remove();
+    iaMsgStream('<div class="ia-msg ai">❌ '+e.message+'<br><small style="color:var(--t3)">Verifique sua API Key em Configurações → IA (Gemini: AIza... | Claude: sk-ant-...)</small></div>');
+  }
+}
+// ══ FIM CAIXA DE PERGUNTAS IA ══
+
+// ══ ALERTAS DE CICLO DE COMPRA (visão geral — todas as empresas) ══
+// Esta função (e cicloAcao) já existia no arquivo mas só na metade "morta" do
+// documento duplicado — nunca era chamada pelo buildDash() que realmente roda,
+// então o card "Alertas de Ciclo de Compra" do Dashboard ficava travado em
+// "Carregando..." para sempre. Portada para cá, ligada ao buildDash() ativo, e
+// com os botões de follow-up por WhatsApp/E-mail adicionados na coluna de ação.
+function renderAlertasCiclo(){
+  const el=document.getElementById('dash-ciclo-body'); if(!el) return;
+  const hoje=new Date();
+  const alertas=[];
+
+  DB.clientes.filter(function(c){return !c.encerrado;}).forEach(function(cli){
+    const peds=DB.pedidos.filter(function(p){return p.cliId===cli.id&&!p.cancelado&&p.dt;});
+    if(peds.length<2) return;
+    const datas=peds.map(function(p){return new Date(p.dt+'T12:00');}).sort(function(a,b){return a-b;});
+    let somaInterv=0;
+    for(let i=1;i<datas.length;i++) somaInterv+=(datas[i]-datas[i-1])/86400000;
+    const intervMedio=Math.round(somaInterv/(datas.length-1));
+    const ultData=datas[datas.length-1];
+    const diasSem=Math.floor((hoje-ultData)/86400000);
+
+    const porAnoMes={};
+    peds.forEach(function(p){
+      const d=new Date(p.dt+'T12:00'); const key=d.getFullYear()+'-'+d.getMonth();
+      if(!porAnoMes[key]) porAnoMes[key]={ano:d.getFullYear(),mes:d.getMonth()};
+    });
+    const mesesFreq={};
+    Object.values(porAnoMes).forEach(function(e){
+      if(!mesesFreq[e.mes]) mesesFreq[e.mes]=[];
+      if(!mesesFreq[e.mes].includes(e.ano)) mesesFreq[e.mes].push(e.ano);
+    });
+    const mesesHab=Object.keys(mesesFreq).filter(function(m){return mesesFreq[m].length>=2;}).map(Number);
+    const compradosMesAno=Object.values(porAnoMes).filter(function(e){return e.ano===hoje.getFullYear();}).map(function(e){return e.mes;});
+    const mesesAtrasados=mesesHab.filter(function(m){return !compradosMesAno.includes(m)&&m<=hoje.getMonth();});
+
+    const atrasado=diasSem>intervMedio*1.3;
+    const proximo=!atrasado&&diasSem>intervMedio*0.85;
+
+    if(atrasado||proximo||mesesAtrasados.length){
+      const e=DB.empresas.find(function(x){return x.id===cli.empId;});
+      alertas.push({cli,e,diasSem,intervMedio,atrasado,proximo,mesesAtrasados,ultData});
+    }
+  });
+
+  if(!DB.cicloAcoes) DB.cicloAcoes={};
+  const hojeStr=hoje.toISOString().split('T')[0];
+
+  const alertasFiltrados=alertas.filter(function(a){
+    const acao=DB.cicloAcoes[a.cli.id];
+    if(!acao) return true;
+    return acao.ate<hojeStr;
+  });
+
+  const badge=document.getElementById('badge-ciclo');
+  if(badge){ badge.textContent=alertasFiltrados.length; badge.style.display=alertasFiltrados.length?'inline':'none'; }
+
+  if(!alertasFiltrados.length){
+    el.innerHTML='<div style="color:var(--grn);font-size:12px;padding:8px"><i class="ti ti-circle-check"></i> Todos os clientes dentro do ciclo ou já contatados! 🎉</div>';
+    return;
+  }
+
+  alertasFiltrados.sort(function(a,b){return b.diasSem-a.diasSem;});
+
+  el.innerHTML='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'+
+    '<thead><tr style="background:var(--s2)">'+
+    '<th style="padding:7px 10px;text-align:left">Cliente</th>'+
+    '<th style="padding:7px 10px;text-align:left">Empresa</th>'+
+    '<th style="padding:7px 10px;text-align:center">Último pedido</th>'+
+    '<th style="padding:7px 10px;text-align:center">Dias sem comprar</th>'+
+    '<th style="padding:7px 10px;text-align:center">Intervalo médio</th>'+
+    '<th style="padding:7px 10px;text-align:left">Situação</th>'+
+    '<th style="padding:7px 10px;text-align:center">Follow-up</th>'+
+    '</tr></thead><tbody>'+
+    alertasFiltrados.map(function(a,idx){
+      const cor=a.atrasado?'var(--red)':a.proximo?'var(--org)':'var(--cyn)';
+      const txt=a.atrasado?'⚠️ Atrasado':a.proximo?'🕐 Próximo':'📅 Mês habitual pendente';
+      const mesesTxt=a.mesesAtrasados.length?' · '+a.mesesAtrasados.map(function(m){return MESES_NOME[m];}).join('/'):'';
+      const bg=idx%2?'background:var(--s2)':'';
+      return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'+
+        '<td style="padding:7px 10px"><span class="lnk" onclick="abrirCli(\''+a.cli.id+'\',\'dash\')">'+a.cli.rs+'</span></td>'+
+        '<td style="padding:7px 10px"><span style="color:'+(a.e?.cor||'var(--t3)')+';font-weight:600">'+(a.e?.nome||'—')+'</span></td>'+
+        '<td style="padding:7px 10px;text-align:center;color:var(--t2)">'+fmtD(a.ultData.toISOString().split('T')[0])+'</td>'+
+        '<td style="padding:7px 10px;text-align:center;font-weight:700;color:'+cor+'">'+a.diasSem+'d</td>'+
+        '<td style="padding:7px 10px;text-align:center;color:var(--t3)">'+a.intervMedio+'d</td>'+
+        '<td style="padding:7px 10px"><span style="font-size:11px;color:'+cor+'">'+txt+mesesTxt+'</span></td>'+
+      '<td style="padding:7px 10px;white-space:nowrap">'+
+        '<button class="btn bs" style="padding:2px 7px;font-size:10px;color:#25d366;border-color:#25d366" onclick="wppFollowUpCiclo(\''+a.cli.id+'\')" title="Chamar no WhatsApp"><i class="ti ti-brand-whatsapp"></i></button> '+
+        '<button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--acc);border-color:var(--acc)" onclick="emailFollowUpCiclo(\''+a.cli.id+'\')" title="Enviar e-mail"><i class="ti ti-mail"></i></button> '+
+        '<button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--grn);border-color:var(--grn)" onclick="cicloAcao(\''+a.cli.id+'\',\'contatado\')" title="Marcar como contatado — retira da lista por 7 dias"><i class="ti ti-phone-check"></i></button> '+
+        '<button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="cicloAcao(\''+a.cli.id+'\',\'seminteresse\')" title="Sem interesse neste ciclo"><i class="ti ti-x"></i></button>'+
+      '</td>'+
+      '</tr>';
+    }).join('')+
+    '</tbody></table></div>';
+}
+
+function cicloAcao(cliId, tipo){
+  if(!DB.cicloAcoes) DB.cicloAcoes={};
+  const hoje=new Date();
+  if(tipo==='contatado'){
+    const ate=new Date(hoje); ate.setDate(ate.getDate()+7);
+    DB.cicloAcoes[cliId]={tipo:'contatado', ate:ate.toISOString().split('T')[0], dt:hoje.toISOString().split('T')[0]};
+    toast('✅ Marcado como contatado — retorna em 7 dias.');
+  } else {
+    const ate=new Date(hoje); ate.setDate(1); ate.setMonth(ate.getMonth()+2); ate.setDate(0);
+    DB.cicloAcoes[cliId]={tipo:'seminteresse', ate:ate.toISOString().split('T')[0], dt:hoje.toISOString().split('T')[0]};
+    toast('❌ Removido da lista até '+fmtD(ate.toISOString().split('T')[0])+'.');
+  }
+  salvarDB();
+  renderAlertasCiclo();
+}
+
+// Follow-up de vendas — WhatsApp e e-mail prontos, mensagem já preenchida com o
+// nome do cliente e há quantos dias ele não compra. O usuário revisa e confirma
+// o envio no próprio WhatsApp/e-mail (nada é enviado automaticamente daqui).
+function wppFollowUpCiclo(cliId){
+  const c=DB.clientes.find(x=>x.id===cliId); if(!c){ toast('Cliente não encontrado'); return; }
+  const cel=(c.cel||c.fone||'').replace(/\D/g,'');
+  if(!cel){ toast('Cliente sem telefone/celular cadastrado.'); return; }
+  const d=dias(c);
+  const msg=`Olá${c.comp?' '+c.comp:''}! Tudo bem? Notei que já faz ${d} dias desde nossa última venda para a ${c.rs} e pensei em passar para saber se já está na hora de repor o estoque ou se tem alguma novidade que eu possa te apresentar. Fico à disposição!`;
+  window.open(`https://wa.me/55${cel}?text=${encodeURIComponent(msg)}`,'_blank');
+}
+function emailFollowUpCiclo(cliId){
+  const c=DB.clientes.find(x=>x.id===cliId); if(!c){ toast('Cliente não encontrado'); return; }
+  if(!c.email){ toast('Cliente sem e-mail cadastrado.'); return; }
+  const d=dias(c);
+  const assunto=`Hora de repor o estoque, ${c.rs}?`;
+  const corpo=`Olá${c.comp?' '+c.comp:''}!\n\nNotei que já faz ${d} dias desde a última compra da ${c.rs} conosco. Gostaria de saber se está na hora de fazer um novo pedido ou se posso ajudar com alguma novidade em nosso catálogo.\n\nFico à disposição para conversar!`;
+  const mailto='mailto:'+c.email+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+  const a=document.createElement('a'); a.href=mailto; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('Abrindo e-mail...');
+}
+// ══ FIM ALERTAS DE CICLO ══
+
+// ══ VENDAS POR EMPRESA (tabela do Dashboard) ══
+// Mesma situação: função já existia mas só na metade morta — a tabela
+// "Vendas por empresa" do Dashboard nunca era preenchida.
+function renderVendasEmpresaDash(){
+  const tbEmp=document.getElementById('tb-dash-empresas'); if(!tbEmp) return;
+  const hj=new Date(); const mes=hj.getMonth(); const ano=hj.getFullYear();
+  const lblMes=document.getElementById('dash-mes-lbl');
+  if(lblMes) lblMes.textContent=hj.toLocaleString('pt-BR',{month:'long',year:'numeric'});
+  const corPct=function(p){ return p>=100?'var(--grn)':p>=70?'var(--org)':'var(--red)'; };
+  let htmlRows=DB.empresas.map(function(e,idx){
+    const venda=DB.pedidos.filter(function(p){return p.empId===e.id&&!p.cancelado&&p.dt;}).filter(function(p){var d=new Date(p.dt+'T12:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).reduce(function(a,p){return a+(p.val||0);},0);
+    const fat=DB.pedidos.filter(function(p){return p.empId===e.id&&!p.cancelado&&p.dtFat;}).filter(function(p){var d=new Date(p.dtFat+'T12:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).reduce(function(a,p){return a+(p.valfat||p.val||0);},0);
+    const metaV=getMetaMensal(e.id,ano,mes,'meta');
+    const metaF=getMetaMensal(e.id,ano,mes,'metaFat');
+    const pV=metaV?Math.round(venda/metaV*100):0;
+    const pF=metaF?Math.round(fat/metaF*100):0;
+    const bg=idx%2?'background:var(--s2)':'';
+    return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'
+      +'<td style="padding:6px 10px"><div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:'+e.cor+'"></div><span style="font-weight:600;color:var(--t1)">'+e.nome+'</span></div></td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--t1)">'+fmt(venda)+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--t3)">'+(metaV?fmt(metaV):'—')+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;font-weight:600;color:'+corPct(pV)+'">'+(metaV?pV+'%':'—')+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--grn)">'+fmt(fat)+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;color:var(--t3)">'+(metaF?fmt(metaF):'—')+'</td>'
+      +'<td style="padding:6px 10px;text-align:right;font-weight:600;color:'+corPct(pF)+'">'+(metaF?pF+'%':'—')+'</td>'
+      +'</tr>';
+  }).join('');
+  const totV=DB.empresas.reduce(function(s,e){return s+DB.pedidos.filter(function(p){return p.empId===e.id&&!p.cancelado&&p.dt;}).filter(function(p){var d=new Date(p.dt+'T12:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).reduce(function(a,p){return a+(p.val||0);},0);},0);
+  const totF=DB.empresas.reduce(function(s,e){return s+DB.pedidos.filter(function(p){return p.empId===e.id&&!p.cancelado&&p.dtFat;}).filter(function(p){var d=new Date(p.dtFat+'T12:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).reduce(function(a,p){return a+(p.valfat||p.val||0);},0);},0);
+  const totMV=DB.empresas.reduce(function(s,e){return s+getMetaMensal(e.id,ano,mes,'meta');},0);
+  const totMF=DB.empresas.reduce(function(s,e){return s+getMetaMensal(e.id,ano,mes,'metaFat');},0);
+  const tpV=totMV?Math.round(totV/totMV*100):0;
+  const tpF=totMF?Math.round(totF/totMF*100):0;
+  htmlRows+='<tr style="background:var(--s2);font-weight:700;border-top:2px solid var(--bdr)">'
+    +'<td style="padding:6px 10px;color:var(--t1)">Total</td>'
+    +'<td style="padding:6px 10px;text-align:right">'+fmt(totV)+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:var(--t3)">'+fmt(totMV)+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:'+corPct(tpV)+'">'+(totMV?tpV+'%':'—')+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:var(--grn)">'+fmt(totF)+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:var(--t3)">'+fmt(totMF)+'</td>'
+    +'<td style="padding:6px 10px;text-align:right;color:'+corPct(tpF)+'">'+(totMF?tpF+'%':'—')+'</td>'
+    +'</tr>';
+  tbEmp.innerHTML=htmlRows;
+}
+// ══ FIM VENDAS POR EMPRESA ══
+
+// ══ BRIEFING DO DIA ══
+function renderBriefingDia(){
+  const body=document.getElementById('briefing-dia-body'); if(!body) return;
+  const lblData=document.getElementById('briefing-dia-data');
+  if(lblData) lblData.textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+  const hojeStr=new Date().toISOString().split('T')[0];
+  const tarefasHoje=DB.tarefas.filter(function(t){return !t.done&&t.dt&&t.dt<=hojeStr;}).length;
+  const cicloVencidos=DB.clientes.filter(function(c){return !c.encerrado;}).map(function(c){
+    const ps=DB.pedidos.filter(function(p){return p.cliId===c.id&&!p.cancelado&&p.dt;}).sort(function(a,b){return a.dt.localeCompare(b.dt);});
+    if(ps.length<2) return null;
+    let soma=0; for(let i=1;i<ps.length;i++) soma+=(new Date(ps[i].dt+'T12:00')-new Date(ps[i-1].dt+'T12:00'))/86400000;
+    const ciclo=Math.round(soma/(ps.length-1));
+    return dias(c)>ciclo?true:null;
+  }).filter(Boolean).length;
+  const semNF=DB.pedidos.filter(function(p){return !p.dtFat&&!p.nf&&!p.cancelado;}).length;
+  function tile(n,lbl,cor,onclick){
+    return '<div style="flex:1;min-width:150px;background:var(--s2);border-radius:8px;padding:10px 14px;'+(onclick?'cursor:pointer':'')+'"'+(onclick?' onclick="'+onclick+'"':'')+'>'
+      +'<div style="font-size:24px;font-weight:800;color:'+cor+'">'+n+'</div>'
+      +'<div style="font-size:11px;color:var(--t3)">'+lbl+'</div>'
+      +'</div>';
+  }
+  body.innerHTML=
+    tile(tarefasHoje,'Tarefas pendentes','var(--red)',"document.getElementById(&quot;tarefas-pend-list&quot;)?.scrollIntoView({behavior:&quot;smooth&quot;})")+
+    tile(cicloVencidos,'Clientes na hora de comprar de novo','#7c3aed',"document.getElementById(&quot;card-alertas-ciclo&quot;)?.scrollIntoView({behavior:&quot;smooth&quot;})")+
+    tile(semNF,'Pedidos aguardando NF','var(--org)',"document.getElementById(&quot;lista-sem-nf&quot;)?.scrollIntoView({behavior:&quot;smooth&quot;})");
+}
+// ══ FIM BRIEFING DO DIA ══
 
 function letraParc(n){ return String.fromCharCode(64+Math.max(1,n)); } // 1=A, 2=B, ...26=Z
 function classeParc(status, dtPrev){
