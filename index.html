@@ -493,14 +493,20 @@ if('serviceWorker' in navigator){
     <div id="col-menu-ped" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t1)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Data',this.checked)"> Data</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Nº Pedido',this.checked)"> Nº Pedido</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Cliente',this.checked)"> Cliente</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Valor',this.checked)"> Valor</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Comissão%',this.checked)"> Comissão%</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Data Fat.',this.checked)"> Data Fat.</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('NF',this.checked)"> NF</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Vl. Faturado',this.checked)"> Vl. Faturado</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Diferença',this.checked)"> Diferença</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Faturado com NF',this.checked)"> Faturado com NF</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Origem',this.checked)"> Origem</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('OBS',this.checked)"> OBS</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Transportadora',this.checked)"> Transportadora</label>
       </div>
     </div>
@@ -519,7 +525,7 @@ if('serviceWorker' in navigator){
       <div style="flex:3;background:rgba(16,185,129,.08);padding:3px 0;text-align:center;font-size:10px;font-weight:700;color:var(--grn)">FATURAMENTO</div>
       <div style="flex:6;background:rgba(139,92,246,.08);border-radius:0 6px 6px 0;padding:3px 0;text-align:center;font-size:10px;font-weight:700;color:var(--acc2)">PAGAMENTOS</div>
     </div>
-    <table><thead><tr><th><input type="checkbox" id="ped-cb-all" onchange="bulkSelTodos(this)"></th><th class="th-sort" onclick="ordenar('eped','dt')">Data <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','num')">Nº <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','cliente')">Cliente <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort" onclick="ordenar('eped','val')">Valor <i class="ti ti-arrows-sort sort-ic"></i></th><th class="col-ped-Desconto">Desc%</th><th class="col-ped-Parcelas">Parc</th><th class="col-ped-Comissao">Com%</th><th class="th-sort col-ped-DataFat" onclick="ordenar('eped','dtFat')">Dt.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-NF" onclick="ordenar('eped','nf')">NF <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-VlFaturado" onclick="ordenar('eped','valfat')">Vl.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th title="Valor do pedido menos valor já faturado">Diferença</th><th class="col-ped-FaturadoNF">Fat?</th><th class="th-sort col-ped-Origem" onclick="ordenar('eped','tipo')">Tipo <i class="ti ti-arrows-sort sort-ic"></i></th><th style="max-width:130px">OBS</th><th class="col-ped-Transportadora" style="text-align:center">Transp.</th><th></th></tr></thead><tbody id="tb-eped"></tbody></table>
+    <table><thead><tr><th><input type="checkbox" id="ped-cb-all" onchange="bulkSelTodos(this)"></th><th class="th-sort col-ped-Data" onclick="ordenar('eped','dt')">Data <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-Num" onclick="ordenar('eped','num')">Nº <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-Cliente" onclick="ordenar('eped','cliente')">Cliente <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-Valor" onclick="ordenar('eped','val')">Valor <i class="ti ti-arrows-sort sort-ic"></i></th><th class="col-ped-Desconto">Desc%</th><th class="col-ped-Parcelas">Parc</th><th class="col-ped-Comissao">Com%</th><th class="th-sort col-ped-DataFat" onclick="ordenar('eped','dtFat')">Dt.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-NF" onclick="ordenar('eped','nf')">NF <i class="ti ti-arrows-sort sort-ic"></i></th><th class="th-sort col-ped-VlFaturado" onclick="ordenar('eped','valfat')">Vl.Fat <i class="ti ti-arrows-sort sort-ic"></i></th><th class="col-ped-Diferenca" title="Valor do pedido menos valor já faturado">Diferença</th><th class="col-ped-FaturadoNF">Fat?</th><th class="th-sort col-ped-Origem" onclick="ordenar('eped','tipo')">Tipo <i class="ti ti-arrows-sort sort-ic"></i></th><th class="col-ped-OBS" style="max-width:130px">OBS</th><th class="col-ped-Transportadora" style="text-align:center">Transp.</th><th></th></tr></thead><tbody id="tb-eped"></tbody></table>
     <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--bdr);display:flex;gap:14px;font-size:11px;flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:rgba(16,185,129,.2);border:1px solid var(--grn);display:inline-block"></span>Pago</span>
       <span style="display:flex;align-items:center;gap:4px"><span style="width:11px;height:11px;border-radius:2px;background:rgba(245,158,11,.2);border:1px solid var(--org);display:inline-block"></span>Atenção</span>
@@ -3249,7 +3255,7 @@ function buildPedTabela(ps,mini){
       <td><span class="lnk" onclick="abrirCli('${p.cliId}','${mini?'clidet':'eped'}')">${c?.rs||'—'}</span></td>
       <td>${fmt(p.val)}</td><td>${p.desc||0}%</td><td>${p.parc||1}x</td>
       ${mini?'':`<td>${p.com||3}%</td>`}
-      <td>${fmtD(p.dtFat)}</td><td style="font-size:11px">${p.nf||'—'}</td><td>${fmt(p.valfat)}</td>
+      <td style="font-weight:600">${fmtD(p.dtFat)}</td><td style="font-weight:600">${p.nf||'—'}</td><td style="font-weight:600">${fmt(p.valfat)}</td>
       ${mini?'':`<td><span class="b ${fatSim?'b-g':'b-o'}" style="font-size:9px">${fatSim?'Sim':'Não'}</span></td>`}
       ${mini?'':`<td>${p.tipo?`<span class="b b-p" style="font-size:9px" title="${p.tipo}">${p.tipo.length>12?p.tipo.substring(0,12)+'...':p.tipo}</span>`:'<span style="color:var(--t3)">—</span>'}</td>`}
       ${mini?'':`<td style="max-width:130px">${p.obs?`<span style="font-size:9px;color:var(--org);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.obs}"><i class="ti ti-note" style="font-size:10px"></i> ${p.obs}</span>`:'<span style="color:var(--t3);font-size:10px">—</span>'}</td>`}
@@ -3264,7 +3270,7 @@ function buildPedTabela(ps,mini){
 // ══ SELETOR DE COLUNAS ══
 var colVisivel = {
   cli: {Cidade:true,Contato:true,Celular:true,Segmento:true,Empresa:true,'Últ. fat.':true,Dias:true,'Situação':true},
-  ped: {Desconto:true,Parcelas:true,'Comissão%':true,'Data Fat.':true,NF:true,'Vl. Faturado':true,'Faturado com NF':true,Origem:true,Transportadora:true},
+  ped: {Data:true,'Nº Pedido':true,Cliente:true,Valor:true,Desconto:true,Parcelas:true,'Comissão%':true,'Data Fat.':true,NF:true,'Vl. Faturado':true,'Diferença':true,'Faturado com NF':true,Origem:true,OBS:true,Transportadora:true},
   com: {'Vl. Faturado':true,'Com%':true,'Total a Receber':true,Parcelas:true,Status:true}
 };
 // Cache do resumo geral (não-selecionado) do card de totais de Pedidos —
@@ -3295,7 +3301,7 @@ function toggleColPed(col,vis){
   // desmarcada), esconde também o cabeçalho correspondente — sem isso, o
   // <th> ficava sempre visível e as colunas desalinhavam quando uma era
   // ocultada. É o mesmo padrão já usado em toggleColCom().
-  var mapaPed={'Desconto':'col-ped-Desconto','Parcelas':'col-ped-Parcelas','Comissão%':'col-ped-Comissao','Data Fat.':'col-ped-DataFat','NF':'col-ped-NF','Vl. Faturado':'col-ped-VlFaturado','Faturado com NF':'col-ped-FaturadoNF','Origem':'col-ped-Origem','Transportadora':'col-ped-Transportadora'};
+  var mapaPed={'Data':'col-ped-Data','Nº Pedido':'col-ped-Num','Cliente':'col-ped-Cliente','Valor':'col-ped-Valor','Desconto':'col-ped-Desconto','Parcelas':'col-ped-Parcelas','Comissão%':'col-ped-Comissao','Data Fat.':'col-ped-DataFat','NF':'col-ped-NF','Vl. Faturado':'col-ped-VlFaturado','Diferença':'col-ped-Diferenca','Faturado com NF':'col-ped-FaturadoNF','Origem':'col-ped-Origem','OBS':'col-ped-OBS','Transportadora':'col-ped-Transportadora'};
   if(mapaPed[col]){
     document.querySelectorAll('.'+mapaPed[col]).forEach(function(el){ el.style.display=vis?'':'none'; });
   }
@@ -8631,14 +8637,20 @@ if('serviceWorker' in navigator){
     <div id="col-menu-ped" style="display:none;position:absolute;right:16px;top:52px;background:var(--s1);border:1px solid var(--bdr);border-radius:10px;padding:12px 16px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.12)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--t1)">Colunas visíveis</div><button onclick="document.querySelectorAll('[id^=col-menu]').forEach(m=>m.style.display='none')" style="background:none;border:none;cursor:pointer;color:var(--t2);font-size:14px;padding:0;line-height:1"><i class="ti ti-x"></i></button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Data',this.checked)"> Data</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Nº Pedido',this.checked)"> Nº Pedido</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Cliente',this.checked)"> Cliente</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Valor',this.checked)"> Valor</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Desconto',this.checked)"> Desconto</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Parcelas',this.checked)"> Parcelas</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Comissão%',this.checked)"> Comissão%</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Data Fat.',this.checked)"> Data Fat.</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('NF',this.checked)"> NF</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Vl. Faturado',this.checked)"> Vl. Faturado</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Diferença',this.checked)"> Diferença</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Faturado com NF',this.checked)"> Faturado com NF</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Origem',this.checked)"> Origem</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('OBS',this.checked)"> OBS</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--t1)"><input type="checkbox" checked onchange="toggleColPed('Transportadora',this.checked)"> Transportadora</label>
       </div>
     </div>
@@ -10692,19 +10704,20 @@ function buildPedTabela(ps,mini){
     const dif=(+p.val||0)-(+p.valfat||0);
     return`<tr>
       ${mini?'':`<td><input type="checkbox" class="ped-cb" data-pedid="${p.id}" onchange="bulkAtualizarBarra()"></td>`}
-      <td>${fmtD(p.dt)}</td><td><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.num||'—'}</span></td>
-      <td><span class="lnk" onclick="abrirCli('${p.cliId}','${mini?'clidet':'eped'}')">${c?.rs||'—'}</span></td>
-      <td>${fmt(p.val)}</td>
+      ${mini||cv['Data']===false?'':`<td>${fmtD(p.dt)}</td>`}
+      ${mini||cv['Nº Pedido']===false?'':`<td><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.num||'—'}</span></td>`}
+      ${mini||cv['Cliente']===false?'':`<td><span class="lnk" onclick="abrirCli('${p.cliId}','${mini?'clidet':'eped'}')">${c?.rs||'—'}</span></td>`}
+      ${mini||cv['Valor']===false?'':`<td>${fmt(p.val)}</td>`}
       ${mini||cv['Desconto']===false?'':`<td>${p.desc||0}%</td>`}
       ${mini||cv['Parcelas']===false?'':`<td>${p.parc||1}x</td>`}
       ${mini||cv['Comissão%']===false?'':`<td>${p.com||3}%</td>`}
-      ${mini||cv['Data Fat.']===false?'':`<td>${fmtD(p.dtFat)}</td>`}
-      ${mini||cv['NF']===false?'':`<td style="font-size:11px">${p.nf||'—'}</td>`}
-      ${mini||cv['Vl. Faturado']===false?'':`<td>${fmt(p.valfat)}</td>`}
-      ${mini?'':`<td style="font-weight:600;color:${dif>0?'var(--org)':dif<0?'var(--grn)':'var(--t2)'}" title="Valor do pedido menos valor já faturado">${fmt(dif)}</td>`}
+      ${mini||cv['Data Fat.']===false?'':`<td style="font-weight:600">${fmtD(p.dtFat)}</td>`}
+      ${mini||cv['NF']===false?'':`<td style="font-weight:600">${p.nf||'—'}</td>`}
+      ${mini||cv['Vl. Faturado']===false?'':`<td style="font-weight:600">${fmt(p.valfat)}</td>`}
+      ${mini||cv['Diferença']===false?'':`<td style="font-weight:600;color:${dif>0?'var(--org)':dif<0?'var(--grn)':'var(--t2)'}" title="Valor do pedido menos valor já faturado">${fmt(dif)}</td>`}
       ${mini||cv['Faturado com NF']===false?'':`<td><span class="b ${fatSim?'b-g':'b-o'}" style="font-size:9px">${fatSim?'Sim':'Não'}</span></td>`}
       ${mini||cv['Origem']===false?'':`<td>${p.tipo?`<span class="b b-p" style="font-size:9px" title="${p.tipo}">${p.tipo.length>12?p.tipo.substring(0,12)+'...':p.tipo}</span>`:'<span style="color:var(--t3)">—</span>'}</td>`}
-      ${mini?'':`<td style="max-width:130px">${p.obs?`<span style="font-size:9px;color:var(--org);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.obs}"><i class="ti ti-note" style="font-size:10px"></i> ${p.obs}</span>`:'<span style="color:var(--t3);font-size:10px">—</span>'}</td>`}
+      ${mini||cv['OBS']===false?'':`<td style="max-width:130px">${p.obs?`<span style="font-size:9px;color:var(--org);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${p.obs}"><i class="ti ti-note" style="font-size:10px"></i> ${p.obs}</span>`:'<span style="color:var(--t3);font-size:10px">—</span>'}</td>`}
       ${mini?pCells.join(''):''}
       ${mini||cv['Transportadora']===false?'':`<td style="text-align:center"><input type="checkbox" ${p.naTransp?"checked":""} onchange="toggleTransp('${p.id}',this)" title="${p.naTransp?'Na transportadora desde '+p.naTranspData:'Marcar como enviado para transportadora'}" style="width:16px;height:16px;cursor:pointer;accent-color:var(--cyn)"></td>`}
       ${mini?'':`<td style="white-space:nowrap"><button class="btn bs" style="padding:2px 6px;font-size:10px" onclick="abrirEditPedido('${p.id}')" title="Editar pedido"><i class="ti ti-pencil"></i></button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--acc);border-color:var(--acc)" onclick="enviarSAC('${p.id}')" title="Enviar e-mail para o SAC"><i class="ti ti-headset"></i> SAC</button> <button class="btn bs" style="padding:2px 6px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirPedido('${p.id}')" title="Excluir pedido"><i class="ti ti-trash"></i></button></td>`}
@@ -10716,7 +10729,7 @@ function buildPedTabela(ps,mini){
 // ══ SELETOR DE COLUNAS ══
 var colVisivel = {
   cli: {Cidade:true,Contato:true,Celular:true,Segmento:true,Empresa:true,'Últ. fat.':true,Dias:true,'Situação':true},
-  ped: {Desconto:true,Parcelas:true,'Comissão%':true,'Data Fat.':true,NF:true,'Vl. Faturado':true,'Faturado com NF':true,Origem:true,Transportadora:true},
+  ped: {Data:true,'Nº Pedido':true,Cliente:true,Valor:true,Desconto:true,Parcelas:true,'Comissão%':true,'Data Fat.':true,NF:true,'Vl. Faturado':true,'Diferença':true,'Faturado com NF':true,Origem:true,OBS:true,Transportadora:true},
   com: {'Vl. Faturado':true,'Com%':true,'Total a Receber':true,Parcelas:true,Status:true}
 };
 // Cache do resumo geral (não-selecionado) do card de totais de Pedidos —
@@ -10747,7 +10760,7 @@ function toggleColPed(col,vis){
   // desmarcada), esconde também o cabeçalho correspondente — sem isso, o
   // <th> ficava sempre visível e as colunas desalinhavam quando uma era
   // ocultada. É o mesmo padrão já usado em toggleColCom().
-  var mapaPed={'Desconto':'col-ped-Desconto','Parcelas':'col-ped-Parcelas','Comissão%':'col-ped-Comissao','Data Fat.':'col-ped-DataFat','NF':'col-ped-NF','Vl. Faturado':'col-ped-VlFaturado','Faturado com NF':'col-ped-FaturadoNF','Origem':'col-ped-Origem','Transportadora':'col-ped-Transportadora'};
+  var mapaPed={'Data':'col-ped-Data','Nº Pedido':'col-ped-Num','Cliente':'col-ped-Cliente','Valor':'col-ped-Valor','Desconto':'col-ped-Desconto','Parcelas':'col-ped-Parcelas','Comissão%':'col-ped-Comissao','Data Fat.':'col-ped-DataFat','NF':'col-ped-NF','Vl. Faturado':'col-ped-VlFaturado','Diferença':'col-ped-Diferenca','Faturado com NF':'col-ped-FaturadoNF','Origem':'col-ped-Origem','OBS':'col-ped-OBS','Transportadora':'col-ped-Transportadora'};
   if(mapaPed[col]){
     document.querySelectorAll('.'+mapaPed[col]).forEach(function(el){ el.style.display=vis?'':'none'; });
   }
