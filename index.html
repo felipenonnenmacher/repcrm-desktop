@@ -9540,6 +9540,7 @@ function init() {
   if(cfg.fontSize){ setFonte(cfg.fontSize); }
   if(cfg.modo) setModo(cfg.modo);
   preencherSelects();
+  atualizarSelectSegmento();
   buildSidebar();
   sp('dash');
   buildDash();
@@ -10131,6 +10132,7 @@ function abrirEditarCliente(id){
   const ufSel=document.getElementById('edit-cli-uf');
   if(ufSel){ [...ufSel.options].forEach(o=>{ o.selected=o.value===(c.uf||'RS'); }); }
   // Segmento
+  atualizarSelectSegmento();
   const segSel=document.getElementById('edit-cli-seg');
   if(segSel){
     // Adiciona opção se não existir
@@ -14602,7 +14604,7 @@ function limparDados(){
 
 // ══ CFG ══
 function setCfgTab(el,id){
-  ['cf-emp','cf-senha','cf-ap','cf-bkp','cf-nuvem','cf-ia'].forEach(t=>{
+  ['cf-emp','cf-senha','cf-ap','cf-bkp','cf-nuvem','cf-ia','cf-seg'].forEach(t=>{
     const x=document.getElementById(t); if(x) x.style.display='none';
   });
   document.getElementById(id).style.display='';
@@ -14611,6 +14613,7 @@ function setCfgTab(el,id){
   if(id==='cf-emp') renderCfgEmpresas();
   if(id==='cf-senha') carregarCfgAcesso();
   if(id==='cf-nuvem') carregarCfgNuvem();
+  if(id==='cf-seg') renderCfgSegmentos();
 }
 
 function renderCfgEmpresas(){
@@ -14780,6 +14783,68 @@ function salvarCfg(){
   };
   saveCfg(cfg); toast('Configurações salvas!');
 }
+
+// ══ SEGMENTOS (gerenciamento em Configurações → Segmentos) ══
+// Estas funções existiam apenas na metade "morta" do arquivo (mesmo problema
+// já encontrado em outras telas) — a aba de Segmentos nunca funcionava de
+// verdade: o botão "+ Adicionar" dava erro, e o campo Segmento no cadastro de
+// cliente ficava sempre vazio, só com a opção "— Selecione —".
+function getSegmentos(){
+  // Primeiro tenta DB.segmentos (sincroniza com Firebase)
+  if(DB.segmentos&&DB.segmentos.length) return [...DB.segmentos].sort();
+  // Fallback: cfg local
+  const cfg=loadCfg();
+  if(cfg.segmentos&&cfg.segmentos.length) return cfg.segmentos;
+  // Último recurso: extrai dos clientes
+  return [...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))].sort();
+}
+function salvarSegmentos(segs){
+  DB.segmentos=segs;
+  salvarDB();
+  const cfg=loadCfg(); cfg.segmentos=segs; saveCfg(cfg);
+}
+function renderCfgSegmentos(){
+  const el=document.getElementById('cfg-seg-lista'); if(!el) return;
+  const segs=getSegmentos();
+  if(!segs.length){ el.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px">Nenhum segmento cadastrado.</div>'; return; }
+  el.innerHTML=segs.map((s,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--s2);border-radius:7px;border:1px solid var(--bdr)">
+      <input class="fi" value="${s}" style="flex:1;padding:4px 8px;font-size:12px" onchange="editarSegmento(${i},this.value)">
+      <button class="btn bs" style="padding:2px 8px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="removerSegmento(${i})" title="Remover"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+function adicionarSegmento(){
+  const inp=document.getElementById('cfg-seg-novo'); if(!inp) return;
+  const val=inp.value.trim(); if(!val){ toast('Digite o nome do segmento'); return; }
+  const segs=getSegmentos();
+  if(segs.includes(val)){ toast('Segmento já existe'); return; }
+  segs.push(val); segs.sort(); salvarSegmentos(segs);
+  inp.value=''; renderCfgSegmentos(); toast('Segmento adicionado!'); atualizarSelectSegmento();
+}
+function editarSegmento(idx,val){
+  val=val.trim(); if(!val) return;
+  const segs=getSegmentos(); const old=segs[idx];
+  segs[idx]=val; segs.sort(); salvarSegmentos(segs);
+  DB.clientes.forEach(c=>{ if(c.seg===old) c.seg=val; }); salvarDB();
+  renderCfgSegmentos(); atualizarSelectSegmento();
+}
+function removerSegmento(idx){
+  const segs=getSegmentos();
+  if(!confirm('Remover segmento "'+segs[idx]+'"?')) return;
+  segs.splice(idx,1); salvarSegmentos(segs);
+  renderCfgSegmentos(); atualizarSelectSegmento(); toast('Segmento removido!');
+}
+function atualizarSelectSegmento(){
+  const segs=getSegmentos();
+  const opts='<option value="">— Selecione —</option>'+segs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  // Atualiza select do modal de novo cliente
+  const sel=document.getElementById('cli-seg');
+  if(sel){ const v=sel.value; sel.innerHTML=opts; sel.value=v; }
+  // Atualiza select do modal de edição
+  const sel2=document.getElementById('edit-cli-seg');
+  if(sel2){ const v=sel2.value; sel2.innerHTML=opts; sel2.value=v; }
+}
+// ══ FIM SEGMENTOS ══
 
 // ══ IA EMPRESA ══
 async function chamarGemini(prompt){
