@@ -1823,6 +1823,13 @@ if('serviceWorker' in navigator){
     </div>
     <div class="fg"><label class="fl">Google Places API Key</label><input class="fi" id="cfg-placeskey" type="password" placeholder="AIza... (busca de lojas próximas)"></div>
     <div style="font-size:11px;color:var(--t3);margin-top:-6px;margin-bottom:14px">console.cloud.google.com → Places API (nova)</div>
+    <div class="fg">
+      <label class="fl">WhatsApp</label>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:8px;border:1px solid var(--bdr)">
+        <input type="checkbox" id="cfg-wpp-desktop" style="width:16px;height:16px;cursor:pointer" checked onchange="salvarCfg()">
+        <label for="cfg-wpp-desktop" style="font-size:12px;color:var(--t2);cursor:pointer;flex:1">Abrir no WhatsApp Desktop instalado (em vez do WhatsApp Web no navegador)</label>
+      </div>
+    </div>
     <button class="btn bp" onclick="salvarCfg()"><i class="ti ti-check"></i> Salvar</button>
   </div>
   <div id="cf-seg" style="display:none">
@@ -1975,6 +1982,7 @@ function init() {
   const cfg = loadCfg();
   if(cfg.nome) document.getElementById('cfg-nome').value = cfg.nome;
   if(cfg.iakey){ const el=document.getElementById('cfg-iakey'); if(el) el.value=cfg.iakey; }
+  { const elWpp=document.getElementById('cfg-wpp-desktop'); if(elWpp) elWpp.checked = cfg.wppDesktop!==false; }
   if(cfg.fontSize){ setFonte(cfg.fontSize); }
   if(cfg.modo) setModo(cfg.modo);
   preencherSelects();
@@ -2707,7 +2715,7 @@ function addObs(){
   document.getElementById('hist-obs').innerHTML=c.hist.map(h=>`<div style="background:var(--s2);border-radius:7px;padding:10px;font-size:12px"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">${h.dt}</div>${h.txt}</div>`).join('');
   toast('Anotação salva!');
 }
-function abrirWpp(id){const c=DB.clientes.find(x=>x.id===id);if(!c)return;const cel=(c.cel||'').replace(/\D/g,'');const msg=encodeURIComponent(`Olá ${c.comp||''}! Passando para apresentar novidades.`);window.open(`https://wa.me/55${cel}?text=${msg}`,'_blank');}
+function abrirWpp(id){const c=DB.clientes.find(x=>x.id===id);if(!c)return;abrirWhatsApp(c.cel, `Olá ${c.comp||''}! Passando para apresentar novidades.`);}
 function abrirEmail(id){const c=DB.clientes.find(x=>x.id===id);if(!c?.email){toast('Cliente sem e-mail cadastrado');return;}const a=document.createElement('a');a.href=`mailto:${c.email}`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
 function enderecoCliente(c){
   // Prioriza o endereço real (rua/cidade/UF). A razão social misturada ao endereço
@@ -5734,6 +5742,7 @@ function salvarCfg(){
     email:document.getElementById('cfg-email')?.value||prev.email||'',
     iakey:document.getElementById('cfg-iakey')?.value||prev.iakey||'',
     placeskey:document.getElementById('cfg-placeskey')?.value||prev.placeskey||'',
+    wppDesktop:document.getElementById('cfg-wpp-desktop')?document.getElementById('cfg-wpp-desktop').checked:(prev.wppDesktop!==false),
     fontSize:prev.fontSize, modo:prev.modo, senhaHash:prev.senhaHash
   };
   saveCfg(cfg); toast('Configurações salvas!');
@@ -5974,7 +5983,7 @@ function renderPosVendas(){
     const c=DB.clientes.find(x=>x.id===p.cliId);
     const d=Math.floor((hoje-new Date(p.dtFat+'T12:00'))/86400000);
     const tel=(c?.cel||c?.fone||'').replace(/\D/g,'');
-    const wppUrl=tel?`https://wa.me/55${tel}?text=${encodeURIComponent(`Olá${c?.comp?' '+c.comp:''}! Tudo certo com o pedido ${p.nf||''}? Alguma dúvida sobre a entrega?`)}`:'';
+    const wppUrl=tel?wppLink(tel, `Olá${c?.comp?' '+c.comp:''}! Tudo certo com o pedido ${p.nf||''}? Alguma dúvida sobre a entrega?`):'';
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--s3)">
       <div style="flex:1;min-width:0">
         <div class="lnk" onclick="abrirCli('${p.cliId}','edash')" style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c?.rs||'—'}</div>
@@ -9379,6 +9388,13 @@ if('serviceWorker' in navigator){
     </div>
     <div class="fg"><label class="fl">Google Places API Key</label><input class="fi" id="cfg-placeskey" type="password" placeholder="AIza... (busca de lojas próximas)"></div>
     <div style="font-size:11px;color:var(--t3);margin-top:-6px;margin-bottom:14px">console.cloud.google.com → Places API (nova)</div>
+    <div class="fg">
+      <label class="fl">WhatsApp</label>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:8px;border:1px solid var(--bdr)">
+        <input type="checkbox" id="cfg-wpp-desktop" style="width:16px;height:16px;cursor:pointer" checked onchange="salvarCfg()">
+        <label for="cfg-wpp-desktop" style="font-size:12px;color:var(--t2);cursor:pointer;flex:1">Abrir no WhatsApp Desktop instalado (em vez do WhatsApp Web no navegador)</label>
+      </div>
+    </div>
     <button class="btn bp" onclick="salvarCfg()"><i class="ti ti-check"></i> Salvar</button>
   </div>
 
@@ -9520,6 +9536,7 @@ function init() {
   const cfg = loadCfg();
   if(cfg.nome) document.getElementById('cfg-nome').value = cfg.nome;
   if(cfg.iakey){ const el=document.getElementById('cfg-iakey'); if(el) el.value=cfg.iakey; }
+  { const elWpp=document.getElementById('cfg-wpp-desktop'); if(elWpp) elWpp.checked = cfg.wppDesktop!==false; }
   if(cfg.fontSize){ setFonte(cfg.fontSize); }
   if(cfg.modo) setModo(cfg.modo);
   preencherSelects();
@@ -10164,7 +10181,7 @@ function addObs(){
   document.getElementById('hist-obs').innerHTML=c.hist.map(h=>`<div style="background:var(--s2);border-radius:7px;padding:10px;font-size:12px"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">${h.dt}</div>${h.txt}</div>`).join('');
   toast('Anotação salva!');
 }
-function abrirWpp(id){const c=DB.clientes.find(x=>x.id===id);if(!c)return;const cel=(c.cel||'').replace(/\D/g,'');const msg=encodeURIComponent(`Olá ${c.comp||''}! Passando para apresentar novidades.`);window.open(`https://wa.me/55${cel}?text=${msg}`,'_blank');}
+function abrirWpp(id){const c=DB.clientes.find(x=>x.id===id);if(!c)return;abrirWhatsApp(c.cel, `Olá ${c.comp||''}! Passando para apresentar novidades.`);}
 function abrirEmail(id){const c=DB.clientes.find(x=>x.id===id);if(!c?.email){toast('Cliente sem e-mail cadastrado');return;}const a=document.createElement('a');a.href=`mailto:${c.email}`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
 function enderecoCliente(c){
   // Prioriza o endereço real (rua/cidade/UF). A razão social misturada ao endereço
@@ -14758,6 +14775,7 @@ function salvarCfg(){
     email:document.getElementById('cfg-email')?.value||prev.email||'',
     iakey:document.getElementById('cfg-iakey')?.value||prev.iakey||'',
     placeskey:document.getElementById('cfg-placeskey')?.value||prev.placeskey||'',
+    wppDesktop:document.getElementById('cfg-wpp-desktop')?document.getElementById('cfg-wpp-desktop').checked:(prev.wppDesktop!==false),
     fontSize:prev.fontSize, modo:prev.modo, senhaHash:prev.senhaHash
   };
   saveCfg(cfg); toast('Configurações salvas!');
@@ -14998,7 +15016,7 @@ function renderPosVendas(){
     const c=DB.clientes.find(x=>x.id===p.cliId);
     const d=Math.floor((hoje-new Date(p.dtFat+'T12:00'))/86400000);
     const tel=(c?.cel||c?.fone||'').replace(/\D/g,'');
-    const wppUrl=tel?`https://wa.me/55${tel}?text=${encodeURIComponent(`Olá${c?.comp?' '+c.comp:''}! Tudo certo com o pedido ${p.nf||''}? Alguma dúvida sobre a entrega?`)}`:'';
+    const wppUrl=tel?wppLink(tel, `Olá${c?.comp?' '+c.comp:''}! Tudo certo com o pedido ${p.nf||''}? Alguma dúvida sobre a entrega?`):'';
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--s3)">
       <div style="flex:1;min-width:0">
         <div class="lnk" onclick="abrirCli('${p.cliId}','edash')" style="font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c?.rs||'—'}</div>
@@ -15340,6 +15358,34 @@ function cicloAcao(cliId, tipo){
   renderAlertasCiclo();
 }
 
+// ══ ABERTURA DE WHATSAPP (Desktop instalado ou WhatsApp Web) ══
+// Por padrão abre o app do WhatsApp Desktop (protocolo whatsapp://), que o
+// Windows/Mac associa automaticamente ao instalar o programa oficial. Se o
+// usuário desmarcar "Abrir no WhatsApp Desktop" em Configurações → IA, volta
+// a usar o wa.me (WhatsApp Web) como antes.
+function wppLink(tel, texto){
+  const num=(tel||'').replace(/\D/g,'');
+  if(!num) return '';
+  const numFull = num.startsWith('55')?num:'55'+num;
+  const cfg=loadCfg();
+  if(cfg.wppDesktop===false){
+    return 'https://wa.me/'+numFull+(texto?('?text='+encodeURIComponent(texto)):'');
+  }
+  return 'whatsapp://send?phone='+numFull+(texto?('&text='+encodeURIComponent(texto)):'');
+}
+function abrirWhatsApp(tel, texto){
+  const url=wppLink(tel, texto);
+  if(!url){ toast('Telefone/celular não cadastrado.'); return; }
+  if(url.startsWith('https://')){
+    window.open(url,'_blank');
+  } else {
+    // location.href (em vez de window.open) para não deixar aba em branco:
+    // o navegador só repassa o protocolo "whatsapp://" para o sistema abrir o app.
+    window.location.href=url;
+  }
+}
+// ══ FIM ABERTURA DE WHATSAPP ══
+
 // Follow-up de vendas — WhatsApp e e-mail prontos, mensagem já preenchida com o
 // nome do cliente e há quantos dias ele não compra. O usuário revisa e confirma
 // o envio no próprio WhatsApp/e-mail (nada é enviado automaticamente daqui).
@@ -15349,7 +15395,7 @@ function wppFollowUpCiclo(cliId){
   if(!cel){ toast('Cliente sem telefone/celular cadastrado.'); return; }
   const d=dias(c);
   const msg=`Olá${c.comp?' '+c.comp:''}! Tudo bem? Notei que já faz ${d} dias desde nossa última venda para a ${c.rs} e pensei em passar para saber se já está na hora de repor o estoque ou se tem alguma novidade que eu possa te apresentar. Fico à disposição!`;
-  window.open(`https://wa.me/55${cel}?text=${encodeURIComponent(msg)}`,'_blank');
+  abrirWhatsApp(cel, msg);
 }
 function emailFollowUpCiclo(cliId){
   const c=DB.clientes.find(x=>x.id===cliId); if(!c){ toast('Cliente não encontrado'); return; }
