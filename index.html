@@ -2491,7 +2491,7 @@ function abrirCli(id, from) {
   document.getElementById('btn-wpp').onclick  = function(){ abrirWpp(id); };
   document.getElementById('btn-mail').onclick = function(){ abrirEmail(id); };
   document.getElementById('btn-maps').onclick = function(){ abrirMaps(id); };
-  document.getElementById('btn-tel').onclick  = function(){ window.open('tel:'+(c.fone||c.cel||'').replace(/\D/g,'')); };
+  document.getElementById('btn-tel').onclick  = function(){ window.open('tel:'+(typeof melhorTel==='function'?melhorTel(c.fone,c.cel):(c.fone||c.cel||'').replace(/\D/g,''))); };
 
   // Botão encerrar
   const txtEnc = document.getElementById('txt-enc-cli');
@@ -2715,7 +2715,7 @@ function addObs(){
   document.getElementById('hist-obs').innerHTML=c.hist.map(h=>`<div style="background:var(--s2);border-radius:7px;padding:10px;font-size:12px"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">${h.dt}</div>${h.txt}</div>`).join('');
   toast('Anotação salva!');
 }
-function abrirWpp(id){const c=DB.clientes.find(x=>x.id===id);if(!c)return;abrirWhatsApp(c.fone||c.cel, `Olá ${c.comp||''}! Passando para apresentar novidades.`);}
+function abrirWpp(id){const c=DB.clientes.find(x=>x.id===id);if(!c)return;abrirWhatsApp(melhorTel(c.fone,c.cel), `Olá ${c.comp||''}! Passando para apresentar novidades.`);}
 function abrirEmail(id){const c=DB.clientes.find(x=>x.id===id);if(!c?.email){toast('Cliente sem e-mail cadastrado');return;}const a=document.createElement('a');a.href=`mailto:${c.email}`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
 function enderecoCliente(c){
   // Prioriza o endereço real (rua/cidade/UF). A razão social misturada ao endereço
@@ -5982,7 +5982,7 @@ function renderPosVendas(){
   el.innerHTML=lista.map(p=>{
     const c=DB.clientes.find(x=>x.id===p.cliId);
     const d=Math.floor((hoje-new Date(p.dtFat+'T12:00'))/86400000);
-    const tel=(c?.fone||c?.cel||'').replace(/\D/g,'');
+    const tel=melhorTel(c?.fone, c?.cel);
     const wppUrl=tel?wppLink(tel, `Olá${c?.comp?' '+c.comp:''}! Tudo certo com o pedido ${p.nf||''}? Alguma dúvida sobre a entrega?`):'';
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--s3)">
       <div style="flex:1;min-width:0">
@@ -10002,7 +10002,7 @@ function abrirCli(id, from) {
   document.getElementById('btn-wpp').onclick  = function(){ abrirWpp(id); };
   document.getElementById('btn-mail').onclick = function(){ abrirEmail(id); };
   document.getElementById('btn-maps').onclick = function(){ abrirMaps(id); };
-  document.getElementById('btn-tel').onclick  = function(){ window.open('tel:'+(c.fone||c.cel||'').replace(/\D/g,'')); };
+  document.getElementById('btn-tel').onclick  = function(){ window.open('tel:'+(typeof melhorTel==='function'?melhorTel(c.fone,c.cel):(c.fone||c.cel||'').replace(/\D/g,''))); };
 
   // Botão encerrar
   const txtEnc = document.getElementById('txt-enc-cli');
@@ -10183,7 +10183,7 @@ function addObs(){
   document.getElementById('hist-obs').innerHTML=c.hist.map(h=>`<div style="background:var(--s2);border-radius:7px;padding:10px;font-size:12px"><div style="font-size:10px;color:var(--t3);margin-bottom:3px">${h.dt}</div>${h.txt}</div>`).join('');
   toast('Anotação salva!');
 }
-function abrirWpp(id){const c=DB.clientes.find(x=>x.id===id);if(!c)return;abrirWhatsApp(c.fone||c.cel, `Olá ${c.comp||''}! Passando para apresentar novidades.`);}
+function abrirWpp(id){const c=DB.clientes.find(x=>x.id===id);if(!c)return;abrirWhatsApp(melhorTel(c.fone,c.cel), `Olá ${c.comp||''}! Passando para apresentar novidades.`);}
 function abrirEmail(id){const c=DB.clientes.find(x=>x.id===id);if(!c?.email){toast('Cliente sem e-mail cadastrado');return;}const a=document.createElement('a');a.href=`mailto:${c.email}`;document.body.appendChild(a);a.click();document.body.removeChild(a);}
 function enderecoCliente(c){
   // Prioriza o endereço real (rua/cidade/UF). A razão social misturada ao endereço
@@ -15080,7 +15080,7 @@ function renderPosVendas(){
   el.innerHTML=lista.map(p=>{
     const c=DB.clientes.find(x=>x.id===p.cliId);
     const d=Math.floor((hoje-new Date(p.dtFat+'T12:00'))/86400000);
-    const tel=(c?.fone||c?.cel||'').replace(/\D/g,'');
+    const tel=melhorTel(c?.fone, c?.cel);
     const wppUrl=tel?wppLink(tel, `Olá${c?.comp?' '+c.comp:''}! Tudo certo com o pedido ${p.nf||''}? Alguma dúvida sobre a entrega?`):'';
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--s3)">
       <div style="flex:1;min-width:0">
@@ -15423,6 +15423,16 @@ function cicloAcao(cliId, tipo){
   renderAlertasCiclo();
 }
 
+// Escolhe o telefone a usar para contato (Fone tem prioridade, Celular é o
+// reserva) só quando o campo preferido realmente tem dígitos utilizáveis —
+// evita que um "Fone" com valor inválido/placeholder (texto, traço, etc.)
+// bloqueie o contato quando o Celular tem um número válido.
+function melhorTel(fone, cel){
+  const f=(fone||'').replace(/\D/g,'');
+  if(f) return f;
+  return (cel||'').replace(/\D/g,'');
+}
+
 // ══ ABERTURA DE WHATSAPP (Desktop instalado ou WhatsApp Web) ══
 // Por padrão abre o app do WhatsApp Desktop (protocolo whatsapp://), que o
 // Windows/Mac associa automaticamente ao instalar o programa oficial. Se o
@@ -15456,7 +15466,7 @@ function abrirWhatsApp(tel, texto){
 // o envio no próprio WhatsApp/e-mail (nada é enviado automaticamente daqui).
 function wppFollowUpCiclo(cliId){
   const c=DB.clientes.find(x=>x.id===cliId); if(!c){ toast('Cliente não encontrado'); return; }
-  const cel=(c.fone||c.cel||'').replace(/\D/g,'');
+  const cel=melhorTel(c.fone, c.cel);
   if(!cel){ toast('Cliente sem telefone/celular cadastrado.'); return; }
   const d=dias(c);
   const msg=`Olá${c.comp?' '+c.comp:''}! Tudo bem? Notei que já faz ${d} dias desde nossa última venda para a ${c.rs} e pensei em passar para saber se já está na hora de repor o estoque ou se tem alguma novidade que eu possa te apresentar. Fico à disposição!`;
