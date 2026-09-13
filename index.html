@@ -10794,13 +10794,14 @@ function buildPedTabela(ps,mini){
     // e o <th> correspondente é escondido via classe (toggleColPed) —
     // assim cabeçalho e corpo desalinhavam.
     const cv=colVisivel.ped||{};
-    const dif=(+p.val||0)-(+p.valfat||0);
+    const valFinal=(+p.val||0)*(1-(+p.desc||0)/100);
+    const dif=valFinal-(+p.valfat||0);
     return`<tr>
       ${mini?'':`<td><input type="checkbox" class="ped-cb" data-pedid="${p.id}" onchange="bulkAtualizarBarra()"></td>`}
       ${mini||cv['Data']===false?'':`<td>${fmtD(p.dt)}</td>`}
       ${mini||cv['Nº Pedido']===false?'':`<td><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.num||'—'}</span></td>`}
       ${mini||cv['Cliente']===false?'':`<td><span class="lnk" onclick="abrirCli('${p.cliId}','${mini?'clidet':'eped'}')">${c?.rs||'—'}</span></td>`}
-      ${mini||cv['Valor']===false?'':`<td title="Valor do pedido: ${fmt(p.val)}${p.desc?' — Desconto: '+p.desc+'%':''}">${fmt((+p.val||0)*(1-(+p.desc||0)/100))}</td>`}
+      ${mini||cv['Valor']===false?'':`<td title="Valor do pedido: ${fmt(p.val)}${p.desc?' — Desconto: '+p.desc+'%':''}">${fmt(valFinal)}</td>`}
       ${mini||cv['Desconto']===false?'':`<td>${p.desc||0}%</td>`}
       ${mini||cv['Parcelas']===false?'':`<td>${p.parc||1}x</td>`}
       ${mini||cv['Comissão%']===false?'':`<td>${p.com||3}%</td>`}
@@ -14437,33 +14438,33 @@ function imprimirOrcamento(){
   var obs=document.getElementById('orc-obs').value;
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Orçamento '+num+'</title><style>';
-  html+='body{font-family:Arial,sans-serif;font-size:12px;color:#222;margin:20px}';
+  html+='body{font-family:Arial,sans-serif;font-size:7px;color:#222;margin:20px}';
   html+='.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #333;padding-bottom:12px;margin-bottom:16px}';
-  html+='.emp{font-size:18px;font-weight:700;color:#1a3a5c}';
-  html+='.orc-num{font-size:22px;font-weight:700;color:#2563eb;text-align:right}';
+  html+='.emp{font-size:16px;font-weight:700;color:#1a3a5c}';
+  html+='.orc-num{font-size:14px;font-weight:700;color:#2563eb;text-align:right}';
   html+='.cli-box{background:#f5f7fa;border:1px solid #ddd;border-radius:6px;padding:10px 14px;margin-bottom:16px}';
   html+='table{width:100%;border-collapse:collapse;margin-bottom:16px}';
-  html+='thead tr{background:#1a3a5c;color:#fff}th{padding:8px 10px;text-align:left;font-weight:600}';
+  html+='thead tr{background:#1a3a5c;color:#fff}th{padding:8px 10px;text-align:left;font-weight:600;font-size:8px}';
   html+='tbody tr:nth-child(even){background:#f5f7fa}td{padding:7px 10px;border-bottom:1px solid #eee}';
   html+='.totais{float:right;width:280px;border:1px solid #ddd;border-radius:6px;padding:12px}';
   html+='.total-row{display:flex;justify-content:space-between;padding:4px 0}';
   html+='.total-final{font-weight:700;font-size:16px;border-top:2px solid #333;padding-top:8px;margin-top:8px}';
   html+='@media print{button{display:none}}</style></head><body>';
   html+='<div class="header"><div><div class="emp">'+(emp?.nome||'')+'</div></div>';
-  html+='<div class="orc-num">ORÇAMENTO<br>'+num+'<div style="font-size:12px;font-weight:400;color:#555">Data: '+data+'</div>';
+  html+='<div class="orc-num">ORÇAMENTO '+num+'<div style="font-size:8px;font-weight:400;color:#555">Data: '+data+'</div>';
   html+=(val?'<div style="font-size:11px;color:#888">Válido até: '+val+'</div>':'');
   html+='</div></div>';
 
   if(cli){
     html+='<div class="cli-box" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px">';
-    html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Razão Social</span><div style="font-weight:700;font-size:14px;color:#1a3a5c">'+cli.rs+'</div></div>';
-    html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">CNPJ</span><div>'+(cli.cnpj||'—')+'</div></div>';
-    if(cli.end) html+='<div style="grid-column:span 2"><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Endereço</span><div>'+cli.end+(cli.cid?', '+cli.cid:'')+(cli.uf?' - '+cli.uf:'')+'</div></div>';
-    else if(cli.cid) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Cidade</span><div>'+cli.cid+(cli.uf?' - '+cli.uf:'')+'</div></div>';
-    if(cli.comp) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Comprador</span><div>'+cli.comp+'</div></div>';
-    if(cli.fone||cli.cel) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Telefone</span><div>'+(cli.fone?cli.fone+' ':'')+( cli.cel?'· '+cli.cel:'')+'</div></div>';
-    if(cli.email) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">E-mail</span><div>'+cli.email+'</div></div>';
-    if(cli.seg) html+='<div><span style="font-size:10px;color:#666;text-transform:uppercase;font-weight:600">Segmento</span><div>'+cli.seg+'</div></div>';
+    html+='<div><span style="font-size:8px;color:#666;text-transform:uppercase;font-weight:600">Razão Social</span><div style="font-weight:700;font-size:8px;color:#1a3a5c">'+cli.rs+'</div></div>';
+    html+='<div><span style="font-size:8px;color:#666;text-transform:uppercase;font-weight:600">CNPJ</span><div>'+(cli.cnpj||'—')+'</div></div>';
+    if(cli.end) html+='<div style="grid-column:span 2"><span style="font-size:8px;color:#666;text-transform:uppercase;font-weight:600">Endereço</span><div>'+cli.end+(cli.cid?', '+cli.cid:'')+(cli.uf?' - '+cli.uf:'')+'</div></div>';
+    else if(cli.cid) html+='<div><span style="font-size:8px;color:#666;text-transform:uppercase;font-weight:600">Cidade</span><div>'+cli.cid+(cli.uf?' - '+cli.uf:'')+'</div></div>';
+    if(cli.comp) html+='<div><span style="font-size:8px;color:#666;text-transform:uppercase;font-weight:600">Comprador</span><div>'+cli.comp+'</div></div>';
+    if(cli.fone||cli.cel) html+='<div><span style="font-size:8px;color:#666;text-transform:uppercase;font-weight:600">Telefone</span><div>'+(cli.fone?cli.fone+' ':'')+( cli.cel?'· '+cli.cel:'')+'</div></div>';
+    if(cli.email) html+='<div><span style="font-size:8px;color:#666;text-transform:uppercase;font-weight:600">E-mail</span><div>'+cli.email+'</div></div>';
+    if(cli.seg) html+='<div><span style="font-size:8px;color:#666;text-transform:uppercase;font-weight:600">Segmento</span><div>'+cli.seg+'</div></div>';
     html+='</div>';
   }
 
@@ -14480,7 +14481,7 @@ function imprimirOrcamento(){
   html+='</div></div>';
 
   if(obs) html+='<div style="margin-top:20px;padding:10px;background:#fef9e7;border:1px solid #f0d080;border-radius:6px"><b>Observações:</b> '+obs+'</div>';
-  html+='<div style="margin-top:30px;border-top:1px solid #ddd;padding-top:10px;color:#888;font-size:11px;text-align:center">RepCRM — Sistema de Representação Comercial</div>';
+  html+='<div style="margin-top:30px;border-top:1px solid #ddd;padding-top:10px;color:#888;font-size:11px;text-align:center">FN-CRM Sistema de Representação Comercial 51 992060914</div>';
   html+='</body></html>';
 
   var win=window.open('','_blank');
