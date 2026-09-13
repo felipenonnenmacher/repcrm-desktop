@@ -725,8 +725,6 @@ if('serviceWorker' in navigator){
     <div class="fg"><label class="fl">Comissão %</label><input class="fi" id="edit-com" type="number" min="0" max="30" step="0.1" oninput="calcEditCom()"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">50% no faturamento?</label><select class="fi" id="edit-fatcom" onchange="calcEditCom()"><option value="sim">Sim</option><option value="nao">Não</option></select></div>
     <div class="fg"><label class="fl">Parcelamento</label><select class="fi" id="edit-parc" onchange="calcEditCom()"><option value="1">À vista</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option></select></div>
-    <div class="fg"><label class="fl">Transportadora</label><select class="fi" id="edit-transp"></select></div>
-    <div class="fg"><label class="fl">Código / NF rastreio</label><input class="fi" id="edit-cod" placeholder="Ex: BR123456789BR"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Origem / Tipo do pedido</label><input class="fi" id="edit-tipo" list="lista-tipos-pedido" placeholder="Ex: Feira ABC, Visita, WhatsApp, Indicação..."></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Observação</label><textarea class="fi" id="edit-obs" placeholder="Observações sobre o pedido..." style="resize:vertical;min-height:55px;font-size:var(--fs-sm)"></textarea></div>
     <div class="fg" style="grid-column:span 2" id="edit-datas-parc-box"></div>
@@ -1476,6 +1474,7 @@ if('serviceWorker' in navigator){
     </div>
     <div class="fg"><label class="fl">Valor pedido</label><input class="fi" id="ped-val" type="number" min="0" placeholder="0,00" oninput="calcCom()"></div>
     <div class="fg"><label class="fl">Desconto %</label><input class="fi" id="ped-desc" type="number" min="0" max="100" placeholder="0" oninput="calcCom()"></div>
+    <div class="fg"><label class="fl">Valor Final</label><input class="fi" id="ped-valfinal" type="text" readonly placeholder="0,00" style="background:var(--s2);font-weight:600;color:var(--grn)" title="Valor do pedido menos o desconto"></div>
     <div class="fg"><label class="fl">Parcelamento</label><select class="fi" id="ped-parc" onchange="calcCom()"><option value="1">À vista</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option></select></div>
     <div class="fg"><label class="fl">Comissão %</label><input class="fi" id="ped-com" type="number" min="0" max="30" step="0.1" placeholder="3" oninput="calcCom()"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">50% comissão no faturamento?</label><select class="fi" id="ped-fatcom" onchange="calcCom()"><option value="sim">Sim</option><option value="nao">Não</option></select></div>
@@ -3921,18 +3920,16 @@ function abrirEditPedido(pedId){
   const tituloEl = document.getElementById('edit-titulo');
   if(tituloEl) tituloEl.innerHTML = 'Editar Pedido' + (p.num?' #'+p.num:'') + (cNome?' — '+cNome:'') +
     (empNome?' <span style="font-size:11px;padding:2px 8px;border-radius:12px;background:'+empCor+'22;color:'+empCor+';font-weight:600;margin-left:6px">'+empNome+'</span>':'');
-  // Carregar transportadoras da empresa do pedido
-  preencherSelectTransp('edit-transp', p.empId, p.transp);
   document.getElementById('edit-num').value    = p.num||'';
   document.getElementById('edit-dt').value     = p.dt||'';
+  document.getElementById('edit-val').value    = p.val||'';
+  document.getElementById('edit-desc').value   = p.desc||'';
   document.getElementById('edit-dtfat').value  = p.dtFat||'';
   document.getElementById('edit-nf').value     = p.nf||'';
   document.getElementById('edit-valfat').value = p.valfat||0;
   document.getElementById('edit-com').value    = p.com||3;
   document.getElementById('edit-fatcom').value = p.fatcom||'sim';
   document.getElementById('edit-parc').value   = p.parc||1;
-  document.getElementById('edit-transp').value = p.transp||'Correios';
-  document.getElementById('edit-cod').value    = p.cod||'';
   document.getElementById('edit-tipo').value   = p.tipo||'';
   if(document.getElementById('edit-obs')) document.getElementById('edit-obs').value = p.obs||'';
   if(document.getElementById('edit-categorias')) document.getElementById('edit-categorias').value = p.categorias||'';
@@ -4000,6 +3997,10 @@ function calcEditCom(){
   const tot  = vf*com/100;
   const fatV = fat?tot*.5:0;
   const liq  = tot-fatV;
+  const val  = parseFloat(document.getElementById('edit-val')?.value)||0;
+  const desc = parseFloat(document.getElementById('edit-desc')?.value)||0;
+  const valfinalEl=document.getElementById('edit-valfinal');
+  if(valfinalEl) valfinalEl.value=fmt(val*(1-desc/100));
   const box  = document.getElementById('edit-com-prev');
   if(box&&vf>0) box.innerHTML=`
     <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Preview de comissão</div>
@@ -4022,14 +4023,14 @@ function salvarEdicaoPedido(){
   p.paysDt = coletarPaysDtEdit(novoPaim, novoFat==='sim');
   p.num    = document.getElementById('edit-num').value;
   p.dt     = document.getElementById('edit-dt').value;
+  p.val    = parseFloat(document.getElementById('edit-val').value)||0;
+  p.desc   = parseFloat(document.getElementById('edit-desc').value)||0;
   p.dtFat  = document.getElementById('edit-dtfat').value||null;
   p.nf     = document.getElementById('edit-nf').value||null;
   p.valfat = parseFloat(document.getElementById('edit-valfat').value)||0;
   p.com    = parseFloat(document.getElementById('edit-com').value)||3;
   p.fatcom = novoFat;
   p.parc   = novoPaim;
-  p.transp = document.getElementById('edit-transp').value;
-  p.cod    = document.getElementById('edit-cod').value||null;
   p.tipo   = document.getElementById('edit-tipo')?.value?.trim()||null;
   p.obs    = document.getElementById('edit-obs')?.value?.trim()||null;
   p.categorias = document.getElementById('edit-categorias')?.value?.trim()||null;
@@ -4379,6 +4380,9 @@ function calcCom(){
   const parc=parseInt(document.getElementById('ped-parc')?.value)||1;
   const fatSim=document.getElementById('ped-fatcom')?.value==='sim';
   const valfat=parseFloat(document.getElementById('ped-valfat')?.value)||val*(1-desc/100);
+  // Valor Final = Valor do pedido menos o desconto (%)
+  const valfinalEl=document.getElementById('ped-valfinal');
+  if(valfinalEl) valfinalEl.value=fmt(val*(1-desc/100));
   const tot=valfat*com/100; const fat=fatSim?tot*.5:0; const liq=tot-fat;
   const box=document.getElementById('com-prev-box');
   if(box&&val>0) box.innerHTML=`
@@ -4435,7 +4439,7 @@ function salvarPedido(){
   if(subAtual==='eped')renderEmpPed();
 }
 function limparFormPedido(){
-  ['ped-num','ped-val','ped-desc','ped-com','ped-dtfat','ped-nf','ped-valfat','ped-cod','ped-tipo'].forEach(function(id){
+  ['ped-num','ped-val','ped-desc','ped-com','ped-dtfat','ped-nf','ped-valfat','ped-cod','ped-tipo','ped-valfinal'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('ped-dt').value='';
@@ -8865,14 +8869,15 @@ if('serviceWorker' in navigator){
   <div class="fg2">
     <div class="fg"><label class="fl">Nº Pedido</label><input class="fi" id="edit-num" placeholder="0000"></div>
     <div class="fg"><label class="fl">Data pedido</label><input class="fi" id="edit-dt" type="date"></div>
+    <div class="fg"><label class="fl">Valor pedido</label><input class="fi" id="edit-val" type="number" min="0" placeholder="0,00" oninput="calcEditCom()"></div>
+    <div class="fg"><label class="fl">Desconto %</label><input class="fi" id="edit-desc" type="number" min="0" max="100" placeholder="0" oninput="calcEditCom()"></div>
+    <div class="fg"><label class="fl">Valor Final</label><input class="fi" id="edit-valfinal" type="text" readonly placeholder="0,00" style="background:var(--s2);font-weight:600;color:var(--grn)" title="Valor do pedido menos o desconto"></div>
     <div class="fg"><label class="fl">Data faturamento</label><input class="fi" id="edit-dtfat" type="date"></div>
     <div class="fg"><label class="fl">Nota Fiscal</label><input class="fi" id="edit-nf" placeholder="NF-0000"></div>
     <div class="fg"><label class="fl">Valor faturado (R$)</label><input class="fi" id="edit-valfat" type="number" min="0" oninput="calcEditCom()"></div>
     <div class="fg"><label class="fl">Comissão %</label><input class="fi" id="edit-com" type="number" min="0" max="30" step="0.1" oninput="calcEditCom()"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">50% no faturamento?</label><select class="fi" id="edit-fatcom" onchange="calcEditCom()"><option value="sim">Sim</option><option value="nao">Não</option></select></div>
     <div class="fg"><label class="fl">Parcelamento</label><select class="fi" id="edit-parc" onchange="calcEditCom()"><option value="1">À vista</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option></select></div>
-    <div class="fg"><label class="fl">Transportadora</label><select class="fi" id="edit-transp"></select></div>
-    <div class="fg"><label class="fl">Código / NF rastreio</label><input class="fi" id="edit-cod" placeholder="Ex: BR123456789BR"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">Origem / Tipo do pedido</label><input class="fi" id="edit-tipo" list="lista-tipos-pedido" placeholder="Ex: Feira ABC, Visita, WhatsApp, Indicação..."></div>
     <div class="fg" style="grid-column:span 2">
       <label class="fl">Categorias de produtos</label>
@@ -9124,6 +9129,7 @@ if('serviceWorker' in navigator){
     </div>
     <div class="fg"><label class="fl">Valor pedido</label><input class="fi" id="ped-val" type="number" min="0" placeholder="0,00" oninput="calcCom()"></div>
     <div class="fg"><label class="fl">Desconto %</label><input class="fi" id="ped-desc" type="number" min="0" max="100" placeholder="0" oninput="calcCom()"></div>
+    <div class="fg"><label class="fl">Valor Final</label><input class="fi" id="ped-valfinal" type="text" readonly placeholder="0,00" style="background:var(--s2);font-weight:600;color:var(--grn)" title="Valor do pedido menos o desconto"></div>
     <div class="fg"><label class="fl">Parcelamento</label><select class="fi" id="ped-parc" onchange="calcCom()"><option value="1">À vista</option><option value="2">2x</option><option value="3">3x</option><option value="4">4x</option><option value="5">5x</option><option value="6">6x</option><option value="7">7x</option><option value="8">8x</option><option value="9">9x</option><option value="10">10x</option><option value="11">11x</option><option value="12">12x</option><option value="13">13x</option><option value="14">14x</option><option value="15">15x</option></select></div>
     <div class="fg"><label class="fl">Comissão %</label><input class="fi" id="ped-com" type="number" min="0" max="30" step="0.1" placeholder="3" oninput="calcCom()"></div>
     <div class="fg" style="grid-column:span 2"><label class="fl">50% comissão no faturamento?</label><select class="fi" id="ped-fatcom" onchange="calcCom()"><option value="sim">Sim</option><option value="nao">Não</option></select></div>
@@ -10794,7 +10800,7 @@ function buildPedTabela(ps,mini){
       ${mini||cv['Data']===false?'':`<td>${fmtD(p.dt)}</td>`}
       ${mini||cv['Nº Pedido']===false?'':`<td><span class="lnk" style="color:var(--acc);font-weight:700" onclick="verPedido('${p.id}')" title="Visualizar pedido">${p.num||'—'}</span></td>`}
       ${mini||cv['Cliente']===false?'':`<td><span class="lnk" onclick="abrirCli('${p.cliId}','${mini?'clidet':'eped'}')">${c?.rs||'—'}</span></td>`}
-      ${mini||cv['Valor']===false?'':`<td>${fmt(p.val)}</td>`}
+      ${mini||cv['Valor']===false?'':`<td title="Valor do pedido: ${fmt(p.val)}${p.desc?' — Desconto: '+p.desc+'%':''}">${fmt((+p.val||0)*(1-(+p.desc||0)/100))}</td>`}
       ${mini||cv['Desconto']===false?'':`<td>${p.desc||0}%</td>`}
       ${mini||cv['Parcelas']===false?'':`<td>${p.parc||1}x</td>`}
       ${mini||cv['Comissão%']===false?'':`<td>${p.com||3}%</td>`}
@@ -10812,6 +10818,87 @@ function buildPedTabela(ps,mini){
     </tr>`;
   }).join('');
 }
+
+// ══ VER PEDIDO ══
+// Esta função existia só na metade "morta" do arquivo (mesmo problema já
+// encontrado em outras telas) — clicar no Nº do Pedido ou na NF para ver o
+// detalhe do pedido dava erro (função não existia) e nunca funcionava.
+function verPedido(id){
+  const p=DB.pedidos.find(x=>x.id===id); if(!p){ toast('Pedido não encontrado'); return; }
+  const c=DB.clientes.find(x=>x.id===p.cliId);
+  const e=DB.empresas.find(x=>x.id===p.empId);
+  const fatSim=p.fatcom==='sim';
+
+  document.getElementById('vped-num').textContent = p.num||'—';
+  const editBtn=document.getElementById('vped-btn-edit');
+  if(editBtn) editBtn.onclick=function(){ cm('mVerPed'); setTimeout(function(){ abrirEditPedido(id); },200); };
+
+  const cor=p.dtFat?'var(--grn)':'var(--org)';
+  const status=p.dtFat?'Faturado':'Em aberto';
+
+  // Parcelas
+  let parcHtml='';
+  if(p.pays&&p.pays.length){
+    parcHtml='<div style="display:flex;gap:5px;flex-wrap:wrap">';
+    p.pays.forEach(function(st,i){
+      if(i===0&&!fatSim) return;
+      const lbl=i===0&&fatSim?'FAT':letraParc(i);
+      const cor2=st==='ok'?'var(--grn)':st==='atrasado'?'var(--red)':'var(--t3)';
+      const ico=st==='ok'?'✓':st==='atrasado'?'!':'○';
+      const dt=p.paysDt&&p.paysDt[i]?fmtD(p.paysDt[i]):'';
+      const vl=p.paysVal&&p.paysVal[i]?fmt(p.paysVal[i]):'';
+      parcHtml+=`<div style="background:var(--s2);border:1px solid var(--bdr);border-radius:6px;padding:4px 8px;font-size:10px;text-align:center;min-width:52px">
+        <div style="font-weight:700;color:${cor2}">${lbl} ${ico}</div>
+        ${dt?`<div style="color:var(--t3)">${dt}</div>`:''}
+        ${vl?`<div style="color:var(--t1);font-weight:600">${vl}</div>`:''}
+      </div>`;
+    });
+    parcHtml+='</div>';
+  }
+
+  const row=function(label,val,cor2){
+    return `<div style="display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--s3);padding:6px 0">
+      <div style="width:130px;font-size:11px;color:var(--t3);flex-shrink:0">${label}</div>
+      <div style="font-size:13px;color:${cor2||'var(--t1)'};">${val||'—'}</div>
+    </div>`;
+  };
+
+  document.getElementById('mVerPed-body').innerHTML=`
+    <div style="background:var(--s2);border-radius:10px;padding:12px 16px">
+      ${row('Empresa', e?`<span style="font-weight:700;color:${e.cor}">${e.nome}</span>`:' — ')}
+      ${row('Cliente', `<b>${c?.rs||'—'}</b>`)}
+      ${c?.cnpj?row('CNPJ', c.cnpj):''}
+      ${c?.end?row('Endereço', c.end+(c.cid?', '+c.cid:'')+(c.uf?' - '+c.uf:'')):c?.cid?row('Cidade', c.cid+(c.uf?' - '+c.uf:'')):''}
+      ${c?.comp?row('Comprador', c.comp):''}
+      ${c?.fone||c?.cel?row('Telefone', (c?.fone||'')+(c?.fone&&c?.cel?' · ':'')+( c?.cel||'')):''}
+      ${c?.email?row('E-mail', c.email):''}
+      ${row('Data do pedido', fmtD(p.dt))}
+      ${row('Nº Pedido', `<b>${p.num||'—'}</b>`)}
+      ${row('Origem / Tipo', p.tipo||'—')}
+    </div>
+    <div style="background:var(--s2);border-radius:10px;padding:12px 16px">
+      ${row('Valor do pedido', fmt(p.val||0), 'var(--t1)')}
+      ${row('Desconto', (p.desc||0)+'%')}
+      ${row('Valor Final', fmt((+p.val||0)*(1-(+p.desc||0)/100)), 'var(--grn)')}
+      ${row('Parcelamento', (p.parc||1)+'x'+(fatSim?' + FAT':''))}
+      ${row('Comissão', (p.com||0)+'%')}
+    </div>
+    <div style="background:var(--s2);border-radius:10px;padding:12px 16px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700;color:var(--t1)">Faturamento</div>
+        <span style="background:${cor}22;color:${cor};border:1px solid ${cor}44;border-radius:12px;padding:1px 10px;font-size:10px;font-weight:700">${status}</span>
+      </div>
+      ${row('Data faturamento', fmtD(p.dtFat))}
+      ${row('Nota Fiscal', p.nf||'—')}
+      ${row('Valor faturado', p.valfat?fmt(p.valfat):'—', 'var(--grn)')}
+    </div>
+    ${parcHtml?`<div><div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:6px">PARCELAS</div>${parcHtml}</div>`:''}
+    ${p.obs?`<div style="background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.25);border-radius:8px;padding:10px 14px"><div style="font-size:10px;color:var(--org);font-weight:700;margin-bottom:4px"><i class="ti ti-note"></i> OBSERVAÇÃO</div><div style="font-size:12px;color:var(--t1)">${p.obs}</div></div>`:''}
+    ${p.categorias?`<div style="background:var(--s2);border-radius:10px;padding:10px 14px"><div style="font-size:10px;color:var(--t3);font-weight:700;margin-bottom:6px"><i class="ti ti-tag"></i> CATEGORIAS DE PRODUTOS</div><div style="font-size:11px;color:var(--t2);line-height:1.8">${p.categorias.split('|').map(function(x){return '<span style="background:var(--s1);border:1px solid var(--bdr);border-radius:12px;padding:2px 10px;margin:2px;display:inline-block">'+x.trim()+'</span>';}).join('')}</div></div>`:''}
+  `;
+  om('mVerPed');
+}
+// ══ FIM VER PEDIDO ══
 
 // ══ SELETOR DE COLUNAS ══
 var colVisivel = {
@@ -11430,18 +11517,16 @@ function abrirEditPedido(pedId){
   const tituloEl = document.getElementById('edit-titulo');
   if(tituloEl) tituloEl.innerHTML = 'Editar Pedido' + (p.num?' #'+p.num:'') + (cNome?' — '+cNome:'') +
     (empNome?' <span style="font-size:11px;padding:2px 8px;border-radius:12px;background:'+empCor+'22;color:'+empCor+';font-weight:600;margin-left:6px">'+empNome+'</span>':'');
-  // Carregar transportadoras da empresa do pedido
-  preencherSelectTransp('edit-transp', p.empId, p.transp);
   document.getElementById('edit-num').value    = p.num||'';
   document.getElementById('edit-dt').value     = p.dt||'';
+  document.getElementById('edit-val').value    = p.val||'';
+  document.getElementById('edit-desc').value   = p.desc||'';
   document.getElementById('edit-dtfat').value  = p.dtFat||'';
   document.getElementById('edit-nf').value     = p.nf||'';
   document.getElementById('edit-valfat').value = p.valfat||0;
   document.getElementById('edit-com').value    = p.com||3;
   document.getElementById('edit-fatcom').value = p.fatcom||'sim';
   document.getElementById('edit-parc').value   = p.parc||1;
-  document.getElementById('edit-transp').value = p.transp||'Correios';
-  document.getElementById('edit-cod').value    = p.cod||'';
   document.getElementById('edit-tipo').value   = p.tipo||'';
   if(document.getElementById('edit-obs')) document.getElementById('edit-obs').value = p.obs||'';
   window._paysDtEditAtual = p.paysDt||[];
@@ -11506,6 +11591,10 @@ function calcEditCom(){
   const tot  = vf*com/100;
   const fatV = fat?tot*.5:0;
   const liq  = tot-fatV;
+  const val  = parseFloat(document.getElementById('edit-val')?.value)||0;
+  const desc = parseFloat(document.getElementById('edit-desc')?.value)||0;
+  const valfinalEl=document.getElementById('edit-valfinal');
+  if(valfinalEl) valfinalEl.value=fmt(val*(1-desc/100));
   const box  = document.getElementById('edit-com-prev');
   if(box&&vf>0) box.innerHTML=`
     <div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:6px">Preview de comissão</div>
@@ -11528,14 +11617,14 @@ function salvarEdicaoPedido(){
   p.paysDt = coletarPaysDtEdit(novoPaim, novoFat==='sim');
   p.num    = document.getElementById('edit-num').value;
   p.dt     = document.getElementById('edit-dt').value;
+  p.val    = parseFloat(document.getElementById('edit-val').value)||0;
+  p.desc   = parseFloat(document.getElementById('edit-desc').value)||0;
   p.dtFat  = document.getElementById('edit-dtfat').value||null;
   p.nf     = document.getElementById('edit-nf').value||null;
   p.valfat = parseFloat(document.getElementById('edit-valfat').value)||0;
   p.com    = parseFloat(document.getElementById('edit-com').value)||3;
   p.fatcom = novoFat;
   p.parc   = novoPaim;
-  p.transp = document.getElementById('edit-transp').value;
-  p.cod    = document.getElementById('edit-cod').value||null;
   p.tipo   = document.getElementById('edit-tipo')?.value?.trim()||null;
   p.obs    = document.getElementById('edit-obs')?.value?.trim()||null;
   p.categorias = document.getElementById('edit-categorias')?.value?.trim()||null;
@@ -11552,6 +11641,26 @@ function salvarEdicaoPedido(){
     abrirCli(p.cliId, voltarPara);
   }
   pedidoEditId=null;
+}
+
+function duplicarPedidoEdit(){
+  const orig=DB.pedidos.find(x=>x.id===pedidoEditId);
+  if(!orig){ toast('Pedido não encontrado'); return; }
+  if(!confirm('Criar cópia deste pedido para nova NF?\n\nSerão copiados: Data, Nº Pedido, Cliente e Origem.\nValor, NF e Faturamento ficarão em branco.')) return;
+  const nova={
+    id:uid(), empId:orig.empId, cliId:orig.cliId,
+    dt:orig.dt, num:orig.num, tipo:orig.tipo,
+    desc:orig.desc||0, parc:orig.parc||1, com:orig.com||0,
+    fatcom:orig.fatcom||'nao', transp:orig.transp||'',
+    val:0, valfat:0, dtFat:null, nf:null,
+    obs:orig.obs||null, cancelado:false,
+    pays:[], paysDt:[], nfRef:orig.id
+  };
+  DB.pedidos.push(nova);
+  salvarDB();
+  cm('mEditPed');
+  toast('Nova NF criada! Edite para preencher valor e faturamento.');
+  setTimeout(function(){ abrirEditPedido(nova.id); }, 400);
 }
 
 function excluirPedidoEdit(){
@@ -11818,6 +11927,9 @@ function calcCom(){
   const parc=parseInt(document.getElementById('ped-parc')?.value)||1;
   const fatSim=document.getElementById('ped-fatcom')?.value==='sim';
   const valfat=parseFloat(document.getElementById('ped-valfat')?.value)||val*(1-desc/100);
+  // Valor Final = Valor do pedido menos o desconto (%)
+  const valfinalEl=document.getElementById('ped-valfinal');
+  if(valfinalEl) valfinalEl.value=fmt(val*(1-desc/100));
   const tot=valfat*com/100; const fat=fatSim?tot*.5:0; const liq=tot-fat;
   const box=document.getElementById('com-prev-box');
   if(box&&val>0) box.innerHTML=`
@@ -11863,7 +11975,7 @@ function salvarPedido(){
   if(subAtual==='eped')renderEmpPed();
 }
 function limparFormPedido(){
-  ['ped-num','ped-val','ped-desc','ped-com','ped-dtfat','ped-nf','ped-valfat','ped-cod','ped-tipo'].forEach(function(id){
+  ['ped-num','ped-val','ped-desc','ped-com','ped-dtfat','ped-nf','ped-valfat','ped-cod','ped-tipo','ped-valfinal'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('ped-dt').value='';
