@@ -221,7 +221,7 @@ if('serviceWorker' in navigator){
   <!-- Briefing do Dia -->
   <div class="card" style="margin-bottom:14px;border-left:3px solid #7c3aed" id="card-briefing-dia">
     <div class="ct">
-      <div class="ctl"><i class="ti ti-sun-2" style="color:#f59e0b"></i>Briefing do Dia</div>
+      <div class="ctl"><i class="ti ti-sun-2" style="color:#f59e0b"></i>O que fazer hoje</div>
       <span id="briefing-dia-data" style="font-size:11px;color:var(--t3);text-transform:capitalize"></span>
     </div>
     <div id="briefing-dia-body" style="display:flex;gap:12px;flex-wrap:wrap"></div>
@@ -601,6 +601,10 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-com"></div>
+  <div class="card" style="margin-bottom:14px" id="card-com-futuras">
+    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — próximos 6 meses</div><span id="com-futuras-total" style="font-size:11px;color:var(--t3)"></span></div>
+    <div id="com-futuras-body" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+  </div>
   <div class="card" style="overflow-x:auto">
     <div class="ct"><div class="ctl"><i class="ti ti-coin" style="color:var(--org)"></i>Extrato detalhado de comissões</div></div>
     <table id="tbl-com-main" class="tbl-compact">
@@ -626,7 +630,6 @@ if('serviceWorker' in navigator){
       <span style="color:var(--t3)">Clique na parcela = pago/aberto · Botão direito = alterar status · Clique na NF = editar pedido</span>
     </div>
   </div>
-  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-chart-line" style="color:var(--grn)"></i>Evolução mensal</div></div><div class="cw"><canvas id="cv-com" role="img" aria-label="Comissões">Comissões</canvas></div></div>
 </div>
 
 <!-- EMP VENDAS -->
@@ -1782,10 +1785,10 @@ if('serviceWorker' in navigator){
       </div>
     </div>
     <div class="fg">
-      <label class="fl">Backup automático</label>
+      <label class="fl">Backup automático semanal</label>
       <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:8px;border:1px solid var(--bdr)">
         <input type="checkbox" id="cfg-bkp-auto" style="width:16px;height:16px;cursor:pointer" onchange="salvarCfgBkp()">
-        <label for="cfg-bkp-auto" style="font-size:12px;color:var(--t2);cursor:pointer;flex:1">Baixar backup automaticamente ao fechar</label>
+        <label for="cfg-bkp-auto" style="font-size:12px;color:var(--t2);cursor:pointer;flex:1">Baixar backup automaticamente 1x por semana, ao abrir o sistema</label>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
@@ -3823,6 +3826,7 @@ function renderEmpCom(){
     <div class="mc bl"><div class="mcl">Comissão Faturamento</div><div class="mcv">${fmt(comFatMes)}</div><div class="mcs">a receber em ${hoje.toLocaleString('pt-BR',{month:'long'})}</div></div>
     <div class="mc gr"><div class="mcl">Comissão Duplicata</div><div class="mcv">${fmt(comDupMes)}</div><div class="mcs">vencendo em ${hoje.toLocaleString('pt-BR',{month:'long'})}</div></div>
     <div class="mc re"><div class="mcl">Comissões a Vencer</div><div class="mcv">${fmt(comAVencer)}</div><div class="mcs">total ainda não pago</div></div>`;
+  renderComissoesFuturas();
 
   document.getElementById('tb-com').innerHTML=ps.map(p=>{
     const c=DB.clientes.find(x=>x.id===p.cliId);
@@ -3871,17 +3875,6 @@ function renderEmpCom(){
       </td>
     </tr>`;
   }).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:20px">Nenhum registro encontrado</td></tr>`;
-
-  // Chart
-  setTimeout(()=>{
-    const ctx=document.getElementById('cv-com');if(!ctx)return;
-    if(chCom)chCom.destroy();
-    const gc='rgba(255,255,255,.04)',tc='#475569';
-    chCom=new Chart(ctx,{type:'bar',data:{labels:['Jan','Fev','Mar','Abr','Mai','Jun'],
-      datasets:[{label:'Comissão',data:[1200,1450,1800,1600,2100,tp/2||2500],backgroundColor:(e.cor||'#3b82f6')+'99',borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:tc},grid:{color:gc}},y:{ticks:{color:tc,callback:v=>'R$'+(v/1000).toFixed(1)+'k'},grid:{color:gc}}}}});
-  },100);
 
   atualizarBadgesSidebar();
   atualizarIconesOrdenacao('com');
@@ -4692,7 +4685,7 @@ function exportarComissoes(){
 
 // ══ BACKUP ══
 function exportarBackup(){
-  const dados={empresas:DB.empresas,clientes:DB.clientes,pedidos:DB.pedidos,tarefas:DB.tarefas,eventos:DB.eventos,exportado:new Date().toISOString()};
+  const dados={empresas:DB.empresas,clientes:DB.clientes,pedidos:DB.pedidos,tarefas:DB.tarefas,eventos:DB.eventos,orcamentos:DB.orcamentos||[],exportado:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(dados,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`repcrm_backup_${new Date().toISOString().split('T')[0]}.json`;a.click();
   toast('Backup exportado!');
@@ -4707,6 +4700,7 @@ function restaurarBackup(input){
       if(!confirm(`Restaurar backup de ${dados.exportado||'?'}?\nIsso substituirá todos os dados atuais.`))return;
       DB.empresas=dados.empresas||[];DB.clientes=dados.clientes||[];
       DB.pedidos=dados.pedidos||[];DB.tarefas=dados.tarefas||[];DB.eventos=dados.eventos||[];
+      DB.orcamentos=dados.orcamentos||[]; save('orcamentos', DB.orcamentos);
       salvarDB();toast('Backup restaurado!');cm('mCfg');
       preencherSelects();buildSidebar();sp('dash');buildDash();
     }catch(err){toast('Erro ao restaurar: '+err.message);}
@@ -8763,6 +8757,10 @@ if('serviceWorker' in navigator){
     </div>
   </div>
   <div class="mg" id="mg-com"></div>
+  <div class="card" style="margin-bottom:14px" id="card-com-futuras">
+    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — próximos 6 meses</div><span id="com-futuras-total" style="font-size:11px;color:var(--t3)"></span></div>
+    <div id="com-futuras-body" style="display:flex;gap:10px;flex-wrap:wrap"></div>
+  </div>
   <div class="card" style="overflow-x:auto">
     <div class="ct"><div class="ctl"><i class="ti ti-coin" style="color:var(--org)"></i>Extrato detalhado de comissões</div></div>
     <table id="tbl-com-main" class="tbl-compact">
@@ -8788,7 +8786,6 @@ if('serviceWorker' in navigator){
       <span style="color:var(--t3)">Clique na parcela = pago/aberto · Botão direito = alterar status · Clique na NF = editar pedido</span>
     </div>
   </div>
-  <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-chart-line" style="color:var(--grn)"></i>Evolução mensal</div></div><div class="cw"><canvas id="cv-com" role="img" aria-label="Comissões">Comissões</canvas></div></div>
 </div>
 
 <!-- EMP VENDAS -->
@@ -9354,10 +9351,10 @@ if('serviceWorker' in navigator){
       </div>
     </div>
     <div class="fg">
-      <label class="fl">Backup automático</label>
+      <label class="fl">Backup automático semanal</label>
       <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:8px;border:1px solid var(--bdr)">
         <input type="checkbox" id="cfg-bkp-auto" style="width:16px;height:16px;cursor:pointer" onchange="salvarCfgBkp()">
-        <label for="cfg-bkp-auto" style="font-size:12px;color:var(--t2);cursor:pointer;flex:1">Baixar backup automaticamente ao fechar</label>
+        <label for="cfg-bkp-auto" style="font-size:12px;color:var(--t2);cursor:pointer;flex:1">Baixar backup automaticamente 1x por semana, ao abrir o sistema</label>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
@@ -9543,6 +9540,8 @@ function init() {
   if(cfg.nome) document.getElementById('cfg-nome').value = cfg.nome;
   if(cfg.iakey){ const el=document.getElementById('cfg-iakey'); if(el) el.value=cfg.iakey; }
   { const elWpp=document.getElementById('cfg-wpp-desktop'); if(elWpp) elWpp.checked = cfg.wppDesktop!==false; }
+  { const elAv=document.getElementById('cfg-aviso-fechar'); if(elAv) elAv.checked = !!cfg.avisoFechar; }
+  { const elBk=document.getElementById('cfg-bkp-auto'); if(elBk) elBk.checked = cfg.bkpAuto!==false; }
   if(cfg.fontSize){ setFonte(cfg.fontSize); }
   if(cfg.modo) setModo(cfg.modo);
   preencherSelects();
@@ -9551,7 +9550,41 @@ function init() {
   sp('dash');
   buildDash();
   atualizarBadgeAgenda();
+  verificarBackupAutomaticoSemanal();
+  window.addEventListener('beforeunload', function(e){
+    var c=loadCfg();
+    if(c.avisoFechar){ e.preventDefault(); e.returnValue='Deseja sair do RepCRM?'; return 'Deseja sair do RepCRM?'; }
+  });
 }
+
+// ══ BACKUP AUTOMÁTICO SEMANAL ══
+function salvarCfgBkp(){
+  const cfg=loadCfg();
+  cfg.avisoFechar = document.getElementById('cfg-aviso-fechar')?.checked||false;
+  cfg.bkpAuto = document.getElementById('cfg-bkp-auto')?.checked!==false;
+  saveCfg(cfg);
+  toast('Preferências de backup salvas!');
+}
+function verificarBackupAutomaticoSemanal(){
+  const cfg=loadCfg();
+  if(cfg.bkpAuto===false) return;
+  const agora=new Date();
+  const seteDiasMs=7*24*60*60*1000;
+  if(cfg.ultimoBackupAuto && (agora-new Date(cfg.ultimoBackupAuto))<seteDiasMs) return;
+  try{
+    const dados={empresas:DB.empresas,clientes:DB.clientes,pedidos:DB.pedidos,tarefas:DB.tarefas,eventos:DB.eventos,orcamentos:DB.orcamentos||[],exportado:agora.toISOString(),versao:'1.0'};
+    const blob=new Blob([JSON.stringify(dados,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='RepCRM_backup_'+agora.toISOString().split('T')[0]+'.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    cfg.ultimoBackupAuto=agora.toISOString();
+    saveCfg(cfg);
+    toast('📦 Backup semanal automático salvo na pasta Downloads!');
+  }catch(err){ console.warn('Falha no backup automático semanal', err); }
+}
+// ══ FIM BACKUP AUTOMÁTICO SEMANAL ══
 
 function carregarDadosExemplo() {
   DB.empresas = [
@@ -11421,6 +11454,7 @@ function renderEmpCom(){
     <div class="mc bl"><div class="mcl">Comissão Faturamento</div><div class="mcv">${fmt(comFatMes)}</div><div class="mcs">a receber em ${hoje.toLocaleString('pt-BR',{month:'long'})}</div></div>
     <div class="mc gr"><div class="mcl">Comissão Duplicata</div><div class="mcv">${fmt(comDupMes)}</div><div class="mcs">vencendo em ${hoje.toLocaleString('pt-BR',{month:'long'})}</div></div>
     <div class="mc re"><div class="mcl">Comissões a Vencer</div><div class="mcv">${fmt(comAVencer)}</div><div class="mcs">total ainda não pago</div></div>`;
+  renderComissoesFuturas();
 
   document.getElementById('tb-com').innerHTML=ps.map(p=>{
     const c=DB.clientes.find(x=>x.id===p.cliId);
@@ -11470,20 +11504,70 @@ function renderEmpCom(){
     </tr>`;
   }).join('') || `<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:20px">Nenhum registro encontrado</td></tr>`;
 
-  // Chart
-  setTimeout(()=>{
-    const ctx=document.getElementById('cv-com');if(!ctx)return;
-    if(chCom)chCom.destroy();
-    const gc='rgba(255,255,255,.04)',tc='#475569';
-    chCom=new Chart(ctx,{type:'bar',data:{labels:['Jan','Fev','Mar','Abr','Mai','Jun'],
-      datasets:[{label:'Comissão',data:[1200,1450,1800,1600,2100,tp/2||2500],backgroundColor:(e.cor||'#3b82f6')+'99',borderRadius:4}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:tc},grid:{color:gc}},y:{ticks:{color:tc,callback:v=>'R$'+(v/1000).toFixed(1)+'k'},grid:{color:gc}}}}});
-  },100);
-
   atualizarBadgesSidebar();
   atualizarIconesOrdenacao('com');
 }
+
+// ══ COMISSÕES FUTURAS (próximos 6 meses) ══
+function renderComissoesFuturas(){
+  const body=document.getElementById('com-futuras-body'); if(!body) return;
+  const lblTotal=document.getElementById('com-futuras-total');
+  const mesesAbrev=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const hoje=new Date();
+  const buckets=[];
+  for(let i=0;i<6;i++){
+    const d=new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+    buckets.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: mesesAbrev[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), valor:0 });
+  }
+  const idxByKey={}; buckets.forEach(function(b,i){ idxByKey[b.key]=i; });
+  function addValor(dtStr, valor){
+    if(!dtStr||!valor) return;
+    const key=dtStr.slice(0,7);
+    if(idxByKey[key]!==undefined) buckets[idxByKey[key]].valor+=valor;
+  }
+  const psTodos=DB.pedidos.filter(function(p){ return p.empId===empAtual && !p.cancelado; });
+  psTodos.forEach(function(p){
+    const tot=(p.valfat||0)*(p.com||3)/100;
+    const fatSimP=p.fatcom==='sim';
+    const fat=fatSimP?tot*.5:0;
+    const liq=tot-fat;
+    const pays=p.pays||[];
+    const paysDt=p.paysDt||[];
+    const numDup=p.parc||1;
+    const vlParc=numDup>0?liq/numDup:0;
+    if(fatSimP){
+      if((pays[0]||'')!=='pg') addValor(p.dtFat, fat);
+      for(let i=1;i<=numDup;i++){
+        if((pays[i]||'')!=='pg'){
+          const v=(p.paysVal&&p.paysVal[i])||vlParc;
+          addValor(paysDt[i], v);
+        }
+      }
+    } else {
+      for(let i=0;i<numDup;i++){
+        if((pays[i]||'')!=='pg'){
+          const v=(p.paysVal&&p.paysVal[i])||vlParc;
+          addValor(paysDt[i], v);
+        }
+      }
+    }
+  });
+  const maxV=Math.max.apply(null, buckets.map(function(b){return b.valor;}).concat([1]));
+  const totalGeral=buckets.reduce(function(s,b){return s+b.valor;},0);
+  if(lblTotal) lblTotal.textContent='Total dos 6 meses: '+fmt(totalGeral);
+  body.innerHTML=buckets.map(function(b,i){
+    const alturaBarra=Math.max(4,Math.round(b.valor/maxV*60));
+    const cor=i===0?'var(--acc)':'var(--t2)';
+    return '<div style="flex:1;min-width:110px;background:var(--s2);border-radius:8px;padding:10px 12px;text-align:center">'
+      +'<div style="font-size:10px;color:var(--t3);text-transform:capitalize;margin-bottom:6px">'+b.label+'</div>'
+      +'<div style="height:60px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:6px">'
+        +'<div style="width:26px;border-radius:4px 4px 0 0;background:'+cor+';height:'+alturaBarra+'px"></div>'
+      +'</div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--t1)">'+fmt(b.valor)+'</div>'
+      +'</div>';
+  }).join('');
+}
+// ══ FIM COMISSÕES FUTURAS ══
 
 function excluirPedidoCom(id){
   const p=DB.pedidos.find(x=>x.id===id);
@@ -14687,7 +14771,7 @@ function exportarComissoes(){
 
 // ══ BACKUP ══
 function exportarBackup(){
-  const dados={empresas:DB.empresas,clientes:DB.clientes,pedidos:DB.pedidos,tarefas:DB.tarefas,eventos:DB.eventos,exportado:new Date().toISOString()};
+  const dados={empresas:DB.empresas,clientes:DB.clientes,pedidos:DB.pedidos,tarefas:DB.tarefas,eventos:DB.eventos,orcamentos:DB.orcamentos||[],exportado:new Date().toISOString()};
   const blob=new Blob([JSON.stringify(dados,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`repcrm_backup_${new Date().toISOString().split('T')[0]}.json`;a.click();
   toast('Backup exportado!');
@@ -14702,6 +14786,7 @@ function restaurarBackup(input){
       if(!confirm(`Restaurar backup de ${dados.exportado||'?'}?\nIsso substituirá todos os dados atuais.`))return;
       DB.empresas=dados.empresas||[];DB.clientes=dados.clientes||[];
       DB.pedidos=dados.pedidos||[];DB.tarefas=dados.tarefas||[];DB.eventos=dados.eventos||[];
+      DB.orcamentos=dados.orcamentos||[]; save('orcamentos', DB.orcamentos);
       salvarDB();toast('Backup restaurado!');cm('mCfg');
       preencherSelects();buildSidebar();sp('dash');buildDash();
     }catch(err){toast('Erro ao restaurar: '+err.message);}
@@ -15658,6 +15743,19 @@ function renderBriefingDia(){
     return dias(c)>ciclo?true:null;
   }).filter(Boolean).length;
   const semNF=DB.pedidos.filter(function(p){return !p.dtFat&&!p.nf&&!p.cancelado;}).length;
+  // Parcelas vencidas: mesma regra já usada para pintar de vermelho as
+  // parcelinhas na tela de Comissões (classeParc -> 'venc'), só que somada
+  // aqui pra todas as empresas de uma vez.
+  let parcVenc=0;
+  DB.pedidos.forEach(function(p){
+    if(p.cancelado) return;
+    const pays=p.pays||[], paysDt=p.paysDt||[];
+    pays.forEach(function(st,i){ if(classeParc(st,paysDt[i])==='venc') parcVenc++; });
+  });
+  // Orçamentos vencidos ou vencendo nos próximos 3 dias, ainda não convertidos em pedido
+  const limite3d=new Date(); limite3d.setDate(limite3d.getDate()+3);
+  const limite3dStr=limite3d.toISOString().split('T')[0];
+  const orcVenc=(DB.orcamentos||[]).filter(function(o){ return o.status==='orcamento'&&o.validade&&o.validade<=limite3dStr; }).length;
   function tile(n,lbl,cor,onclick){
     return '<div style="flex:1;min-width:150px;background:var(--s2);border-radius:8px;padding:10px 14px;'+(onclick?'cursor:pointer':'')+'"'+(onclick?' onclick="'+onclick+'"':'')+'>'
       +'<div style="font-size:24px;font-weight:800;color:'+cor+'">'+n+'</div>'
@@ -15667,7 +15765,9 @@ function renderBriefingDia(){
   body.innerHTML=
     tile(tarefasHoje,'Tarefas pendentes','var(--red)',"document.getElementById(&quot;tarefas-pend-list&quot;)?.scrollIntoView({behavior:&quot;smooth&quot;})")+
     tile(cicloVencidos,'Clientes na hora de comprar de novo','#7c3aed',"document.getElementById(&quot;card-alertas-ciclo&quot;)?.scrollIntoView({behavior:&quot;smooth&quot;})")+
-    tile(semNF,'Pedidos aguardando NF','var(--org)',"document.getElementById(&quot;lista-sem-nf&quot;)?.scrollIntoView({behavior:&quot;smooth&quot;})");
+    tile(semNF,'Pedidos aguardando NF','var(--org)',"document.getElementById(&quot;lista-sem-nf&quot;)?.scrollIntoView({behavior:&quot;smooth&quot;})")+
+    tile(parcVenc,'Parcelas vencidas','var(--red)')+
+    tile(orcVenc,'Orçamentos vencendo','var(--org)');
 }
 // ══ FIM BRIEFING DO DIA ══
 
