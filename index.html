@@ -1052,6 +1052,7 @@ if('serviceWorker' in navigator){
     <button id="ftab-receb"  onclick="fiscalTab('receb')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">NF Recebimento</button>
     <button id="ftab-geral"  onclick="fiscalTab('geral')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Geral</button>
     <button id="ftab-cfg"    onclick="fiscalTab('cfg')"    class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Configurações</button>
+    <button id="ftab-comnf"  onclick="fiscalTab('comnf')"  class="btn bs" style="border-radius:6px 6px 0 0;border-bottom:none;padding:7px 16px;font-size:12px">Email NF Comissões</button>
   </div>
 
   <!-- Aba Gastos -->
@@ -1170,7 +1171,50 @@ if('serviceWorker' in navigator){
       </div>
     </div>
   </div>
+
+  <!-- Aba Email NF Comissões -->
+  <div id="fpanel-comnf" style="display:none">
+    <div class="card" style="margin-bottom:12px">
+      <div class="ct" style="padding:10px 14px;flex-wrap:wrap;gap:8px">
+        <div class="ctl"><i class="ti ti-mail"></i> Email NF Comissões — envio mensal para o contador</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn bs" onclick="abrirCfgEmailContador()"><i class="ti ti-settings"></i> Configurar E-mail</button>
+          <button class="btn bp" onclick="enviarEmailComNF()"><i class="ti ti-send"></i> Enviar E-mail</button>
+        </div>
+      </div>
+      <div style="padding:0 14px 10px;font-size:12px;color:var(--t3)">
+        Marque as empresas que devem entrar no e-mail deste mês para o contador emitir as notas fiscais de comissão. Os valores sugeridos vêm das parcelas pendentes do mês atual, mas podem ser editados livremente.
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="background:var(--s2)">
+            <th style="padding:6px 10px;width:34px"></th>
+            <th style="padding:6px 12px;text-align:left;color:var(--t3);font-size:10px;text-transform:uppercase">Empresas</th>
+            <th style="padding:6px 12px;text-align:left;color:var(--t3);font-size:10px;text-transform:uppercase">CNPJ</th>
+            <th style="padding:6px 12px;text-align:right;color:var(--t3);font-size:10px;text-transform:uppercase;width:160px">Valor</th>
+          </tr></thead>
+          <tbody id="tb-comnf"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- MODAL CONFIGURAR E-MAIL CONTADOR -->
+<div class="mbg" id="mCfgEmailContador"><div class="modal" style="max-width:440px">
+  <div class="mtt"><i class="ti ti-settings" style="color:var(--acc)"></i> Configurar e-mail do contador
+    <button class="xb" onclick="cm('mCfgEmailContador')"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="fg" style="margin-bottom:14px">
+    <label class="fl">E-mail(s) do contador</label>
+    <input class="fi" id="cfg-email-contador" placeholder="contador@exemplo.com, outro@exemplo.com">
+    <div style="font-size:11px;color:var(--t3);margin-top:4px">Para mais de um destinatário, separe os e-mails por vírgula.</div>
+  </div>
+  <div style="display:flex;gap:8px;justify-content:flex-end">
+    <button class="btn bs" onclick="cm('mCfgEmailContador')">Cancelar</button>
+    <button class="btn bp" onclick="salvarEmailContador()"><i class="ti ti-check"></i> Salvar</button>
+  </div>
+</div></div>
 
 <!-- MODAL ANEXAR NF -->
 <div class="mbg" id="mAnexarNF"><div class="modal" style="max-width:520px">
@@ -11517,13 +11561,16 @@ function renderComissoesFuturas(){
   const buckets=[];
   for(let i=0;i<6;i++){
     const d=new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
-    buckets.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: mesesAbrev[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), valor:0 });
+    buckets.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: mesesAbrev[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), valor:0, valorFat:0 });
   }
   const idxByKey={}; buckets.forEach(function(b,i){ idxByKey[b.key]=i; });
-  function addValor(dtStr, valor){
+  function addValor(dtStr, valor, isFat){
     if(!dtStr||!valor) return;
     const key=dtStr.slice(0,7);
-    if(idxByKey[key]!==undefined) buckets[idxByKey[key]].valor+=valor;
+    if(idxByKey[key]!==undefined){
+      buckets[idxByKey[key]].valor+=valor;
+      if(isFat) buckets[idxByKey[key]].valorFat+=valor;
+    }
   }
   const psTodos=DB.pedidos.filter(function(p){ return p.empId===empAtual && !p.cancelado; });
   psTodos.forEach(function(p){
@@ -11536,38 +11583,159 @@ function renderComissoesFuturas(){
     const numDup=p.parc||1;
     const vlParc=numDup>0?liq/numDup:0;
     if(fatSimP){
-      if((pays[0]||'')!=='pg') addValor(p.dtFat, fat);
+      if((pays[0]||'')!=='pg') addValor(p.dtFat, fat, true);
       for(let i=1;i<=numDup;i++){
         if((pays[i]||'')!=='pg'){
           const v=(p.paysVal&&p.paysVal[i])||vlParc;
-          addValor(paysDt[i], v);
+          addValor(paysDt[i], v, false);
         }
       }
     } else {
       for(let i=0;i<numDup;i++){
         if((pays[i]||'')!=='pg'){
           const v=(p.paysVal&&p.paysVal[i])||vlParc;
-          addValor(paysDt[i], v);
+          addValor(paysDt[i], v, false);
         }
       }
     }
   });
-  const maxV=Math.max.apply(null, buckets.map(function(b){return b.valor;}).concat([1]));
   const totalGeral=buckets.reduce(function(s,b){return s+b.valor;},0);
-  if(lblTotal) lblTotal.textContent='Total dos 6 meses: '+fmt(totalGeral);
-  body.innerHTML=buckets.map(function(b,i){
-    const alturaBarra=Math.max(4,Math.round(b.valor/maxV*60));
-    const cor=i===0?'var(--acc)':'var(--t2)';
-    return '<div style="flex:1;min-width:110px;background:var(--s2);border-radius:8px;padding:10px 12px;text-align:center">'
+  const totalFat=buckets.reduce(function(s,b){return s+b.valorFat;},0);
+  if(lblTotal){
+    let txt='Total dos 6 meses: '+fmt(totalGeral);
+    if(totalFat>0) txt+='  •  Comissão de faturamento: '+fmt(totalFat);
+    lblTotal.textContent=txt;
+  }
+  body.innerHTML=buckets.map(function(b){
+    return '<div style="flex:1;min-width:120px;background:var(--s2);border-radius:8px;padding:10px 12px;text-align:center">'
       +'<div style="font-size:10px;color:var(--t3);text-transform:capitalize;margin-bottom:6px">'+b.label+'</div>'
-      +'<div style="height:60px;display:flex;align-items:flex-end;justify-content:center;margin-bottom:6px">'
-        +'<div style="width:26px;border-radius:4px 4px 0 0;background:'+cor+';height:'+alturaBarra+'px"></div>'
-      +'</div>'
-      +'<div style="font-size:13px;font-weight:700;color:var(--t1)">'+fmt(b.valor)+'</div>'
+      +'<div style="font-size:15px;font-weight:700;color:var(--t1)">'+fmt(b.valor)+'</div>'
+      +(b.valorFat>0?'<div style="font-size:10px;color:var(--t3);margin-top:6px;padding-top:6px;border-top:1px dashed var(--bdr)">Faturamento<br><b style="font-size:12px;color:var(--acc)">'+fmt(b.valorFat)+'</b></div>':'')
       +'</div>';
   }).join('');
 }
 // ══ FIM COMISSÕES FUTURAS ══
+
+// ══ EMAIL NF COMISSÕES — lista de empresas para envio mensal ao contador ══
+var COMNF_MIN_LINHAS=10;
+
+function abrirCfgEmailContador(){
+  const cfg=loadCfg();
+  const el=document.getElementById('cfg-email-contador');
+  if(el) el.value=cfg.emailContador||'';
+  om('mCfgEmailContador');
+}
+function salvarEmailContador(){
+  const v=(document.getElementById('cfg-email-contador').value||'').trim();
+  const cfg=loadCfg();
+  cfg.emailContador=v;
+  saveCfg(cfg);
+  toast('E-mail do contador salvo!');
+  cm('mCfgEmailContador');
+}
+
+function calcComissaoMesEmpresa(empId){
+  const hoje=new Date();
+  const mesKey=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
+  let total=0;
+  DB.pedidos.filter(function(p){ return p.empId===empId && !p.cancelado; }).forEach(function(p){
+    const tot=(p.valfat||0)*(p.com||3)/100;
+    const fatSimP=p.fatcom==='sim';
+    const fat=fatSimP?tot*.5:0;
+    const liq=tot-fat;
+    const pays=p.pays||[];
+    const paysDt=p.paysDt||[];
+    const numDup=p.parc||1;
+    const vlParc=numDup>0?liq/numDup:0;
+    function soma(i,dt,valor){
+      if((pays[i]||'')!=='pg' && dt && dt.slice(0,7)===mesKey) total+=valor;
+    }
+    if(fatSimP){
+      soma(0,p.dtFat,fat);
+      for(let i=1;i<=numDup;i++){ const v=(p.paysVal&&p.paysVal[i])||vlParc; soma(i,paysDt[i],v); }
+    } else {
+      for(let i=0;i<numDup;i++){ const v=(p.paysVal&&p.paysVal[i])||vlParc; soma(i,paysDt[i],v); }
+    }
+  });
+  return total;
+}
+
+function linhasComNFPadrao(){
+  if(!DB.geral) DB.geral={};
+  const salvo=DB.geral.COM_NF_ROWS;
+  if(salvo && salvo.length) return salvo.slice();
+  const linhas=(DB.empresas||[]).map(function(e){
+    return { empId:e.id, cnpj:e.cnpj||'', valor:calcComissaoMesEmpresa(e.id), sel:false };
+  });
+  while(linhas.length<COMNF_MIN_LINHAS) linhas.push({ empId:'', cnpj:'', valor:0, sel:false });
+  return linhas;
+}
+
+function renderComNF(){
+  const tb=document.getElementById('tb-comnf'); if(!tb) return;
+  if(!DB.geral) DB.geral={};
+  const linhas=linhasComNFPadrao();
+  const opcoes='<option value="">— selecionar —</option>'+(DB.empresas||[]).map(function(e){ return '<option value="'+e.id+'">'+(e.nome||'')+'</option>'; }).join('');
+  tb.innerHTML=linhas.map(function(l,i){
+    return '<tr>'
+      +'<td style="padding:6px 10px;text-align:center"><input type="checkbox" id="comnf-sel-'+i+'" '+(l.sel?'checked':'')+' onchange="salvarComNF()"></td>'
+      +'<td style="padding:4px 10px"><select class="fi" id="comnf-emp-'+i+'" style="font-size:12px;padding:5px 8px" onchange="comnfEmpChange('+i+')">'+opcoes+'</select></td>'
+      +'<td style="padding:4px 10px"><input class="fi" id="comnf-cnpj-'+i+'" style="font-size:12px;padding:5px 8px" value="'+(l.cnpj||'').replace(/"/g,'&quot;')+'" placeholder="CNPJ" onchange="salvarComNF()"></td>'
+      +'<td style="padding:4px 10px"><input class="fi" id="comnf-val-'+i+'" type="number" step="0.01" min="0" style="font-size:12px;padding:5px 8px;text-align:right" value="'+(l.valor?(+l.valor).toFixed(2):'')+'" onchange="salvarComNF()"></td>'
+      +'</tr>';
+  }).join('');
+  linhas.forEach(function(l,i){ const sel=document.getElementById('comnf-emp-'+i); if(sel) sel.value=l.empId||''; });
+}
+
+function comnfEmpChange(i){
+  const sel=document.getElementById('comnf-emp-'+i);
+  const empId=sel?sel.value:'';
+  const e=(DB.empresas||[]).find(function(x){ return x.id===empId; });
+  const cnpjEl=document.getElementById('comnf-cnpj-'+i);
+  const valEl=document.getElementById('comnf-val-'+i);
+  if(cnpjEl) cnpjEl.value=e?(e.cnpj||''):'';
+  if(valEl && (!valEl.value || +valEl.value===0)) valEl.value=e?calcComissaoMesEmpresa(e.id).toFixed(2):'';
+  salvarComNF();
+}
+
+function salvarComNF(){
+  if(!DB.geral) DB.geral={};
+  const tb=document.getElementById('tb-comnf'); if(!tb) return;
+  const n=tb.querySelectorAll('select[id^="comnf-emp-"]').length;
+  const linhas=[];
+  for(let i=0;i<n;i++){
+    const sel=document.getElementById('comnf-emp-'+i);
+    const cnpjEl=document.getElementById('comnf-cnpj-'+i);
+    const valEl=document.getElementById('comnf-val-'+i);
+    const selEl=document.getElementById('comnf-sel-'+i);
+    linhas.push({ empId:sel?sel.value:'', cnpj:cnpjEl?cnpjEl.value:'', valor:valEl?(+valEl.value||0):0, sel:!!(selEl&&selEl.checked) });
+  }
+  DB.geral.COM_NF_ROWS=linhas;
+  salvarGeralLocal();
+}
+
+function enviarEmailComNF(){
+  const cfg=loadCfg();
+  const destinos=(cfg.emailContador||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(!destinos.length){ toast('Configure o e-mail do contador primeiro'); abrirCfgEmailContador(); return; }
+  if(!DB.geral) DB.geral={};
+  const linhas=(DB.geral.COM_NF_ROWS||[]).filter(function(l){ return l.sel && l.empId; });
+  if(!linhas.length){ toast('Selecione ao menos uma empresa na lista'); return; }
+  const hoje=new Date();
+  const mesesNomes=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const refMes=mesesNomes[hoje.getMonth()]+'/'+hoje.getFullYear();
+  const assunto='Emissão de notas fiscais de comissão — '+refMes;
+  let corpo='Olá,\n\nSegue a lista de empresas para emissão das notas fiscais de comissão referentes a '+refMes+':\n\n';
+  linhas.forEach(function(l){
+    const e=(DB.empresas||[]).find(function(x){ return x.id===l.empId; });
+    corpo+=(e?e.nome:'—')+' — CNPJ: '+(l.cnpj||'—')+' — Valor: '+fmt(l.valor)+'\n';
+  });
+  corpo+='\nObrigado!';
+  const mailto='mailto:?to='+encodeURIComponent(destinos.join(','))+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+  const a=document.createElement('a'); a.href=mailto; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('E-mail aberto para o contador');
+}
+// ══ FIM EMAIL NF COMISSÕES ══
 
 function excluirPedidoCom(id){
   const p=DB.pedidos.find(x=>x.id===id);
@@ -12736,7 +12904,7 @@ function fiscalMesNav(dir){
 
 function fiscalTab(tab){
   _fiscalTab=tab;
-  ['gastos','fotos','receb','geral','cfg'].forEach(function(t){
+  ['gastos','fotos','receb','geral','cfg','comnf'].forEach(function(t){
     var p=document.getElementById('fpanel-'+t);
     var b=document.getElementById('ftab-'+t);
     if(p) p.style.display=t===tab?'block':'none';
@@ -12746,6 +12914,7 @@ function fiscalTab(tab){
     }
   });
   if(tab==='geral') renderGeral();
+  if(tab==='comnf') renderComNF();
 }
 
 // ══ ABA GERAL — cards soltos por planilha contábil (RECEBIMENTOS, PAGAMENTOS,
@@ -13458,7 +13627,12 @@ function renderFiscal(){
   var gridReceb=document.getElementById('grid-fiscal-receb');
   if(gridReceb){
     if(!DB.geral) DB.geral={};
-    var recebs=DB.geral.RECEBIMENTOS||[];
+    // Antes mostrava TODOS os recebimentos de todos os meses, sem respeitar
+    // o mês navegado na aba Fiscal (mesStr) — por isso notas de um mês
+    // ficavam "grudadas" aparecendo sempre junto de outro mês. Agora filtra
+    // pela data do recebimento, igual já é feito com as NFs de gastos (nfs)
+    // e na aba Geral.
+    var recebs=(DB.geral.RECEBIMENTOS||[]).filter(function(r){ return r.data&&r.data.startsWith(mesStr); });
     // Restaura anexos faltando do localStorage (bytes ficam fora do blob principal)
     recebs.forEach(function(r){
       if(!r.imgB64 && r.temAnexo){
