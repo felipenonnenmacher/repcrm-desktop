@@ -602,7 +602,7 @@ if('serviceWorker' in navigator){
   </div>
   <div class="mg" id="mg-com"></div>
   <div class="card" style="margin-bottom:14px" id="card-com-futuras">
-    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — próximos 6 meses</div><span id="com-futuras-total" style="font-size:11px;color:var(--t3)"></span></div>
+    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — mês anterior + próximos 6 meses</div><span id="com-futuras-total" style="font-size:11px;color:var(--t3)"></span></div>
     <div id="com-futuras-body" style="display:flex;gap:10px;flex-wrap:wrap"></div>
   </div>
   <div class="card" style="overflow-x:auto">
@@ -1183,8 +1183,9 @@ if('serviceWorker' in navigator){
         </div>
       </div>
       <div style="padding:0 14px 10px;font-size:12px;color:var(--t3)">
-        Marque as empresas que devem entrar no e-mail deste mês para o contador emitir as notas fiscais de comissão. Os valores sugeridos vêm das parcelas pendentes do mês atual, mas podem ser editados livremente.
+        Marque as empresas que devem entrar no e-mail deste mês para o contador emitir as notas fiscais de comissão. O nome da empresa é editável — digite livremente para casos de razão social diferente da cadastrada (ex.: mais de uma razão social para a mesma empresa). Ao digitar um nome já cadastrado, CNPJ e valor são sugeridos automaticamente, mas tudo pode ser ajustado.
       </div>
+      <datalist id="comnf-emp-list"></datalist>
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead><tr style="background:var(--s2)">
@@ -8802,7 +8803,7 @@ if('serviceWorker' in navigator){
   </div>
   <div class="mg" id="mg-com"></div>
   <div class="card" style="margin-bottom:14px" id="card-com-futuras">
-    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — próximos 6 meses</div><span id="com-futuras-total" style="font-size:11px;color:var(--t3)"></span></div>
+    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — mês anterior + próximos 6 meses</div><span id="com-futuras-total" style="font-size:11px;color:var(--t3)"></span></div>
     <div id="com-futuras-body" style="display:flex;gap:10px;flex-wrap:wrap"></div>
   </div>
   <div class="card" style="overflow-x:auto">
@@ -11559,9 +11560,9 @@ function renderComissoesFuturas(){
   const mesesAbrev=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const hoje=new Date();
   const buckets=[];
-  for(let i=0;i<6;i++){
+  for(let i=-1;i<6;i++){
     const d=new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
-    buckets.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: mesesAbrev[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), valor:0, valorFat:0 });
+    buckets.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: mesesAbrev[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), valor:0, valorFat:0, anterior:i===-1 });
   }
   const idxByKey={}; buckets.forEach(function(b,i){ idxByKey[b.key]=i; });
   function addValor(dtStr, valor, isFat){
@@ -11602,13 +11603,14 @@ function renderComissoesFuturas(){
   const totalGeral=buckets.reduce(function(s,b){return s+b.valor;},0);
   const totalFat=buckets.reduce(function(s,b){return s+b.valorFat;},0);
   if(lblTotal){
-    let txt='Total dos 6 meses: '+fmt(totalGeral);
+    let txt='Total do período: '+fmt(totalGeral);
     if(totalFat>0) txt+='  •  Comissão de faturamento: '+fmt(totalFat);
     lblTotal.textContent=txt;
   }
   body.innerHTML=buckets.map(function(b){
-    return '<div style="flex:1;min-width:120px;background:var(--s2);border-radius:8px;padding:10px 12px;text-align:center">'
-      +'<div style="font-size:10px;color:var(--t3);text-transform:capitalize;margin-bottom:6px">'+b.label+'</div>'
+    const corBorda=b.anterior?'var(--red)':'var(--s2)';
+    return '<div style="flex:1;min-width:120px;background:var(--s2);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid '+corBorda+'">'
+      +'<div style="font-size:10px;color:'+(b.anterior?'var(--red)':'var(--t3)')+';text-transform:capitalize;margin-bottom:6px">'+b.label+(b.anterior?' <span style="font-size:9px">(mês anterior)</span>':'')+'</div>'
       +'<div style="font-size:15px;font-weight:700;color:var(--t1)">'+fmt(b.valor)+'</div>'
       +(b.valorFat>0?'<div style="font-size:10px;color:var(--t3);margin-top:6px;padding-top:6px;border-top:1px dashed var(--bdr)">Faturamento<br><b style="font-size:12px;color:var(--acc)">'+fmt(b.valorFat)+'</b></div>':'')
       +'</div>';
@@ -11663,11 +11665,21 @@ function calcComissaoMesEmpresa(empId){
 function linhasComNFPadrao(){
   if(!DB.geral) DB.geral={};
   const salvo=DB.geral.COM_NF_ROWS;
-  if(salvo && salvo.length) return salvo.slice();
+  if(salvo && salvo.length){
+    // Migração: linhas salvas antes desta versão guardavam empId em vez do
+    // nome digitado — resolve o nome a partir do cadastro de empresas nesse caso.
+    return salvo.map(function(l){
+      if(l.nome===undefined && l.empId){
+        const e=(DB.empresas||[]).find(function(x){ return x.id===l.empId; });
+        return { nome:e?(e.nome||''):'', cnpj:l.cnpj||'', valor:l.valor||0, sel:!!l.sel };
+      }
+      return { nome:l.nome||'', cnpj:l.cnpj||'', valor:l.valor||0, sel:!!l.sel };
+    });
+  }
   const linhas=(DB.empresas||[]).map(function(e){
-    return { empId:e.id, cnpj:e.cnpj||'', valor:calcComissaoMesEmpresa(e.id), sel:false };
+    return { nome:e.nome||'', cnpj:e.cnpj||'', valor:calcComissaoMesEmpresa(e.id), sel:false };
   });
-  while(linhas.length<COMNF_MIN_LINHAS) linhas.push({ empId:'', cnpj:'', valor:0, sel:false });
+  while(linhas.length<COMNF_MIN_LINHAS) linhas.push({ nome:'', cnpj:'', valor:0, sel:false });
   return linhas;
 }
 
@@ -11675,40 +11687,42 @@ function renderComNF(){
   const tb=document.getElementById('tb-comnf'); if(!tb) return;
   if(!DB.geral) DB.geral={};
   const linhas=linhasComNFPadrao();
-  const opcoes='<option value="">— selecionar —</option>'+(DB.empresas||[]).map(function(e){ return '<option value="'+e.id+'">'+(e.nome||'')+'</option>'; }).join('');
+  const dl=document.getElementById('comnf-emp-list');
+  if(dl) dl.innerHTML=(DB.empresas||[]).map(function(e){ return '<option value="'+(e.nome||'').replace(/"/g,'&quot;')+'">'; }).join('');
   tb.innerHTML=linhas.map(function(l,i){
     return '<tr>'
       +'<td style="padding:6px 10px;text-align:center"><input type="checkbox" id="comnf-sel-'+i+'" '+(l.sel?'checked':'')+' onchange="salvarComNF()"></td>'
-      +'<td style="padding:4px 10px"><select class="fi" id="comnf-emp-'+i+'" style="font-size:12px;padding:5px 8px" onchange="comnfEmpChange('+i+')">'+opcoes+'</select></td>'
+      +'<td style="padding:4px 10px"><input class="fi" id="comnf-emp-'+i+'" list="comnf-emp-list" style="font-size:12px;padding:5px 8px" value="'+(l.nome||'').replace(/"/g,'&quot;')+'" placeholder="Nome / razão social" oninput="comnfEmpChange('+i+')" onchange="comnfEmpChange('+i+')"></td>'
       +'<td style="padding:4px 10px"><input class="fi" id="comnf-cnpj-'+i+'" style="font-size:12px;padding:5px 8px" value="'+(l.cnpj||'').replace(/"/g,'&quot;')+'" placeholder="CNPJ" onchange="salvarComNF()"></td>'
       +'<td style="padding:4px 10px"><input class="fi" id="comnf-val-'+i+'" type="number" step="0.01" min="0" style="font-size:12px;padding:5px 8px;text-align:right" value="'+(l.valor?(+l.valor).toFixed(2):'')+'" onchange="salvarComNF()"></td>'
       +'</tr>';
   }).join('');
-  linhas.forEach(function(l,i){ const sel=document.getElementById('comnf-emp-'+i); if(sel) sel.value=l.empId||''; });
 }
 
 function comnfEmpChange(i){
-  const sel=document.getElementById('comnf-emp-'+i);
-  const empId=sel?sel.value:'';
-  const e=(DB.empresas||[]).find(function(x){ return x.id===empId; });
+  const nomeEl=document.getElementById('comnf-emp-'+i);
+  const nome=nomeEl?nomeEl.value.trim():'';
+  const e=(DB.empresas||[]).find(function(x){ return (x.nome||'').trim().toLowerCase()===nome.toLowerCase(); });
   const cnpjEl=document.getElementById('comnf-cnpj-'+i);
   const valEl=document.getElementById('comnf-val-'+i);
-  if(cnpjEl) cnpjEl.value=e?(e.cnpj||''):'';
-  if(valEl && (!valEl.value || +valEl.value===0)) valEl.value=e?calcComissaoMesEmpresa(e.id).toFixed(2):'';
+  if(e){
+    if(cnpjEl && !cnpjEl.value) cnpjEl.value=e.cnpj||'';
+    if(valEl && (!valEl.value || +valEl.value===0)) valEl.value=calcComissaoMesEmpresa(e.id).toFixed(2);
+  }
   salvarComNF();
 }
 
 function salvarComNF(){
   if(!DB.geral) DB.geral={};
   const tb=document.getElementById('tb-comnf'); if(!tb) return;
-  const n=tb.querySelectorAll('select[id^="comnf-emp-"]').length;
+  const n=tb.querySelectorAll('input[id^="comnf-emp-"]').length;
   const linhas=[];
   for(let i=0;i<n;i++){
-    const sel=document.getElementById('comnf-emp-'+i);
+    const nomeEl=document.getElementById('comnf-emp-'+i);
     const cnpjEl=document.getElementById('comnf-cnpj-'+i);
     const valEl=document.getElementById('comnf-val-'+i);
     const selEl=document.getElementById('comnf-sel-'+i);
-    linhas.push({ empId:sel?sel.value:'', cnpj:cnpjEl?cnpjEl.value:'', valor:valEl?(+valEl.value||0):0, sel:!!(selEl&&selEl.checked) });
+    linhas.push({ nome:nomeEl?nomeEl.value.trim():'', cnpj:cnpjEl?cnpjEl.value:'', valor:valEl?(+valEl.value||0):0, sel:!!(selEl&&selEl.checked) });
   }
   DB.geral.COM_NF_ROWS=linhas;
   salvarGeralLocal();
@@ -11719,7 +11733,7 @@ function enviarEmailComNF(){
   const destinos=(cfg.emailContador||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
   if(!destinos.length){ toast('Configure o e-mail do contador primeiro'); abrirCfgEmailContador(); return; }
   if(!DB.geral) DB.geral={};
-  const linhas=(DB.geral.COM_NF_ROWS||[]).filter(function(l){ return l.sel && l.empId; });
+  const linhas=(DB.geral.COM_NF_ROWS||[]).filter(function(l){ return l.sel && l.nome; });
   if(!linhas.length){ toast('Selecione ao menos uma empresa na lista'); return; }
   const hoje=new Date();
   const mesesNomes=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -11727,8 +11741,7 @@ function enviarEmailComNF(){
   const assunto='Emissão de notas fiscais de comissão — '+refMes;
   let corpo='Olá,\n\nSegue a lista de empresas para emissão das notas fiscais de comissão referentes a '+refMes+':\n\n';
   linhas.forEach(function(l){
-    const e=(DB.empresas||[]).find(function(x){ return x.id===l.empId; });
-    corpo+=(e?e.nome:'—')+' — CNPJ: '+(l.cnpj||'—')+' — Valor: '+fmt(l.valor)+'\n';
+    corpo+=(l.nome||'—')+' — CNPJ: '+(l.cnpj||'—')+' — Valor: '+fmt(l.valor)+'\n';
   });
   corpo+='\nObrigado!';
   const mailto='mailto:?to='+encodeURIComponent(destinos.join(','))+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
