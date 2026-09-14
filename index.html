@@ -602,7 +602,7 @@ if('serviceWorker' in navigator){
   </div>
   <div class="mg" id="mg-com"></div>
   <div class="card" style="margin-bottom:14px" id="card-com-futuras">
-    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — mês anterior + próximos 6 meses</div><span id="com-futuras-total" style="font-size:11px;color:var(--t3)"></span></div>
+    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — mês anterior + próximos 6 meses</div><span id="com-futuras-total" style="font-size:10px;color:var(--t3)"></span></div>
     <div id="com-futuras-body" style="display:flex;gap:10px;flex-wrap:wrap"></div>
   </div>
   <div class="card" style="overflow-x:auto">
@@ -1183,7 +1183,7 @@ if('serviceWorker' in navigator){
         </div>
       </div>
       <div style="padding:0 14px 10px;font-size:12px;color:var(--t3)">
-        Marque as empresas que devem entrar no e-mail deste mês para o contador emitir as notas fiscais de comissão. O nome da empresa é editável — digite livremente para casos de razão social diferente da cadastrada (ex.: mais de uma razão social para a mesma empresa). Ao digitar um nome já cadastrado, CNPJ e valor são sugeridos automaticamente, mas tudo pode ser ajustado.
+        Marque as empresas que devem entrar no e-mail deste mês para o contador emitir as notas fiscais de comissão. O nome da empresa é editável — digite livremente para casos de razão social diferente da cadastrada (ex.: mais de uma razão social para a mesma empresa). Ao digitar um nome já cadastrado, o CNPJ é preenchido automaticamente; o valor deve ser informado manualmente.
       </div>
       <datalist id="comnf-emp-list"></datalist>
       <div style="overflow-x:auto">
@@ -1202,7 +1202,7 @@ if('serviceWorker' in navigator){
 </div>
 
 <!-- MODAL CONFIGURAR E-MAIL CONTADOR -->
-<div class="mbg" id="mCfgEmailContador"><div class="modal" style="max-width:440px">
+<div class="mbg" id="mCfgEmailContador"><div class="modal" style="max-width:520px">
   <div class="mtt"><i class="ti ti-settings" style="color:var(--acc)"></i> Configurar e-mail do contador
     <button class="xb" onclick="cm('mCfgEmailContador')"><i class="ti ti-x"></i></button>
   </div>
@@ -1211,6 +1211,15 @@ if('serviceWorker' in navigator){
     <input class="fi" id="cfg-email-contador" placeholder="contador@exemplo.com, outro@exemplo.com">
     <div style="font-size:11px;color:var(--t3);margin-top:4px">Para mais de um destinatário, separe os e-mails por vírgula.</div>
   </div>
+  <div class="fg" style="margin-bottom:14px">
+    <label class="fl">Assunto do e-mail</label>
+    <input class="fi" id="cfg-email-assunto" placeholder="Emissão de notas fiscais de comissão — {mes}">
+  </div>
+  <div class="fg" style="margin-bottom:6px">
+    <label class="fl">Mensagem (corpo)</label>
+    <textarea class="fi" id="cfg-email-corpo" rows="5" style="resize:vertical" placeholder="Olá,&#10;&#10;Segue a lista de empresas para emissão das notas fiscais de comissão referentes a {mes}:"></textarea>
+  </div>
+  <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Use <b>{mes}</b> para o sistema preencher o mês de referência automaticamente (sempre o mês anterior ao vigente). A lista de empresas marcadas é adicionada ao final da mensagem.</div>
   <div style="display:flex;gap:8px;justify-content:flex-end">
     <button class="btn bs" onclick="cm('mCfgEmailContador')">Cancelar</button>
     <button class="btn bp" onclick="salvarEmailContador()"><i class="ti ti-check"></i> Salvar</button>
@@ -8803,7 +8812,7 @@ if('serviceWorker' in navigator){
   </div>
   <div class="mg" id="mg-com"></div>
   <div class="card" style="margin-bottom:14px" id="card-com-futuras">
-    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — mês anterior + próximos 6 meses</div><span id="com-futuras-total" style="font-size:11px;color:var(--t3)"></span></div>
+    <div class="ct"><div class="ctl"><i class="ti ti-calendar-stats" style="color:var(--acc)"></i>Comissões Futuras — mês anterior + próximos 6 meses</div><span id="com-futuras-total" style="font-size:10px;color:var(--t3)"></span></div>
     <div id="com-futuras-body" style="display:flex;gap:10px;flex-wrap:wrap"></div>
   </div>
   <div class="card" style="overflow-x:auto">
@@ -11562,15 +11571,15 @@ function renderComissoesFuturas(){
   const buckets=[];
   for(let i=-1;i<6;i++){
     const d=new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
-    buckets.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: mesesAbrev[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), valor:0, valorFat:0, anterior:i===-1 });
+    buckets.push({ key: d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'), label: mesesAbrev[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), valorFat:0, valorDup:0, anterior:i===-1 });
   }
   const idxByKey={}; buckets.forEach(function(b,i){ idxByKey[b.key]=i; });
   function addValor(dtStr, valor, isFat){
     if(!dtStr||!valor) return;
     const key=dtStr.slice(0,7);
     if(idxByKey[key]!==undefined){
-      buckets[idxByKey[key]].valor+=valor;
       if(isFat) buckets[idxByKey[key]].valorFat+=valor;
+      else buckets[idxByKey[key]].valorDup+=valor;
     }
   }
   const psTodos=DB.pedidos.filter(function(p){ return p.empId===empAtual && !p.cancelado; });
@@ -11600,19 +11609,24 @@ function renderComissoesFuturas(){
       }
     }
   });
-  const totalGeral=buckets.reduce(function(s,b){return s+b.valor;},0);
   const totalFat=buckets.reduce(function(s,b){return s+b.valorFat;},0);
+  const totalDup=buckets.reduce(function(s,b){return s+b.valorDup;},0);
+  const totalGeral=totalFat+totalDup;
   if(lblTotal){
-    let txt='Total do período: '+fmt(totalGeral);
-    if(totalFat>0) txt+='  •  Comissão de faturamento: '+fmt(totalFat);
-    lblTotal.textContent=txt;
+    lblTotal.textContent='Total do período: '+fmt(totalGeral)+'  •  Faturamento: '+fmt(totalFat)+'  •  Duplicata: '+fmt(totalDup);
+  }
+  function linha(rot,val,destaque){
+    return '<div style="display:flex;justify-content:space-between;gap:6px;font-size:9px;color:var(--t3)'+(destaque?';margin-top:3px;padding-top:3px;border-top:1px solid var(--bdr)':'')+'">'
+      +'<span>'+rot+'</span><b style="font-size:'+(destaque?'10px':'9px')+';color:'+(destaque?'var(--acc)':'var(--t1)')+'">'+fmt(val)+'</b></div>';
   }
   body.innerHTML=buckets.map(function(b){
     const corBorda=b.anterior?'var(--red)':'var(--s2)';
-    return '<div style="flex:1;min-width:120px;background:var(--s2);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid '+corBorda+'">'
-      +'<div style="font-size:10px;color:'+(b.anterior?'var(--red)':'var(--t3)')+';text-transform:capitalize;margin-bottom:6px">'+b.label+(b.anterior?' <span style="font-size:9px">(mês anterior)</span>':'')+'</div>'
-      +'<div style="font-size:15px;font-weight:700;color:var(--t1)">'+fmt(b.valor)+'</div>'
-      +(b.valorFat>0?'<div style="font-size:10px;color:var(--t3);margin-top:6px;padding-top:6px;border-top:1px dashed var(--bdr)">Faturamento<br><b style="font-size:12px;color:var(--acc)">'+fmt(b.valorFat)+'</b></div>':'')
+    const total=b.valorFat+b.valorDup;
+    return '<div style="flex:1;min-width:96px;background:var(--s2);border-radius:8px;padding:6px 8px;text-align:left;border:1px solid '+corBorda+'">'
+      +'<div style="font-size:9px;color:'+(b.anterior?'var(--red)':'var(--t3)')+';text-transform:capitalize;margin-bottom:4px;text-align:center;font-weight:600">'+b.label+(b.anterior?' <span style="font-size:8px;font-weight:400">(anterior)</span>':'')+'</div>'
+      +linha('Faturamento', b.valorFat, false)
+      +linha('Duplicata', b.valorDup, false)
+      +linha('Total', total, true)
       +'</div>';
   }).join('');
 }
@@ -11620,48 +11634,40 @@ function renderComissoesFuturas(){
 
 // ══ EMAIL NF COMISSÕES — lista de empresas para envio mensal ao contador ══
 var COMNF_MIN_LINHAS=10;
+var COMNF_ASSUNTO_PADRAO='Emissão de notas fiscais de comissão — {mes}';
+var COMNF_CORPO_PADRAO='Olá,\n\nSegue a lista de empresas para emissão das notas fiscais de comissão referentes a {mes}:';
 
 function abrirCfgEmailContador(){
   const cfg=loadCfg();
   const el=document.getElementById('cfg-email-contador');
+  const elAssunto=document.getElementById('cfg-email-assunto');
+  const elCorpo=document.getElementById('cfg-email-corpo');
   if(el) el.value=cfg.emailContador||'';
+  if(elAssunto) elAssunto.value=cfg.emailContadorAssunto||COMNF_ASSUNTO_PADRAO;
+  if(elCorpo) elCorpo.value=cfg.emailContadorCorpo||COMNF_CORPO_PADRAO;
   om('mCfgEmailContador');
 }
 function salvarEmailContador(){
   const v=(document.getElementById('cfg-email-contador').value||'').trim();
+  const assunto=(document.getElementById('cfg-email-assunto').value||'').trim();
+  const corpo=(document.getElementById('cfg-email-corpo').value||'').trim();
   const cfg=loadCfg();
   cfg.emailContador=v;
+  cfg.emailContadorAssunto=assunto||COMNF_ASSUNTO_PADRAO;
+  cfg.emailContadorCorpo=corpo||COMNF_CORPO_PADRAO;
   saveCfg(cfg);
   toast('E-mail do contador salvo!');
   cm('mCfgEmailContador');
 }
 
-function calcComissaoMesEmpresa(empId){
+function mesRefContadorKey(){
+  // As notas do contador são sempre referentes ao mês ANTERIOR ao vigente
+  // (ex.: em setembro, envia-se a comissão de agosto) — usado tanto para
+  // sugerir o valor de cada empresa quanto para o texto do e-mail.
   const hoje=new Date();
-  const mesKey=hoje.getFullYear()+'-'+String(hoje.getMonth()+1).padStart(2,'0');
-  let total=0;
-  DB.pedidos.filter(function(p){ return p.empId===empId && !p.cancelado; }).forEach(function(p){
-    const tot=(p.valfat||0)*(p.com||3)/100;
-    const fatSimP=p.fatcom==='sim';
-    const fat=fatSimP?tot*.5:0;
-    const liq=tot-fat;
-    const pays=p.pays||[];
-    const paysDt=p.paysDt||[];
-    const numDup=p.parc||1;
-    const vlParc=numDup>0?liq/numDup:0;
-    function soma(i,dt,valor){
-      if((pays[i]||'')!=='pg' && dt && dt.slice(0,7)===mesKey) total+=valor;
-    }
-    if(fatSimP){
-      soma(0,p.dtFat,fat);
-      for(let i=1;i<=numDup;i++){ const v=(p.paysVal&&p.paysVal[i])||vlParc; soma(i,paysDt[i],v); }
-    } else {
-      for(let i=0;i<numDup;i++){ const v=(p.paysVal&&p.paysVal[i])||vlParc; soma(i,paysDt[i],v); }
-    }
-  });
-  return total;
+  const dRef=new Date(hoje.getFullYear(), hoje.getMonth()-1, 1);
+  return { ano:dRef.getFullYear(), mes:dRef.getMonth(), key: dRef.getFullYear()+'-'+String(dRef.getMonth()+1).padStart(2,'0') };
 }
-
 function linhasComNFPadrao(){
   if(!DB.geral) DB.geral={};
   const salvo=DB.geral.COM_NF_ROWS;
@@ -11677,7 +11683,7 @@ function linhasComNFPadrao(){
     });
   }
   const linhas=(DB.empresas||[]).map(function(e){
-    return { nome:e.nome||'', cnpj:e.cnpj||'', valor:calcComissaoMesEmpresa(e.id), sel:false };
+    return { nome:e.nome||'', cnpj:e.cnpj||'', valor:0, sel:false };
   });
   while(linhas.length<COMNF_MIN_LINHAS) linhas.push({ nome:'', cnpj:'', valor:0, sel:false });
   return linhas;
@@ -11704,11 +11710,7 @@ function comnfEmpChange(i){
   const nome=nomeEl?nomeEl.value.trim():'';
   const e=(DB.empresas||[]).find(function(x){ return (x.nome||'').trim().toLowerCase()===nome.toLowerCase(); });
   const cnpjEl=document.getElementById('comnf-cnpj-'+i);
-  const valEl=document.getElementById('comnf-val-'+i);
-  if(e){
-    if(cnpjEl && !cnpjEl.value) cnpjEl.value=e.cnpj||'';
-    if(valEl && (!valEl.value || +valEl.value===0)) valEl.value=calcComissaoMesEmpresa(e.id).toFixed(2);
-  }
+  if(e && cnpjEl && !cnpjEl.value) cnpjEl.value=e.cnpj||'';
   salvarComNF();
 }
 
@@ -11735,11 +11737,11 @@ function enviarEmailComNF(){
   if(!DB.geral) DB.geral={};
   const linhas=(DB.geral.COM_NF_ROWS||[]).filter(function(l){ return l.sel && l.nome; });
   if(!linhas.length){ toast('Selecione ao menos uma empresa na lista'); return; }
-  const hoje=new Date();
   const mesesNomes=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  const refMes=mesesNomes[hoje.getMonth()]+'/'+hoje.getFullYear();
-  const assunto='Emissão de notas fiscais de comissão — '+refMes;
-  let corpo='Olá,\n\nSegue a lista de empresas para emissão das notas fiscais de comissão referentes a '+refMes+':\n\n';
+  const mesRef=mesRefContadorKey();
+  const refMes=mesesNomes[mesRef.mes]+'/'+mesRef.ano;
+  const assunto=(cfg.emailContadorAssunto||COMNF_ASSUNTO_PADRAO).replace(/\{mes\}/gi, refMes);
+  let corpo=(cfg.emailContadorCorpo||COMNF_CORPO_PADRAO).replace(/\{mes\}/gi, refMes)+'\n\n';
   linhas.forEach(function(l){
     corpo+=(l.nome||'—')+' — CNPJ: '+(l.cnpj||'—')+' — Valor: '+fmt(l.valor)+'\n';
   });
