@@ -1906,7 +1906,7 @@ if('serviceWorker' in navigator){
 
 <script>
 // ══ STORAGE ══
-const KEYS = { empresas:'crm_empresas', clientes:'crm_clientes', pedidos:'crm_pedidos', tarefas:'crm_tarefas', eventos:'crm_eventos', cfg:'crm_cfg' };
+const KEYS = { empresas:'crm_empresas', clientes:'crm_clientes', pedidos:'crm_pedidos', tarefas:'crm_tarefas', eventos:'crm_eventos', cfg:'crm_cfg', leads:'crm_leads', segmentos:'crm_segmentos', produtos:'crm_produtos', orcamentos:'crm_orcamentos', finalidades:'crm_finalidades', fiscal:'crm_fiscal', cicloAcoes:'crm_cicloAcoes' };
 const load  = k => JSON.parse(localStorage.getItem(KEYS[k])||'[]');
 const save  = (k,v) => localStorage.setItem(KEYS[k], JSON.stringify(v));
 const loadCfg  = () => JSON.parse(localStorage.getItem(KEYS.cfg)||'{}');
@@ -1920,6 +1920,24 @@ let chEmps=null, chMen=null, chSeg=null, chCom=null, chTipo=null, chMeso=null;
 let xlData=[];
 
 function carregarDB() {
+  // Migração: até esta versão, o objeto KEYS não tinha entradas para leads,
+  // segmentos, produtos, orcamentos, finalidades, fiscal e cicloAcoes — todas
+  // essas chamadas de save()/load() caíam sem querer na mesma chave
+  // "undefined" do localStorage, de forma que cada save() sobrescrevia o
+  // valor do campo anterior. Como finalidades era sempre a última a ser
+  // salva nessa sequência (em salvarDB()/salvarLocal()), o que sobrou nessa
+  // chave compartilhada é quase certamente o conteúdo de finalidades — os
+  // outros campos não têm como ser recuperados daqui com segurança (mas
+  // devem voltar sozinhos pela sincronização com a Nuvem, se estiver ativa).
+  try{
+    if(localStorage.getItem(KEYS.finalidades)===null){
+      var legado=localStorage.getItem('undefined');
+      if(legado){
+        var arr=JSON.parse(legado);
+        if(Array.isArray(arr)) localStorage.setItem(KEYS.finalidades, legado);
+      }
+    }
+  }catch(e){}
   DB.empresas   = load('empresas');
   DB.clientes   = load('clientes');
   DB.pedidos    = load('pedidos');
@@ -3548,8 +3566,14 @@ function initFirebase(){
       DB.fiscal      = remoto.fiscal      || [];
       DB.finalidades = remoto.finalidades || [];
       DB._ts        = remoto._ts;
-      // Re-renderiza fiscal se estiver na página
+      // Re-renderiza a página se ela já estiver aberta neste aparelho — sem
+      // isso, uma atualização vinda de outro aparelho (ex.: um lead
+      // cadastrado no celular) só aparecia depois de sair e voltar pra tela,
+      // ou nunca aparecia se a tela já estivesse aberta antes da chegada.
       if(document.getElementById('p-fiscal')&&document.getElementById('p-fiscal').style.display!=='none') renderFiscal();
+      if(document.getElementById('p-leads')&&document.getElementById('p-leads').style.display!=='none') renderLeads();
+      if(document.getElementById('p-cli')&&document.getElementById('p-cli').style.display!=='none') renderCli();
+      if(document.getElementById('p-produtos')&&document.getElementById('p-produtos').style.display!=='none') renderPaginaProdutos();
       salvarLocal();
       renderDash();
     }, function(err){
@@ -5576,13 +5600,32 @@ function renderPerfilCompras(cliId){
 // ══ FIM PERFIL ══
 
 function getSegmentos(){
-  // Primeiro tenta DB.segmentos (sincroniza com Firebase)
-  if(DB.segmentos&&DB.segmentos.length) return [...DB.segmentos].sort();
-  // Fallback: cfg local
+  // Lista configurada em Configurações → Segmentos (DB.segmentos sincroniza
+  // com Firebase; cfg.segmentos é o fallback local mais antigo).
   const cfg=loadCfg();
-  if(cfg.segmentos&&cfg.segmentos.length) return cfg.segmentos;
-  // Último recurso: extrai dos clientes
-  return [...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))].sort();
+  let configurados = (DB.segmentos&&DB.segmentos.length) ? [...DB.segmentos]
+                    : (cfg.segmentos&&cfg.segmentos.length) ? [...cfg.segmentos]
+                    : [];
+  // Segmentos realmente em uso nos clientes cadastrados — sempre confiável,
+  // já que é o próprio dado que aparece no cadastro/edição de cada cliente.
+  const usados=[...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))];
+  // Autocorreção: em algum momento essa lista configurada acabou salva com as
+  // FINALIDADES DE GASTO do módulo Fiscal (ex.: "Combustível", "Hospedagem"),
+  // misturando os dois cadastros — o campo Segmento do cliente passou a
+  // mostrar categorias de despesa em vez dos segmentos reais dos clientes.
+  // Aqui removemos da lista configurada qualquer item que bata com uma
+  // finalidade do Fiscal e que nenhum cliente esteja de fato usando como
+  // segmento, e persistimos a limpeza para não repetir a cada tela aberta.
+  const finSet=new Set((DB.finalidades||[]).map(function(f){ return String(f).trim().toLowerCase(); }));
+  const usadosSet=new Set(usados.map(function(s){ return s.toLowerCase(); }));
+  const limpos=configurados.filter(function(s){
+    return !(finSet.has(String(s).trim().toLowerCase()) && !usadosSet.has(String(s).toLowerCase()));
+  });
+  if(limpos.length!==configurados.length){
+    configurados=limpos;
+    salvarSegmentos(configurados);
+  }
+  return [...new Set(configurados.concat(usados))].sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
 }
 function salvarSegmentos(segs){
   DB.segmentos=segs;
@@ -9464,7 +9507,7 @@ if('serviceWorker' in navigator){
 
 <script>
 // ══ STORAGE ══
-const KEYS = { empresas:'crm_empresas', clientes:'crm_clientes', pedidos:'crm_pedidos', tarefas:'crm_tarefas', eventos:'crm_eventos', cfg:'crm_cfg' };
+const KEYS = { empresas:'crm_empresas', clientes:'crm_clientes', pedidos:'crm_pedidos', tarefas:'crm_tarefas', eventos:'crm_eventos', cfg:'crm_cfg', leads:'crm_leads', segmentos:'crm_segmentos', produtos:'crm_produtos', orcamentos:'crm_orcamentos', finalidades:'crm_finalidades', fiscal:'crm_fiscal', cicloAcoes:'crm_cicloAcoes' };
 const load  = k => JSON.parse(localStorage.getItem(KEYS[k])||'[]');
 const save  = (k,v) => localStorage.setItem(KEYS[k], JSON.stringify(v));
 const loadCfg  = () => JSON.parse(localStorage.getItem(KEYS.cfg)||'{}');
@@ -9478,6 +9521,24 @@ let chEmps=null, chMen=null, chSeg=null, chCom=null, chTipo=null, chMeso=null;
 let xlData=[];
 
 function carregarDB() {
+  // Migração: até esta versão, o objeto KEYS não tinha entradas para leads,
+  // segmentos, produtos, orcamentos, finalidades, fiscal e cicloAcoes — todas
+  // essas chamadas de save()/load() caíam sem querer na mesma chave
+  // "undefined" do localStorage, de forma que cada save() sobrescrevia o
+  // valor do campo anterior. Como finalidades era sempre a última a ser
+  // salva nessa sequência (em salvarDB()/salvarLocal()), o que sobrou nessa
+  // chave compartilhada é quase certamente o conteúdo de finalidades — os
+  // outros campos não têm como ser recuperados daqui com segurança (mas
+  // devem voltar sozinhos pela sincronização com a Nuvem, se estiver ativa).
+  try{
+    if(localStorage.getItem(KEYS.finalidades)===null){
+      var legado=localStorage.getItem('undefined');
+      if(legado){
+        var arr=JSON.parse(legado);
+        if(Array.isArray(arr)) localStorage.setItem(KEYS.finalidades, legado);
+      }
+    }
+  }catch(e){}
   DB.empresas   = load('empresas');
   DB.clientes   = load('clientes');
   DB.pedidos    = load('pedidos');
@@ -9577,7 +9638,7 @@ const sitCls = s => s==='Ativo'?'b-g':s==='Inativo'?'b-r':s==='Encerrado'?'b-p':
 const nomeEmp = id => DB.empresas.find(e=>e.id===id)?.nome||'?';
 let toastTm;
 const toast = m => { const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastTm); toastTm=setTimeout(()=>t.classList.remove('show'),2800); };
-const om = id => document.getElementById(id).classList.add('open');
+const om = id => { document.getElementById(id).classList.add('open'); if(id==='mCli') atualizarSelectSegmento(); };
 const cm = id => document.getElementById(id).classList.remove('open');
 document.querySelectorAll('.mbg').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
 
@@ -9712,6 +9773,154 @@ function buildSidebar() {
   document.getElementById('nbdot').textContent = nr;
 }
 
+// ══ LEADS ══
+if(!DB.leads) DB.leads=[];
+
+var leadEditId=null;
+const ESTAGIOS={
+  'Novo':           {cor:'var(--t3)',  bg:'var(--s2)'},
+  'Contato feito':  {cor:'var(--acc)', bg:'rgba(37,99,235,.1)'},
+  'Proposta enviada':{cor:'var(--cyn)',bg:'rgba(8,145,178,.1)'},
+  'Negociação':     {cor:'var(--org)', bg:'rgba(217,119,6,.1)'},
+  'Convertido':     {cor:'var(--grn)', bg:'rgba(5,150,105,.1)'},
+  'Perdido':        {cor:'var(--red)', bg:'rgba(220,38,38,.1)'}
+};
+
+function abrirModalLead(id){
+  leadEditId=id||null;
+  document.getElementById('lead-modal-titulo').textContent=id?'Editar Lead':'Novo Lead';
+  const segSel=document.getElementById('lead-seg');
+  if(segSel){ segSel.innerHTML='<option value="">—</option>'+getSegmentos().map(s=>`<option value="${s}">${s}</option>`).join(''); }
+  if(id){
+    const l=DB.leads.find(x=>x.id===id); if(!l) return;
+    document.getElementById('lead-nome').value=l.nome||'';
+    document.getElementById('lead-empresa').value=l.empresa||'';
+    document.getElementById('lead-tel').value=l.tel||'';
+    document.getElementById('lead-cidade').value=l.cidade||'';
+    document.getElementById('lead-seg').value=l.seg||'';
+    document.getElementById('lead-origem').value=l.origem||'';
+    document.getElementById('lead-estagio').value=l.estagio||'Novo';
+    document.getElementById('lead-visita').value=l.visita||'';
+    document.getElementById('lead-obs').value=l.obs||'';
+  } else {
+    ['lead-nome','lead-empresa','lead-tel','lead-cidade','lead-obs'].forEach(id=>{ document.getElementById(id).value=''; });
+    document.getElementById('lead-seg').value='';
+    document.getElementById('lead-origem').value='';
+    document.getElementById('lead-estagio').value='Novo';
+    document.getElementById('lead-visita').value='';
+  }
+  om('mLead');
+}
+
+function salvarLead(){
+  const nome=document.getElementById('lead-nome').value.trim();
+  if(!nome){ toast('Informe o nome do lead'); return; }
+  if(!DB.leads) DB.leads=[];
+  const dados={
+    nome, empresa:document.getElementById('lead-empresa').value.trim(),
+    tel:document.getElementById('lead-tel').value.trim(),
+    cidade:document.getElementById('lead-cidade').value.trim(),
+    seg:document.getElementById('lead-seg').value,
+    origem:document.getElementById('lead-origem').value,
+    estagio:document.getElementById('lead-estagio').value,
+    visita:document.getElementById('lead-visita').value||null,
+    obs:document.getElementById('lead-obs').value.trim(),
+    dtCriacao:new Date().toISOString().split('T')[0]
+  };
+  if(leadEditId){
+    const l=DB.leads.find(x=>x.id===leadEditId); if(l) Object.assign(l,dados);
+  } else {
+    dados.id=uid(); DB.leads.push(dados);
+    const b=document.getElementById('badge-leads'); if(b){ b.textContent=DB.leads.filter(x=>x.estagio!=='Convertido'&&x.estagio!=='Perdido').length; b.style.display='block'; }
+  }
+  salvarDB(); cm('mLead'); renderLeads(); toast(leadEditId?'Lead atualizado!':'Lead adicionado!');
+}
+
+function renderLeads(){
+  if(!DB.leads) DB.leads=[];
+  const busca=(document.getElementById('busca-lead')?.value||'').toLowerCase();
+  const filEst=document.getElementById('fil-lead-estagio')?.value||'';
+  const filOri=document.getElementById('fil-lead-origem')?.value||'';
+  let list=[...DB.leads];
+  if(busca) list=list.filter(l=>(l.nome||'').toLowerCase().includes(busca)||(l.empresa||'').toLowerCase().includes(busca));
+  if(filEst) list=list.filter(l=>l.estagio===filEst);
+  if(filOri) list=list.filter(l=>l.origem===filOri);
+  list.sort((a,b)=>(b.dtCriacao||'')>(a.dtCriacao||'')?1:-1);
+  const resumoEl=document.getElementById('lead-resumo');
+  if(resumoEl){
+    const ests=['Novo','Contato feito','Proposta enviada','Negociação','Convertido','Perdido'];
+    resumoEl.innerHTML=ests.map(e=>{
+      const n=DB.leads.filter(l=>l.estagio===e).length;
+      const est=ESTAGIOS[e];
+      return `<div style="background:${est.bg};border:1px solid ${est.cor}44;border-radius:8px;padding:6px 12px;font-size:11px;display:flex;flex-direction:column;align-items:center;min-width:80px;cursor:pointer" onclick="document.getElementById('fil-lead-estagio').value='${e}';renderLeads()">
+        <div style="font-weight:700;font-size:16px;color:${est.cor}">${n}</div>
+        <div style="color:var(--t3);font-size:9px;text-align:center">${e}</div>
+      </div>`;
+    }).join('');
+  }
+  const b=document.getElementById('badge-leads');
+  if(b){ const ativos=DB.leads.filter(x=>x.estagio!=='Convertido'&&x.estagio!=='Perdido').length; b.textContent=ativos; b.style.display=ativos?'block':'none'; }
+  const tb=document.getElementById('tb-leads');
+  if(!tb) return;
+  if(!list.length){ tb.innerHTML='<tr><td colspan="9" style="color:var(--t3);padding:16px;text-align:center">Nenhum lead encontrado.</td></tr>'; return; }
+  tb.innerHTML=list.map((l,idx)=>{
+    const est=ESTAGIOS[l.estagio]||ESTAGIOS['Novo'];
+    const tel=(l.tel||'').replace(/\D/g,'');
+    const wppUrl=tel?`https://wa.me/55${tel}`:'';
+    const bg=idx%2?'background:var(--s2)':'';
+    return `<tr style="border-bottom:1px solid var(--s3);${bg}">
+      <td style="padding:7px 10px">
+        <div style="font-weight:600;color:var(--t1)">${l.nome}</div>
+        ${l.empresa?`<div style="font-size:10px;color:var(--t3)">${l.empresa}</div>`:''}
+      </td>
+      <td style="padding:7px 10px;color:var(--t2)">${l.tel||'—'}</td>
+      <td style="padding:7px 10px;color:var(--t2)">${l.cidade||'—'}</td>
+      <td style="padding:7px 10px"><span class="b b-b">${l.seg||'—'}</span></td>
+      <td style="padding:7px 10px;color:var(--t2)">${l.origem||'—'}</td>
+      <td style="padding:7px 10px;text-align:center">
+        <span style="background:${est.bg};color:${est.cor};border:1px solid ${est.cor}44;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:600;white-space:nowrap">${l.estagio}</span>
+      </td>
+      <td style="padding:7px 10px;text-align:center;font-size:11px;color:var(--t3)">${l.visita?fmtD(l.visita):'—'}</td>
+      <td style="padding:7px 10px;max-width:150px"><div style="font-size:10px;color:var(--t3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${l.obs||''}">${l.obs||'—'}</div></td>
+      <td style="padding:7px 10px;white-space:nowrap">
+        <div style="display:flex;gap:4px;justify-content:center">
+          ${wppUrl?`<a href="${wppUrl}" target="_blank" class="btn bs" style="padding:2px 7px;font-size:10px;color:#25d366;border-color:#25d366" title="WhatsApp"><i class="ti ti-brand-whatsapp"></i></a>`:''}
+          ${tel?`<a href="tel:${l.tel}" class="btn bs" style="padding:2px 7px;font-size:10px" title="Ligar"><i class="ti ti-phone"></i></a>`:''}
+          <button class="btn bs" style="padding:2px 7px;font-size:10px" onclick="abrirModalLead('${l.id}')" title="Editar"><i class="ti ti-pencil"></i></button>
+          ${l.estagio!=='Convertido'?`<button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--grn);border-color:var(--grn)" onclick="converterLeadCliente('${l.id}')" title="Converter em cliente"><i class="ti ti-user-check"></i></button>`:''}
+          <button class="btn bs" style="padding:2px 7px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="excluirLead('${l.id}')" title="Excluir"><i class="ti ti-trash"></i></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function excluirLead(id){
+  if(!confirm('Excluir este lead?')) return;
+  DB.leads=DB.leads.filter(x=>x.id!==id);
+  salvarDB(); renderLeads(); toast('Lead removido!');
+}
+
+function converterLeadCliente(id){
+  const l=DB.leads.find(x=>x.id===id); if(!l) return;
+  if(!confirm(`Converter "${l.nome}" em cliente?\n\nEle será adicionado ao cadastro de clientes e marcado como Convertido.`)) return;
+  const novoCli={
+    id:uid(), rs:l.empresa||l.nome, comp:l.nome,
+    fone:l.tel, cel:l.tel, cid:l.cidade, uf:'',
+    seg:l.seg, end:'', obs:l.obs||'', email:'',
+    cnpj:'', empId:DB.empresas[0]?.id||'', rede:'',
+    ultFat:null, hist:[], leadId:id
+  };
+  if(!DB.clientes) DB.clientes=[];
+  DB.clientes.push(novoCli);
+  l.estagio='Convertido';
+  salvarDB();
+  renderLeads();
+  toast(`✅ ${l.nome} convertido em cliente!`);
+  setTimeout(function(){ abrirCli(novoCli.id,'leads'); }, 500);
+}
+// ══ FIM LEADS ══
+
 // ══ NAVEGAÇÃO ══
 function sp(p) {
   // Esconder apenas as páginas de conteúdo (evitar esconder modais etc)
@@ -9727,7 +9936,8 @@ function sp(p) {
   if(p==='eped')  renderEmpPed();
   if(p==='ecom')  renderEmpCom();
   if(p==='evendas') renderEmpVendas();
-  
+  if(p==='produtos'){ document.getElementById('n-produtos')&&document.getElementById('n-produtos').classList.add('act'); renderPaginaProdutos(); }
+  if(p==='leads'){ document.getElementById('n-leads')&&document.getElementById('n-leads').classList.add('act'); renderLeads(); }
   if(p==='fiscal'){document.getElementById('n-fiscal')&&document.getElementById('n-fiscal').classList.add('act');renderFiscal();}
   if(p==='lembretes') renderLembretes();
   if(p==='agenda') { document.getElementById('n-agenda').classList.add('act'); renderAgenda(); }
@@ -11176,8 +11386,14 @@ function initFirebase(){
       DB.fiscal      = remoto.fiscal      || [];
       DB.finalidades = remoto.finalidades || [];
       DB._ts        = remoto._ts;
-      // Re-renderiza fiscal se estiver na página
+      // Re-renderiza a página se ela já estiver aberta neste aparelho — sem
+      // isso, uma atualização vinda de outro aparelho (ex.: um lead
+      // cadastrado no celular) só aparecia depois de sair e voltar pra tela,
+      // ou nunca aparecia se a tela já estivesse aberta antes da chegada.
       if(document.getElementById('p-fiscal')&&document.getElementById('p-fiscal').style.display!=='none') renderFiscal();
+      if(document.getElementById('p-leads')&&document.getElementById('p-leads').style.display!=='none') renderLeads();
+      if(document.getElementById('p-cli')&&document.getElementById('p-cli').style.display!=='none') renderCli();
+      if(document.getElementById('p-produtos')&&document.getElementById('p-produtos').style.display!=='none') renderPaginaProdutos();
       salvarLocal();
       renderDash();
     }, function(err){
@@ -15177,13 +15393,32 @@ function salvarCfg(){
 // verdade: o botão "+ Adicionar" dava erro, e o campo Segmento no cadastro de
 // cliente ficava sempre vazio, só com a opção "— Selecione —".
 function getSegmentos(){
-  // Primeiro tenta DB.segmentos (sincroniza com Firebase)
-  if(DB.segmentos&&DB.segmentos.length) return [...DB.segmentos].sort();
-  // Fallback: cfg local
+  // Lista configurada em Configurações → Segmentos (DB.segmentos sincroniza
+  // com Firebase; cfg.segmentos é o fallback local mais antigo).
   const cfg=loadCfg();
-  if(cfg.segmentos&&cfg.segmentos.length) return cfg.segmentos;
-  // Último recurso: extrai dos clientes
-  return [...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))].sort();
+  let configurados = (DB.segmentos&&DB.segmentos.length) ? [...DB.segmentos]
+                    : (cfg.segmentos&&cfg.segmentos.length) ? [...cfg.segmentos]
+                    : [];
+  // Segmentos realmente em uso nos clientes cadastrados — sempre confiável,
+  // já que é o próprio dado que aparece no cadastro/edição de cada cliente.
+  const usados=[...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))];
+  // Autocorreção: em algum momento essa lista configurada acabou salva com as
+  // FINALIDADES DE GASTO do módulo Fiscal (ex.: "Combustível", "Hospedagem"),
+  // misturando os dois cadastros — o campo Segmento do cliente passou a
+  // mostrar categorias de despesa em vez dos segmentos reais dos clientes.
+  // Aqui removemos da lista configurada qualquer item que bata com uma
+  // finalidade do Fiscal e que nenhum cliente esteja de fato usando como
+  // segmento, e persistimos a limpeza para não repetir a cada tela aberta.
+  const finSet=new Set((DB.finalidades||[]).map(function(f){ return String(f).trim().toLowerCase(); }));
+  const usadosSet=new Set(usados.map(function(s){ return s.toLowerCase(); }));
+  const limpos=configurados.filter(function(s){
+    return !(finSet.has(String(s).trim().toLowerCase()) && !usadosSet.has(String(s).toLowerCase()));
+  });
+  if(limpos.length!==configurados.length){
+    configurados=limpos;
+    salvarSegmentos(configurados);
+  }
+  return [...new Set(configurados.concat(usados))].sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
 }
 function salvarSegmentos(segs){
   DB.segmentos=segs;
