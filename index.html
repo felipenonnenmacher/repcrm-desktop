@@ -379,6 +379,8 @@ if('serviceWorker' in navigator){
     <div class="pa">
       <input class="fi" id="busca-cli" style="width:170px;padding:5px 10px;font-size:12px" placeholder="Buscar..." oninput="renderCli()">
       <select class="fi" id="fil-emp-cli" style="width:140px;padding:5px 9px;font-size:12px" onchange="renderCli()"></select>
+      <button class="btn bs" style="color:#7c3aed;border-color:#7c3aed" onclick="mixEscolherArquivos()" title="Selecione vários PDFs de pedido, XMLs de NF ou um ZIP — cada compra vai para o cliente certo pelo CNPJ"><i class="ti ti-file-import"></i> Importar itens (PDF/XML/ZIP)</button>
+      <button class="btn bs" style="color:#7c3aed;border-color:#7c3aed" onclick="mixEscolherArquivos(true)" title="Importa todos os PDFs/XMLs de uma pasta (inclusive subpastas)"><i class="ti ti-folder"></i> Importar pasta</button>
       <button class="btn bs" onclick="emailLote()"><i class="ti ti-mail"></i> E-mail lote</button>
       <button class="btn bs" onclick="mapsLote()"><i class="ti ti-map-pin"></i> Mapa em lote</button>
       <button class="btn bs" onclick="exportarClientesMapa()" title="Gera um arquivo para importar em mymaps.google.com com todos os clientes juntos no mapa"><i class="ti ti-file-spreadsheet"></i> Exportar p/ Google Maps</button>
@@ -437,6 +439,7 @@ if('serviceWorker' in navigator){
       <div class="card"><div class="ct"><div class="ctl"><i class="ti ti-bell" style="color:var(--org)"></i>Lembretes / Tarefas</div><button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="om('mTar')"><i class="ti ti-plus"></i></button></div><div id="cd-lembretes"></div></div>
     </div>
   </div>
+  <div class="card" id="cd-mix"><div class="ct"><div class="ctl"><i class="ti ti-chart-pie" style="color:#7c3aed"></i>Mix de produtos</div><button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="mixEscolherArquivos()"><i class="ti ti-file-import"></i> Importar itens</button></div><div id="cd-mix-body"></div></div>
   <div id="tbl-cliped-wrapper"></div>
 
   <!-- Compras anuais por empresa -->
@@ -2382,6 +2385,373 @@ function apagarDeVezNF(id){
   salvarDB(); renderLixeiraNF(); try{ renderFiscal(); }catch(e){}
 }
 
+window.MIXCFG={db:function(){return (typeof fbDB!=='undefined'&&fbDB)?fbDB:null;}, chave:function(){return fbChave();}, toast:function(m){toast(m);}};
+
+// ════════════════════════════════════════════════════════════════
+// MIX DE PRODUTOS — leitura só de produto + quantidade (PDF do pedido
+// ou XML da NF). Não cria pedido e não mexe em valores/parcelas.
+// Nuvem: <chave>/mix/<cnpj>/<compra>  e  <chave>/mixProd/<código>
+// ════════════════════════════════════════════════════════════════
+var MIX_SEG=[
+  ['Kit almofada pipoca',/^KIT ALMOFADA PIPOCA/],['Kit canecas',/^KIT CANECA/],['Kits',/^KIT\b/],
+  ['Canecas',/^(CANECA|XICARA|XÍCARA|CANECAO)/],['Copos',/^COPO/],['Garrafas/Tumblers',/^(GARRAFA|TUMBLER|SQUEEZE|TERMICA|TÉRMICA)/],
+  ['Lunch box',/^(LUNCH|LANCHEIRA|POTE|MARMITA)/],['Mochilas',/^(MOCHILA|BOLSA|SACOLA|PASTA)/],['Almofadas',/^(ALMOFADA|MICROPEROLA|MICROPÉROLA)/],['Mantas',/^MANTA/],
+  ['Pelúcias',/^PELUCIA|^PELÚCIA/],['Bules',/^BULE/],['Breakfast set',/^BREAKFAST/],['Ornamentos',/^ORNAMENTO/],
+  ['Necessaires/Estojos',/^(NECESSAIRE|ESTOJO)/],['Luminárias',/^(LUMINARIA|LUMINÁRIA|ABAJUR)/],['Porta-objetos',/^PORTA/],
+  ['Cofres',/^COFRE/],['Chaveiros',/^CHAVEIRO/],['Pratos/Tigelas',/^(PRATO|TIGELA|BOWL)/]
+];
+var MIX_LIC=[
+  ['Stitch (Disney)',['STITCH']],['Disney Princesas',['CINDERELA','BELA ','PRINCESAS','ARIEL','RAPUNZEL','BRANCA DE NEVE']],
+  ['Mickey & Minnie',['MICKEY','MINNIE']],['Pooh (Disney)',['POOH']],['Toy Story',['WOODY','BUZZ','TOY STORY']],['Frozen',['FROZEN','ELSA','OLAF']],
+  ['Harry Potter',['HARRY POTTER','HOGWARTS','GRIFINORIA','CORVINAL','SONSERINA','LUFA']],['Star Wars',['BABY YODA','MANDALORIAN','STAR WARS','YODA','DARTH']],
+  ['Sanrio',['HELLO KITTY','KUROMI','CINNAMOROLL','MY MELODY','POMPOMPURIN']],['Pokémon',['POKEMON','POKÉMON','POKEBOLA','PIKACHU']],
+  ['Bob Esponja',['BOB ESPONJA','PATRICK']],['Marvel',['SPIDER','HOMEM ARANHA','CAPITAO','CAPITÃO','VINGADORES','IRON MAN','HULK','THOR','GROOT','WANDAVISION','LOKI','DEADPOOL','AVENGERS']],
+  ['DC',['SUPERMAN','BATMAN','MULHER MARAVILHA','LIGA DA JUSTICA','AQUAMAN','FLASH']],['Super Mario',['SUPER MARIO','1-UP','MARIO','YOSHI','LUIGI']],
+  ['Friends',['FRIENDS SOFA','FRIENDS VIBRANT','500ML FRIENDS','GRAFITE 500ML FRIENDS','FRIENDS CENTRAL']],['Peanuts',['SNOOPY','WOODSTOCK','PEANUTS']],
+  ['Garfield',['GARFIELD']],['Minions',['MINIONS']],['Patrulha Canina',['PATRULHA','PAW PATROL','SKYE','CHASE','MARSHALL']],['Ursinhos Carinhosos',['URSINHOS CARINHOSOS']],
+  ['Looney Tunes',['LOONEY','PERNALONGA','PIU PIU','TAZ']],['Tom & Jerry',['TOM AND JERRY','TOM E JERRY']],['Sonic',['SONIC']],['Game of Thrones',['GAME OF THRONES']],['Estranho Mundo de Jack',['JACK AND SALLY','JACK E SALLY']],['Disney (outros)',['ALICE IN WONDERLAND','ALICE NO PAIS','CARROS','MARIE','DUMBO','LILO','MOANA','ENCANTO']],['Jurassic Park',['JURASSIC']],['Gabby',['GABBY']],['Simpsons',['SIMPSON','HOMER']],['Turma da Mônica',['MONICA','MÔNICA','CEBOLINHA']],
+  ['Profissões',['PROFISS','ADMINISTRACAO','ENFERMAGEM','ENGENHARIA','ODONTOLOGIA','MEDICINA','DIREITO','ARQUITET','PSICOLOGIA','PROFESSOR','FORMATURA','NUTRICAO','FISIOTERAPIA','VETERINARIA','CONTABILIDADE']],
+  ['Café/frases',['CAFE','CAFÉ','MOTIVACIONAL','PODEROSA','FRASE']],['Viagem',['VIAGEM']],['Pets/Animais',['GATO','GATOLINO','PATA ','CACHORRO','PET ','CAPIVARA']],
+  ['Jardinagem',['JARDINAGEM']],['Unicórnio',['UNICORNIO','UNICÓRNIO']],['Futebol/Times',['GREMIO','GRÊMIO','INTERNACIONAL','FLAMENGO','CORINTHIANS','PALMEIRAS']],
+  ['Família/Datas',[' PAI',' MAE',' MÃE','NAMORAD','AMOR',' VÓ',' VO ','VOVO','VOVÓ']],['Astronauta/Espaço',['ASTRONAUTA','ESPACO','ESPAÇO']]
+];
+function mixSegmento(d){ d=String(d||'').toUpperCase(); for(var i=0;i<MIX_SEG.length;i++) if(MIX_SEG[i][1].test(d)) return MIX_SEG[i][0]; return 'Outros'; }
+function mixLicenca(d){ d=' '+String(d||'').toUpperCase()+' '; for(var i=0;i<MIX_LIC.length;i++){ var ws=MIX_LIC[i][1]; for(var j=0;j<ws.length;j++) if(d.indexOf(ws[j])>=0) return MIX_LIC[i][0]; } return 'Sem licença/tema'; }
+function _soDig(s){ return String(s||'').replace(/\D/g,''); }
+function _dataBR(s){ var m=String(s||'').match(/(\d{2})\/(\d{2})\/(\d{4})/); return m?m[3]+'-'+m[2]+'-'+m[1]:''; }
+
+// ── XML da NF-e ──
+function mixLerXML(texto){
+  var x=new DOMParser().parseFromString(texto,'text/xml');
+  var tag=function(el,n){ var e=el.getElementsByTagName(n)[0]; return e?e.textContent.trim():''; };
+  if(!x.getElementsByTagName('infNFe').length) throw new Error('XML não é uma NF-e');
+  var dest=x.getElementsByTagName('dest')[0]||x, emit=x.getElementsByTagName('emit')[0]||x;
+  var base={tipo:'NF', n:tag(x,'nNF'), dt:(tag(x,'dhEmi')||tag(x,'dEmi')).slice(0,10), cnpj:_soDig(tag(dest,'CNPJ')||tag(dest,'CPF')), cli:tag(dest,'xNome'),
+    emp:tag(emit,'xFant')||tag(emit,'xNome'), empNome:tag(emit,'xNome'), empCnpj:_soDig(tag(emit,'CNPJ'))};
+  var porPed={};
+  [].forEach.call(x.getElementsByTagName('det'), function(det){
+    var p=det.getElementsByTagName('prod')[0]; if(!p) return;
+    var c=tag(p,'cProd'), d=tag(p,'xProd').replace(/\s+Ean\s*:.*$/i,'').trim(), q=parseFloat(tag(p,'qCom'))||0, ped=tag(p,'xPed');
+    if(!c||!q) return;
+    (porPed[ped]=porPed[ped]||[]).push({c:c,d:d,q:q});
+  });
+  return Object.keys(porPed).map(function(ped){ return Object.assign({}, base, {ped:ped||'', itens:porPed[ped]}); });
+}
+
+// ── PDF do pedido (texto com posições, vindo do pdf.js) ──
+// paginas = [[{s,x,y}]]  (y cresce para cima, como no PDF)
+function mixLerPedidoPDF(paginas){
+  var todos=[].concat.apply([],paginas.map(function(pg,i){ return pg.map(function(it){ return {s:it.s,x:it.x,y:it.y,p:i}; }); })).filter(function(i){ return i.s&&i.s.trim(); });
+  var txt=todos.map(function(i){return i.s;}).join(' ');
+  var head={tipo:'PED', ped:'', dt:'', cnpj:'', cli:'', emp:''};
+  var mP=txt.match(/Pedido:\s*(\d+)/i); if(mP) head.ped=mP[1];
+  var mD=txt.match(/Data\s*Emiss[ãa]o:\s*(\d{2}\/\d{2}\/\d{4})/i); if(mD) head.dt=_dataBR(mD[1]);
+  var mC=txt.match(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/); if(mC) head.cnpj=_soDig(mC[0]);
+  var mT=txt.match(/Tipo\s*Pedido:\s*([^\s].*?)\s+(Status|Transportadora|Endere)/i); if(mT) head.emp=mT[1].trim();
+  var iCli=todos.findIndex(function(i){ return /^Cliente:?$/i.test(i.s.trim()); });
+  if(iCli>=0){ var yc=todos[iCli].y, pc=todos[iCli].p; head.cli=todos.filter(function(i){ return i.p===pc&&Math.abs(i.y-yc)<2&&i.x>todos[iCli].x&&i.x<280; }).map(function(i){return i.s;}).join(' ').trim(); }
+  // colunas pelo cabeçalho da tabela
+  var col={};
+  todos.forEach(function(i){ var s=i.s.trim(); if(/^C[óo]digo$/i.test(s)&&col.c==null) col.c=i.x; if(/^Descri[çc][ãa]o$/i.test(s)&&col.d==null) col.d=i.x; if(/^Ncm$/i.test(s)&&col.n==null) col.n=i.x; if(/^Qtde$/i.test(s)&&col.q==null) col.q=i.x; });
+  if(col.c==null||col.q==null) throw new Error('Não achei a tabela de itens neste PDF');
+  if(col.d==null) col.d=col.c+30; if(col.n==null) col.n=col.q-100;
+  var itens=[];
+  todos.forEach(function(i){
+    if(Math.abs(i.x-col.c)>12||!/^\d{3,9}$/.test(i.s.trim())) return;
+    var qItem=todos.find(function(o){ return o.p===i.p&&Math.abs(o.y-i.y)<2.5&&Math.abs(o.x-col.q)<15&&/^\d+([.,]\d+)?$/.test(o.s.trim()); });
+    if(!qItem) return;
+    var desc=todos.filter(function(o){ return o.p===i.p&&o.x>=col.d-6&&o.x<col.n-4&&Math.abs(o.y-i.y)<=15; })
+      .sort(function(a,b){ return b.y-a.y||a.x-b.x; }).map(function(o){return o.s.trim();}).join(' ').replace(/\s+/g,' ').trim();
+    itens.push({c:i.s.trim(), d:desc.replace(/\s*-\s*U\s*-\s*UNICA\s*$/i,'').trim(), q:parseFloat(qItem.s.replace(',','.'))||0});
+  });
+  if(!itens.length) throw new Error('Nenhum item encontrado no PDF');
+  head.itens=itens;
+  return [head];
+}
+
+// ── Guardar / sincronizar ─────────────────────────────────────────
+// MIXCFG é definido por cada app: {db(), chave(), toast(msg)}
+function _mixSlug(s){ return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,60); }
+function _mixFbKey(s){ return String(s).replace(/[.#$\[\]\/]/g,'_'); }
+function mixChaveCliente(c){ var d=_soDig(c&&c.cnpj); return d.length>=11?d:('nome_'+_mixSlug(c&&c.rs)); }
+function mixAcharCliente(cnpj, nome){
+  var d=_soDig(cnpj);
+  if(d.length>=11){ var c=DB.clientes.find(function(x){ return _soDig(x.cnpj)===d; }); if(c) return c; }
+  var sn=_mixSlug(nome); if(!sn) return null;
+  return DB.clientes.find(function(x){ return _mixSlug(x.rs)===sn; })||null;
+}
+function _mixGet(k,def){ try{ var v=fotoGet(k); return v?JSON.parse(v):def; }catch(e){ return def; } }
+function _mixSet(k,v){ fotoSet(k, JSON.stringify(v)); }
+function _mixPend(){ try{ return JSON.parse(localStorage.getItem('mix_pend')||'[]'); }catch(e){ return []; } }
+function _mixPendSet(l){ try{ localStorage.setItem('mix_pend', JSON.stringify(l)); }catch(e){} }
+function _mixRef(p){ var db=MIXCFG.db(); return db?db.ref(MIXCFG.chave()+'/'+p):null; }
+
+// Guarda uma compra (pedido ou NF). A NF vale mais que o pedido do mesmo número.
+// Guarda uma compra (pedido ou NF) já com a empresa. A NF vale mais que o pedido do mesmo número.
+function mixGuardarDoc(doc, empId){
+  var cli=mixAcharCliente(doc.cnpj, doc.cli);
+  var key=cli?mixChaveCliente(cli):(_soDig(doc.cnpj).length>=11?_soDig(doc.cnpj):'nome_'+_mixSlug(doc.cli));
+  var base=_mixFbKey(doc.ped?'P'+doc.ped:'N'+doc.n);
+  var docKey=_mixFbKey((empId||'semEmp')+'_'+base);
+  var cache=_mixGet('mix_'+key,{});
+  // compras importadas antes da separação por empresa (sem o prefixo) são trocadas pela nova
+  var legado=cache[base]; if(legado){ delete cache[base]; var lp0=_mixGet('mix_del',[]); lp0.push([key,base]); _mixSet('mix_del',lp0); }
+  var ant=cache[docKey]||legado;
+  var status;
+  if(ant&&ant.t==='NF'&&doc.tipo==='PED') status='ignorado';
+  else status=!ant?'novo':(ant.t==='PED'&&doc.tipo==='NF'?'nf-substituiu':(ant.t===doc.tipo&&(ant.n||'')===(doc.n||'')&&(ant.e||'')===(empId||'')?'repetido':'atualizado'));
+  var compacto={t:doc.tipo, n:doc.n||'', ped:doc.ped||'', dt:doc.dt||'', emp:doc.emp||'', e:empId||'', it:doc.itens.map(function(i){ return [_mixFbKey(i.c), i.q]; })};
+  var cat=_mixGet('mixprod',{}), novosCat={};
+  doc.itens.forEach(function(i){ var k=_mixFbKey(i.c); if(i.d&&cat[k]!==i.d){ cat[k]=i.d; novosCat[k]=i.d; } });
+  _mixSet('mixprod', cat);
+  if(status!=='ignorado'){
+    cache[docKey]=compacto; _mixSet('mix_'+key, cache);
+    var l=_mixPend(); l.push([key,docKey]); _mixPendSet(l);
+  } else if(legado&&!cache[docKey]){ cache[docKey]=Object.assign({},legado,{e:empId||''}); _mixSet('mix_'+key, cache); var l2=_mixPend(); l2.push([key,docKey]); _mixPendSet(l2); }
+  if(Object.keys(novosCat).length){ var lp=_mixGet('mixprod_pend',{}); Object.assign(lp,novosCat); _mixSet('mixprod_pend',lp); }
+  mixEnviarPendentes();
+  return {status:status, cli:cli, key:key, docKey:docKey, pecas:doc.itens.reduce(function(a,i){return a+i.q;},0), refs:doc.itens.length};
+}
+var _mixEnviando=false;
+function mixEnviarPendentes(){
+  var db=MIXCFG.db(); if(!db) return;
+  _mixEnviarRemocoes();
+  if(_mixEnviando){ _mixDenovo=true; return; }
+  var l=_mixPend(), cat=_mixGet('mixprod_pend',{});
+  var vistos={}; l=l.filter(function(p){ var k=p.join('|'); if(vistos[k]) return false; vistos[k]=1; return true; });
+  if(!l.length&&!Object.keys(cat).length) return;
+  _mixEnviando=true; _mixDenovo=false;
+  var enviado={};
+  var tarefas=l.map(function(par){
+    var doc=(_mixGet('mix_'+par[0],{}))[par[1]]; if(!doc) return Promise.resolve(par);
+    enviado[par.join('|')]=JSON.stringify(doc);
+    return _mixRef('mix/'+par[0]+'/'+par[1]).set(doc).then(function(){ return par; });
+  });
+  var catEnv=Object.keys(cat);
+  if(catEnv.length) tarefas.push(_mixRef('mixProd').update(cat).then(function(){ var atual=_mixGet('mixprod_pend',{}); catEnv.forEach(function(k){ if(atual[k]===cat[k]) delete atual[k]; }); _mixSet('mixprod_pend',atual); return null; }));
+  Promise.all(tarefas).then(function(ok){
+    // só tira da fila o que foi enviado na versão atual (se mudou no meio, envia de novo)
+    var feitos={}; ok.filter(Boolean).forEach(function(p){ var k=p.join('|'); var atual=JSON.stringify((_mixGet('mix_'+p[0],{}))[p[1]]||null); if(!enviado[k]||enviado[k]===atual) feitos[k]=1; });
+    _mixPendSet(_mixPend().filter(function(p){ return !feitos[p.join('|')]; }));
+  }).catch(function(e){ console.warn('mix nuvem', e); }).then(function(){
+    _mixEnviando=false;
+    if(_mixDenovo||_mixPend().length&&Object.keys(enviado).length) setTimeout(mixEnviarPendentes, 300);
+  });
+}
+var _mixDenovo=false;
+// Carrega as compras de um cliente: aparelho + nuvem (só desse cliente)
+function mixCarregar(c){
+  var key=mixChaveCliente(c), cache=_mixGet('mix_'+key,{});
+  var ref=_mixRef('mix/'+key);
+  var p=ref?ref.once('value').then(function(s){
+    var rem=s.val()||{};
+    Object.keys(rem).forEach(function(k){ var a=cache[k], b=rem[k]; if(!a||(b.t==='NF'&&a.t!=='NF')||(b.t===a.t)) cache[k]=b; });
+    _mixSet('mix_'+key, cache);
+  }).catch(function(){}):Promise.resolve();
+  return p.then(function(){
+    // descrições que faltam no catálogo deste aparelho
+    var cat=_mixGet('mixprod',{}), falta={};
+    Object.keys(cache).forEach(function(k){ (cache[k].it||[]).forEach(function(i){ if(!cat[i[0]]) falta[i[0]]=1; }); });
+    var cods=Object.keys(falta);
+    if(!cods.length||!MIXCFG.db()) return cache;
+    return Promise.all(cods.slice(0,400).map(function(cd){ return _mixRef('mixProd/'+cd).once('value').then(function(s){ if(s.val()) cat[cd]=s.val(); }).catch(function(){}); }))
+      .then(function(){ _mixSet('mixprod', cat); return cache; });
+  });
+}
+// Resumo por segmento / licença, com última compra × anterior
+// Resumo por segmento / licença, com última compra × anterior (opcionalmente de uma empresa só)
+function mixResumo(cache, empId){
+  var cat=_mixGet('mixprod',{});
+  var compras=Object.keys(cache).filter(function(k){ return !empId||(cache[k].e||'')===empId; }).map(function(k){ var d=cache[k]; var r={k:k,t:d.t,n:d.n,ped:d.ped,dt:d.dt,emp:d.emp,e:d.e||'',pecas:0,seg:{},lic:{}};
+    (d.it||[]).forEach(function(i){ var desc=cat[i[0]]||''; var s=mixSegmento(desc), l=mixLicenca(desc); r.pecas+=i[1]; r.seg[s]=(r.seg[s]||0)+i[1]; r.lic[l]=(r.lic[l]||0)+i[1]; });
+    return r; }).sort(function(a,b){ return (b.dt||'')>(a.dt||'')?1:-1; });
+  var tot={seg:{},lic:{}};
+  compras.forEach(function(r){ ['seg','lic'].forEach(function(t){ Object.keys(r[t]).forEach(function(k){ tot[t][k]=(tot[t][k]||0)+r[t][k]; }); }); });
+  return {compras:compras, tot:tot, ult:compras[0]||null, ant:compras[1]||null};
+}
+function mixHTML(R, compacto, exp){
+  if(!R.compras.length) return '<div style="color:var(--t3);font-size:13px;padding:6px 0">Nenhuma compra importada ainda.'+(compacto?' Importe os PDFs dos pedidos ou os XMLs das NFs no computador (Clientes → Importar itens).':' Use <b>Importar itens (PDF/XML)</b> na página de Clientes.')+'</div>';
+  function tabela(tipo, titulo){
+    var todos=Object.keys(R.tot[tipo]).sort(function(a,b){ return R.tot[tipo][b]-R.tot[tipo][a]; });
+    var ks=exp?todos:todos.slice(0,15);
+    titulo+=(todos.length>15?' <span style="font-weight:400;text-transform:none">— '+(exp?'todas as '+todos.length:'15 principais de '+todos.length)+'</span>':'');
+    var h='<div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin:10px 0 4px">'+titulo+'</div><table style="width:100%;border-collapse:collapse;font-size:13px">'
+      +'<tr style="color:var(--t3);font-size:11px"><td></td><td style="text-align:right">Total</td><td style="text-align:right">Última</td>'+(R.ant?'<td style="text-align:right">Anterior</td>':'')+'</tr>';
+    ks.forEach(function(k){
+      var u=R.ult.seg&&R.ult[tipo][k]||0, a=R.ant?(R.ant[tipo][k]||0):null;
+      var seta=a===null?'':(u>a?' <span style="color:var(--grn)">▲</span>':u<a?' <span style="color:var(--red)">▼</span>':'');
+      h+='<tr style="border-top:1px solid var(--bdr)"><td style="padding:4px 0">'+esc(k)+'</td><td style="text-align:right;font-weight:700">'+R.tot[tipo][k]+'</td><td style="text-align:right">'+(u||'—')+seta+'</td>'+(R.ant?'<td style="text-align:right;color:var(--t3)">'+(a||'—')+'</td>':'')+'</tr>';
+    });
+    return h+'</table>';
+  }
+  var h='<div style="font-size:13px;color:var(--t2)">'+R.compras.length+' compra(s) · última em <b>'+fmtD(R.ult.dt)+'</b> ('+R.ult.pecas+' peças)'+(R.ant?' · anterior '+fmtD(R.ant.dt)+' ('+R.ant.pecas+' peças)':'')+'</div>';
+  if(compacto) h+=tabela('seg','Segmentos (peças)')+tabela('lic','Licenças / temas (peças)');
+  else h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;max-width:980px"><div>'+tabela('seg','Segmentos (peças)')+'</div><div>'+tabela('lic','Licenças / temas (peças)')+'</div></div>';
+  h+='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--acc)">Ver compras importadas</summary>'
+    +R.compras.map(function(r){ return '<div style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--bdr)">'+fmtD(r.dt)+' · '+(r.t==='NF'?'NF '+esc(r.n):'Pedido')+(r.ped?' (ped. '+esc(r.ped)+')':'')+' · '+r.pecas+' peças'+(r.emp?' · '+esc(r.emp):'')+'</div>'; }).join('')+'</details>';
+  return h;
+}
+var _mixTela={};
+function mixRenderEm(el, c, compacto){
+  if(!el||!c) return;
+  el.innerHTML='<div style="color:var(--t3);font-size:13px">🔄 Carregando mix de produtos...</div>';
+  mixCarregar(c).then(function(cache){
+    // abas por empresa (só das empresas que têm compra importada)
+    var emps={}; Object.keys(cache).forEach(function(k){ emps[cache[k].e||'']=1; });
+    var lista=Object.keys(emps);
+    var sel=_mixTela[el.id]&&_mixTela[el.id].c===c.id?_mixTela[el.id].sel:(lista.length===1?lista[0]:'');
+    if(sel&&!emps[sel]) sel='';
+    _mixTela[el.id]={c:c.id, cache:cache, compacto:compacto, sel:sel};
+    mixDesenhar(el.id);
+  }).catch(function(e){ el.innerHTML='<div style="color:var(--red)">Erro ao carregar: '+esc(e.message||e)+'</div>'; });
+}
+// Descobre de qual representada é a compra: CNPJ do emitente (NF) ou tipo do pedido (PDF),
+// usando o que você já associou antes (empresa.mixChaves), o CNPJ ou o nome da empresa.
+function mixEmpresaDoc(doc){
+  var chaves=mixChavesEmpresaDoc(doc);
+  for(var i=0;i<DB.empresas.length;i++){
+    var e=DB.empresas[i], mc=e.mixChaves||[];
+    if(chaves.some(function(k){ return mc.indexOf(k)>=0; })) return e.id;
+  }
+  if(doc.empCnpj){ var e1=DB.empresas.find(function(e){ return _soDig(e.cnpj)===doc.empCnpj; }); if(e1) return e1.id; }
+  var alvo=_mixSlug((doc.empNome||'')+' '+(doc.emp||''));
+  var e2=DB.empresas.find(function(e){ var s=_mixSlug(e.nome); return s.length>=4&&alvo.indexOf(s)>=0; });
+  return e2?e2.id:null;
+}
+function mixChavesEmpresaDoc(doc){
+  var k=[]; if(doc.empCnpj) k.push('cnpj:'+doc.empCnpj); if(doc.emp&&doc.tipo==='PED') k.push('tipo:'+_mixSlug(doc.emp));
+  return k;
+}
+function mixDesenhar(elId){
+  var st=_mixTela[elId], el=document.getElementById(elId); if(!st||!el) return;
+  var emps={}; Object.keys(st.cache).forEach(function(k){ var e=st.cache[k].e||''; emps[e]=(emps[e]||0)+1; });
+  var ids=Object.keys(emps);
+  var nomeEmp=function(id){ if(!id) return 'Sem empresa'; var e=DB.empresas.find(function(x){return x.id===id;}); return e?e.nome:'Empresa removida'; };
+  var corEmp=function(id){ var e=DB.empresas.find(function(x){return x.id===id;}); return e?e.cor:'var(--t3)'; };
+  var abas='';
+  if(ids.length>1||(ids.length===1&&ids[0])){
+    abas='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'
+      +(ids.length>1?'<button type="button" onclick="_mixTela[\''+elId+'\'].sel=\'\';mixDesenhar(\''+elId+'\')" style="padding:4px 10px;border-radius:14px;border:1px solid var(--bdr);font-size:12px;cursor:pointer;'+(st.sel===''?'background:var(--acc);color:#fff;border-color:var(--acc)':'background:none;color:var(--t2)')+'">Todas</button>':'')
+      +ids.map(function(id){ var on=st.sel===id; return '<button type="button" onclick="_mixTela[\''+elId+'\'].sel=\''+id+'\';mixDesenhar(\''+elId+'\')" style="padding:4px 10px;border-radius:14px;border:1px solid '+(on?corEmp(id):'var(--bdr)')+';font-size:12px;cursor:pointer;'+(on?'background:'+corEmp(id)+';color:#fff':'background:none;color:var(--t2)')+'"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+(on?'#fff':corEmp(id))+';margin-right:4px"></span>'+esc(nomeEmp(id))+' ('+emps[id]+')</button>'; }).join('')
+      +'</div>';
+  }
+  var R=mixResumo(st.cache, st.sel);
+  var maior=Math.max(Object.keys(R.tot.seg).length, Object.keys(R.tot.lic).length);
+  var botao=maior>15?'<div style="display:flex;justify-content:flex-end;margin:-2px 0 4px"><button type="button" onclick="_mixTela[\''+elId+'\'].exp=!_mixTela[\''+elId+'\'].exp;mixDesenhar(\''+elId+'\')" style="padding:5px 12px;border-radius:14px;border:1px solid var(--acc);background:none;color:var(--acc);font-size:12px;font-weight:600;cursor:pointer">'+(st.exp?'▲ Reduzir (15 principais)':'▼ Expandir (ver todas)')+'</button></div>':'';
+  el.innerHTML=abas+botao+mixHTML(R, st.compacto, !!st.exp);
+}
+function _mixEnviarRemocoes(){
+  var l=_mixGet('mix_del',[]); if(!l.length||!MIXCFG.db()) return;
+  Promise.all(l.map(function(p){ return _mixRef('mix/'+p[0]+'/'+p[1]).remove().then(function(){ return p.join('|'); }).catch(function(){ return null; }); }))
+    .then(function(ok){ _mixSet('mix_del', _mixGet('mix_del',[]).filter(function(p){ return ok.indexOf(p.join('|'))<0; })); });
+}
+
+
+// ── Importação no computador (PDF do pedido / XML da NF) ──
+function _mixPdfPaginas(buf){
+  var espera=function(){ return new Promise(function(res,rej){ var t=0; (function f(){ if(window.pdfjsLib&&pdfjsLib.getDocument) return res(); if(++t>50) return rej(new Error('Leitor de PDF não carregou (sem internet?)')); setTimeout(f,100); })(); }); };
+  return espera().then(function(){ return pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise; }).then(function(doc){
+    var ps=[]; for(var i=1;i<=doc.numPages;i++) ps.push(doc.getPage(i).then(function(pg){ return pg.getTextContent(); }).then(function(tc){ return tc.items.map(function(it){ return {s:it.str, x:it.transform[4], y:it.transform[5]}; }); }));
+    return Promise.all(ps);
+  });
+}
+function mixEscolherArquivos(pasta){
+  var inp=document.createElement('input'); inp.type='file'; inp.multiple=true;
+  if(pasta){ inp.setAttribute('webkitdirectory',''); inp.setAttribute('directory',''); }
+  else inp.accept='.pdf,.xml,.zip,application/pdf,text/xml,application/zip';
+  inp.onchange=function(){ if(inp.files.length) mixImportarArquivos([].slice.call(inp.files)); };
+  inp.click();
+}
+// Abre ZIPs (portais costumam baixar os XMLs das NFs compactados) e ignora o que não for PDF/XML
+async function _mixExpandir(files){
+  var out=[];
+  for(const f of files){
+    var n=f.name||'';
+    if(/\.zip$/i.test(n)){
+      if(typeof JSZip==='undefined'){ out.push({erro:n+': leitor de ZIP não carregou'}); continue; }
+      var z=await JSZip.loadAsync(await f.arrayBuffer());
+      for(const nome of Object.keys(z.files)){
+        var e=z.files[nome]; if(e.dir||!/\.(xml|pdf)$/i.test(nome)) continue;
+        var blob=await e.async('blob'); out.push(new File([blob], n+' › '+nome.split('/').pop()));
+      }
+    } else if(/\.(xml|pdf)$/i.test(n)) out.push(f);
+  }
+  return out;
+}
+async function mixImportarArquivos(files){
+  var out=document.getElementById('mix-imp-body'); om('mMixImp');
+  out.innerHTML='<div style="padding:10px;color:var(--t3)">🔄 Preparando arquivos...</div>';
+  var lista=await _mixExpandir(files);
+  var errosZip=lista.filter(function(x){return x.erro;}); lista=lista.filter(function(x){return !x.erro;});
+  if(!lista.length){ out.innerHTML='<div style="padding:10px;color:var(--org)">Nenhum PDF ou XML encontrado'+(errosZip.length?': '+esc(errosZip.map(function(e){return e.erro;}).join('; ')):'')+'.</div>'; return; }
+  // 1) Lê tudo
+  var lidos=[];
+  for(var i=0;i<lista.length;i++){
+    var f=lista[i];
+    if(i%5===0) out.innerHTML='<div style="padding:10px;color:var(--t3)">🔄 Lendo '+(i+1)+' de '+lista.length+'...</div>';
+    try{ lidos.push({nome:f.name, docs:/\.xml$/i.test(f.name)?mixLerXML(await f.text()):mixLerPedidoPDF(await _mixPdfPaginas(await f.arrayBuffer()))}); }
+    catch(e){ lidos.push({nome:f.name, erro:e.message||String(e)}); }
+  }
+  // 2) Empresa de cada compra — o que não for reconhecido, você escolhe uma vez e o sistema lembra
+  var faltam={};
+  lidos.forEach(function(l){ (l.docs||[]).forEach(function(d){ d._emp=mixEmpresaDoc(d); if(!d._emp){ var k=mixChavesEmpresaDoc(d)[0]||'sem-identificacao'; faltam[k]=faltam[k]||{rot:(d.tipo==='NF'?'Emitente da NF: '+(d.empNome||d.emp)+(d.empCnpj?' · CNPJ '+d.empCnpj:''):'Pedido tipo "'+(d.emp||'?')+'"'), n:0}; faltam[k].n++; } }); });
+  var ks=Object.keys(faltam);
+  if(ks.length){
+    var escolha=await new Promise(function(res){
+      var opts='<option value="">— escolha a empresa —</option>'+DB.empresas.map(function(e){ return '<option value="'+e.id+'">'+esc(e.nome)+'</option>'; }).join('')+'<option value="__pular">Não importar estes</option>';
+      out.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:6px">De qual empresa são estas compras?</div>'
+        +'<div style="font-size:12px;color:var(--t2);margin-bottom:10px">É só na primeira vez: o sistema guarda a escolha e das próximas vezes separa sozinho.</div>'
+        +ks.map(function(k,ix){ return '<div style="display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap"><div style="flex:1;min-width:260px;font-size:13px">'+esc(faltam[k].rot)+' <span style="color:var(--t3)">('+faltam[k].n+' compra(s))</span></div><select class="fi" style="width:240px" id="mixmap-'+ix+'">'+opts+'</select></div>'; }).join('')
+        +'<div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn bp" id="mixmap-ok"><i class="ti ti-check"></i> Continuar importação</button></div><div id="mixmap-msg" style="color:var(--red);font-size:12px;text-align:right"></div>';
+      document.getElementById('mixmap-ok').onclick=function(){
+        var r={}, ok=true;
+        ks.forEach(function(k,ix){ var v=document.getElementById('mixmap-'+ix).value; if(!v) ok=false; r[k]=v; });
+        if(!ok){ document.getElementById('mixmap-msg').textContent='Escolha uma empresa (ou "Não importar") para cada linha.'; return; }
+        res(r);
+      };
+    });
+    var mudou=false;
+    ks.forEach(function(k){ var v=escolha[k]; if(!v||v==='__pular'||k==='sem-identificacao') return; var e=DB.empresas.find(function(x){return x.id===v;}); if(e){ e.mixChaves=e.mixChaves||[]; if(e.mixChaves.indexOf(k)<0){ e.mixChaves.push(k); mudou=true; } } });
+    if(mudou) salvarDB();
+    lidos.forEach(function(l){ (l.docs||[]).forEach(function(d){ if(!d._emp){ var k=mixChavesEmpresaDoc(d)[0]||'sem-identificacao'; var v=escolha[k]; d._emp=v==='__pular'?'__pular':v; } }); });
+  }
+  // 3) Guarda, separando por cliente e empresa
+  var linhas=[], grupos={}, cont={ok:0,ign:0,err:0,pul:0,pecas:0};
+  var nomeEmp=function(id){ var e=DB.empresas.find(function(x){return x.id===id;}); return e?e.nome:'—'; };
+  lidos.forEach(function(l){
+    if(l.erro){ cont.err++; linhas.push('<tr><td>'+esc(l.nome)+'</td><td colspan="5" style="color:var(--red)">❌ '+esc(l.erro)+'</td></tr>'); return; }
+    l.docs.forEach(function(d){
+      if(d._emp==='__pular'){ cont.pul++; linhas.push('<tr><td>'+esc(l.nome)+'</td><td colspan="5" style="color:var(--t3)">⏭️ não importado (empresa ignorada)</td></tr>'); return; }
+      var r=mixGuardarDoc(d, d._emp);
+      var st={novo:'✅ importado', 'nf-substituiu':'✅ NF substituiu o pedido', atualizado:'🔄 atualizado', ignorado:'⏭️ já tinha a NF deste pedido', repetido:'⏭️ já importado antes'}[r.status];
+      if(r.status==='ignorado'||r.status==='repetido') cont.ign++; else { cont.ok++; cont.pecas+=r.pecas; }
+      var gk=r.key+'|'+d._emp;
+      var g=grupos[gk]=grupos[gk]||{nome:r.cli?r.cli.rs:(d.cli||'?'), cad:!!r.cli, doc:_soDig(d.cnpj), emp:nomeEmp(d._emp), cor:(DB.empresas.find(function(x){return x.id===d._emp;})||{}).cor, compras:0, pecas:0};
+      if(r.status!=='ignorado'&&r.status!=='repetido'){ g.compras++; g.pecas+=r.pecas; }
+      linhas.push('<tr><td>'+esc(l.nome)+'</td><td>'+(r.cli?'<b>'+esc(r.cli.rs)+'</b>':'<span style="color:var(--org)">'+esc(d.cli||'?')+' (não cadastrado)</span>')+'</td><td>'+esc(nomeEmp(d._emp))+'</td><td>'+(d.tipo==='NF'?'NF '+esc(d.n):'Pedido')+(d.ped?' · ped. '+esc(d.ped):'')+'<br><span style="color:var(--t3)">'+fmtD(d.dt)+'</span></td><td style="text-align:right">'+r.refs+' ref. · <b>'+r.pecas+'</b> pç</td><td>'+st+'</td></tr>');
+    });
+  });
+  var gs=Object.keys(grupos).map(function(k){return grupos[k];}).sort(function(a,b){ return a.nome.localeCompare(b.nome)||a.emp.localeCompare(b.emp); });
+  var nc={}; gs.forEach(function(g){ if(!g.cad) nc[g.doc||g.nome]=1; });
+  out.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
+    +'<div class="mc bl" style="flex:1;min-width:130px"><div class="mcl">Arquivos lidos</div><div class="mcv">'+lidos.length+'</div></div>'
+    +'<div class="mc gr" style="flex:1;min-width:130px"><div class="mcl">Compras importadas</div><div class="mcv">'+cont.ok+'</div><div class="mcs">'+cont.pecas+' peças</div></div>'
+    +'<div class="mc or" style="flex:1;min-width:130px"><div class="mcl">Repetidas (ignoradas)</div><div class="mcv">'+cont.ign+'</div></div>'
+    +'<div class="mc re" style="flex:1;min-width:130px"><div class="mcl">Com erro</div><div class="mcv">'+cont.err+'</div></div></div>'
+    +'<div style="font-size:12px;font-weight:700;color:var(--t3);text-transform:uppercase;margin:6px 0">Distribuído por cliente e empresa</div>'
+    +'<table class="intel-t" style="margin-bottom:12px"><thead><tr><th>Cliente</th><th>CNPJ</th><th>Empresa</th><th style="text-align:right">Compras</th><th style="text-align:right">Peças</th></tr></thead><tbody>'
+    +gs.map(function(g){ return '<tr><td>'+(g.cad?'<b>'+esc(g.nome)+'</b>':'<span style="color:var(--org)">'+esc(g.nome)+' · não cadastrado</span>')+'</td><td>'+(g.doc||'—')+'</td><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+(g.cor||'var(--t3)')+';margin-right:5px"></span>'+esc(g.emp)+'</td><td style="text-align:right">'+g.compras+'</td><td style="text-align:right">'+g.pecas+'</td></tr>'; }).join('')+'</tbody></table>'
+    +'<details><summary style="cursor:pointer;font-size:12px;color:var(--acc)">Detalhe por arquivo ('+linhas.length+')</summary><table class="intel-t"><thead><tr><th>Arquivo</th><th>Cliente</th><th>Empresa</th><th>Documento</th><th style="text-align:right">Itens</th><th>Situação</th></tr></thead><tbody>'+linhas.join('')+'</tbody></table></details>'
+    +'<div style="font-size:12px;color:var(--t3);margin-top:8px">Só produtos e quantidades foram lidos — nenhum pedido, valor ou parcela foi alterado.'
+    +(Object.keys(nc).length?' <b style="color:var(--org)">'+Object.keys(nc).length+' cliente(s) não cadastrado(s):</b> as compras ficam guardadas pelo CNPJ e aparecem sozinhas quando você cadastrar o cliente.':'')
+    +' '+(MIXCFG.db()?'Enviado para a nuvem.':'Sem nuvem agora: fica guardado aqui e sobe quando conectar.')+'</div>';
+  try{ if(cliAtual&&document.getElementById('p-clidet').style.display!=='none') renderMixFicha(); }catch(e){}
+}
+function renderMixFicha(){
+  var c=DB.clientes.find(function(x){return x.id===cliAtual;}); var el=document.getElementById('cd-mix-body');
+  if(c&&el) mixRenderEm(el, c, false);
+}
+
 // ══ DATA LOCAL ══
 // Antes o sistema usava toISOString(), que converte para UTC: depois das 21h
 // (horário de Brasília) o "hoje" virava amanhã. dataISO usa o fuso do aparelho.
@@ -4280,7 +4650,7 @@ function conectarRefsFirebase(){
     fbRefImgs = fbDB.ref(fbChave()+'/fiscalImgs');
     firebase.database().ref('.info/connected').on('value', function(snap){
       setSyncStatus(snap.val() ? 'conectado' : 'offline');
-      if(snap.val()){ setTimeout(sincronizarFotos, 4000); setTimeout(oferecerChaveIANuvem, 5000); }
+      if(snap.val()){ setTimeout(sincronizarFotos, 4000); setTimeout(oferecerChaveIANuvem, 5000); setTimeout(mixEnviarPendentes, 3000); }
     });
     // Fotos das NFs sincronizam à parte (não junto do resto do CRM), pra não
     // deixar toda sincronização pesada — cada foto vai e vem sozinha.
@@ -12078,5 +12448,14 @@ function criarNFdaFoto(id){
   <div style="font-size:12px;color:var(--t2);margin-bottom:10px">As NFs excluídas ficam aqui (com a foto) e podem voltar para a planilha. "Apagar para sempre" remove de todos os aparelhos.</div>
   <div id="lixeira-nf-body" style="max-height:60vh;overflow:auto"></div>
 </div></div>
+<div class="mbg" id="mMixImp"><div class="modal" style="max-width:860px">
+  <div class="mtt"><i class="ti ti-file-import" style="color:#7c3aed"></i> Importar itens (produto + quantidade) <button class="xb" onclick="cm('mMixImp')"><i class="ti ti-x"></i></button></div>
+  <div id="mix-imp-body" style="max-height:65vh;overflow:auto"></div>
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px"><button class="btn bs" onclick="mixEscolherArquivos(true)"><i class="ti ti-folder"></i> Importar pasta inteira</button><button class="btn bs" onclick="mixEscolherArquivos()"><i class="ti ti-plus"></i> Mais arquivos</button><button class="btn bp" onclick="cm('mMixImp')">Fechar</button></div>
+</div></div>
+<script>
+// Mostra o mix de produtos ao abrir a ficha do cliente
+(function(){ var _orig=abrirCli; abrirCli=function(){ var r=_orig.apply(this,arguments); try{ renderMixFicha(); }catch(e){ console.warn(e); } return r; }; })();
+</script>
 </body>
 </html>
