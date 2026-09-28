@@ -198,6 +198,7 @@ tr:hover td{background:var(--s2);color:var(--t1)}
 .meta-bar{height:10px;background:var(--s3);border-radius:6px;overflow:hidden;display:flex}
 .meta-bar>div{height:100%}
 @media (max-width:900px){.fila-item{flex-wrap:wrap}.fila-dir{align-items:flex-start;width:100%}}
+.seg-bar-row:hover .seg-bar{filter:brightness(1.15)}
 </style>
 <script>
 if('serviceWorker' in navigator){
@@ -302,6 +303,29 @@ if('serviceWorker' in navigator){
       </tr></thead>
       <tbody id="tb-dash-empresas"></tbody>
     </table>
+  </div>
+
+  <!-- Card Lojas por Segmento -->
+  <div class="card" style="margin-bottom:14px" id="card-seg-dash">
+    <div class="ct">
+      <div class="ctl"><i class="ti ti-tags" style="color:var(--acc2)"></i>Lojas por segmento — <span id="seg-dash-lbl" style="color:var(--t3);font-weight:400;font-size:var(--fs-xs)"></span></div>
+      <button class="btn bs" style="padding:3px 9px;font-size:11px" onclick="abrirCfgSegmentos()"><i class="ti ti-settings"></i> Gerenciar</button>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start">
+      <div>
+        <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)">
+          <thead><tr style="background:var(--s2)">
+            <th style="padding:6px 10px;text-align:left;color:var(--t3);font-weight:600">Segmento</th>
+            <th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">Lojas</th>
+            <th style="padding:6px 10px;text-align:right;color:var(--t3);font-weight:600">%</th>
+            <th style="padding:6px 6px;width:30px"></th>
+          </tr></thead>
+          <tbody id="tb-dash-seg"></tbody>
+        </table>
+        <div id="seg-dash-mais"></div>
+      </div>
+      <div id="seg-dash-graf" aria-label="Gráfico de lojas por segmento"></div>
+    </div>
   </div>
 
   <div class="card" style="border-left:3px solid var(--org);margin-bottom:14px">
@@ -1960,12 +1984,14 @@ if('serviceWorker' in navigator){
     <button class="btn bp" onclick="salvarCfg()"><i class="ti ti-check"></i> Salvar</button>
   </div>
   <div id="cf-seg" style="display:none">
-    <div style="font-size:12px;color:var(--t2);margin-bottom:12px">Gerencie os segmentos disponíveis no cadastro de clientes.</div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.5">Esta é a <b>lista única</b> de segmentos. O cadastro de clientes (desktop e celular), os filtros, o Dashboard e a Prospecção usam só ela. Para juntar repetidos (ex.: "ONLINE" e "ON LINE"), marque as caixinhas e use <b>Juntar</b>.</div>
+    <div id="cfg-seg-sug"></div>
+    <div id="cfg-seg-juntar" style="display:none;margin-bottom:10px;padding:8px 10px;border-radius:8px;background:var(--s2);border:1px solid var(--acc)"></div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <input class="fi" id="cfg-seg-novo" placeholder="Novo segmento..." style="flex:1" onkeydown="if(event.key==='Enter')adicionarSegmento()">
       <button class="btn bp" onclick="adicionarSegmento()"><i class="ti ti-plus"></i> Adicionar</button>
     </div>
-    <div id="cfg-seg-lista" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+    <div id="cfg-seg-lista" style="display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto"></div>
   </div>
 
 </div></div>
@@ -3281,6 +3307,7 @@ function buildDash() {
   renderAgendaDash();
   // Tabela Vendas por Empresa
   renderVendasEmpresaDash();
+  try{ renderSegDash(); }catch(e){ console.warn('seg dash',e); }
   // Alertas de Ciclo de Compra (roda com pequeno atraso pois depende de todo DB.pedidos)
   setTimeout(renderAlertasCiclo, 300);
   // Briefing do Dia
@@ -8852,73 +8879,154 @@ function salvarCfg(){
 // já encontrado em outras telas) — a aba de Segmentos nunca funcionava de
 // verdade: o botão "+ Adicionar" dava erro, e o campo Segmento no cadastro de
 // cliente ficava sempre vazio, só com a opção "— Selecione —".
+function _segK(s){ return String(s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
 function getSegmentos(){
-  // Lista configurada em Configurações → Segmentos (DB.segmentos sincroniza
-  // com Firebase; cfg.segmentos é o fallback local mais antigo).
+  // LISTA ÚNICA = DB.segmentos (sincroniza pela nuvem). Todo segmento digitado/importado
+  // num cliente entra nela, e a grafia dos clientes segue a da lista.
   const cfg=loadCfg();
-  let configurados = (DB.segmentos&&DB.segmentos.length) ? [...DB.segmentos]
-                    : (cfg.segmentos&&cfg.segmentos.length) ? [...cfg.segmentos]
-                    : [];
-  // Segmentos realmente em uso nos clientes cadastrados — sempre confiável,
-  // já que é o próprio dado que aparece no cadastro/edição de cada cliente.
-  const usados=[...new Set(DB.clientes.map(c=>c.seg).filter(Boolean))];
-  // Autocorreção: em algum momento essa lista configurada acabou salva com as
-  // FINALIDADES DE GASTO do módulo Fiscal (ex.: "Combustível", "Hospedagem"),
-  // misturando os dois cadastros — o campo Segmento do cliente passou a
-  // mostrar categorias de despesa em vez dos segmentos reais dos clientes.
-  // Aqui removemos da lista configurada qualquer item que bata com uma
-  // finalidade do Fiscal e que nenhum cliente esteja de fato usando como
-  // segmento, e persistimos a limpeza para não repetir a cada tela aberta.
-  const finSet=new Set((DB.finalidades||[]).map(function(f){ return String(f).trim().toLowerCase(); }));
-  const usadosSet=new Set(usados.map(function(s){ return s.toLowerCase(); }));
-  const limpos=configurados.filter(function(s){
-    return !(finSet.has(String(s).trim().toLowerCase()) && !usadosSet.has(String(s).toLowerCase()));
-  });
-  if(limpos.length!==configurados.length){
-    configurados=limpos;
-    salvarSegmentos(configurados);
-  }
-  return [...new Set(configurados.concat(usados))].sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+  let lista=(DB.segmentos&&DB.segmentos.length)?[...DB.segmentos]:(cfg.segmentos&&cfg.segmentos.length)?[...cfg.segmentos]:[];
+  const finSet=new Set((DB.finalidades||[]).map(f=>_segK(f)));
+  const usados=DB.clientes.map(c=>String(c.seg||'').trim().replace(/\s+/g,' ')).filter(Boolean);
+  const usadosSet=new Set(usados.map(_segK));
+  let mudouLista=false, mudouCli=false;
+  // tira finalidades de gasto do Fiscal que foram parar aqui por engano
+  const antes=lista.length; lista=lista.filter(s=>!(finSet.has(_segK(s))&&!usadosSet.has(_segK(s)))); if(lista.length!==antes) mudouLista=true;
+  // sem repetidos por maiúscula/espaço
+  const porK={}, uni=[];
+  lista.forEach(s=>{ s=String(s||'').trim().replace(/\s+/g,' '); const k=_segK(s); if(!k||porK[k]) { if(k) mudouLista=true; return; } porK[k]=s; uni.push(s); });
+  // adota os usados que não estão na lista
+  usados.forEach(s=>{ const k=_segK(s); if(!porK[k]){ porK[k]=s; uni.push(s); mudouLista=true; } });
+  // clientes com a mesma grafia da lista
+  DB.clientes.forEach(c=>{ const k=_segK(c.seg); if(k&&porK[k]&&c.seg!==porK[k]){ c.seg=porK[k]; mudouCli=true; } });
+  uni.sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  if(mudouLista||mudouCli){ DB.segmentos=uni; const cf=loadCfg(); cf.segmentos=uni; saveCfg(cf); salvarDB(); }
+  return uni;
 }
 function salvarSegmentos(segs){
   DB.segmentos=segs;
   salvarDB();
   const cfg=loadCfg(); cfg.segmentos=segs; saveCfg(cfg);
 }
+function _segClientes(nome){ const k=_segK(nome); return DB.clientes.filter(c=>_segK(c.seg)===k); }
+var _segMarcados={};
+function _segChaveParecida(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'').replace(/(S|R)$/,''); }
+function segSugestoes(){
+  const segs=getSegmentos(), grupos={}, out=[];
+  segs.forEach(s=>{ const k=_segChaveParecida(s); (grupos[k]=grupos[k]||[]).push(s); });
+  Object.keys(grupos).forEach(k=>{ if(grupos[k].length>1) out.push(grupos[k]); });
+  // um contido no outro (ex.: COMBUSTIVEL × POSTO COMBUSTIVEL)
+  const pal=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().split(/[^A-Z0-9]+/).filter(w=>w.length>=4).map(w=>w.replace(/S$/,''));
+  segs.forEach((a,i)=>segs.forEach((b,j)=>{ if(i>=j) return; const A=pal(a), B=pal(b); if(!A.length||!B.length) return;
+    const menor=A.length<=B.length?A:B, maior=A.length<=B.length?B:A;
+    if(menor.every(w=>maior.indexOf(w)>=0)&&!out.some(g=>g.indexOf(a)>=0&&g.indexOf(b)>=0)) out.push([a,b]); }));
+  return out;
+}
 function renderCfgSegmentos(){
   const el=document.getElementById('cfg-seg-lista'); if(!el) return;
   const segs=getSegmentos();
-  if(!segs.length){ el.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px">Nenhum segmento cadastrado.</div>'; return; }
-  el.innerHTML=segs.map((s,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--s2);border-radius:7px;border:1px solid var(--bdr)">
-      <input class="fi" value="${s}" style="flex:1;padding:4px 8px;font-size:12px" onchange="editarSegmento(${i},this.value)">
-      <button class="btn bs" style="padding:2px 8px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="removerSegmento(${i})" title="Remover"><i class="ti ti-trash"></i></button>
-    </div>`).join('');
+  Object.keys(_segMarcados).forEach(k=>{ if(!segs.some(s=>_segK(s)===k)) delete _segMarcados[k]; });
+  // sugestões de repetidos
+  const sug=document.getElementById('cfg-seg-sug');
+  if(sug){ const S=segSugestoes();
+    sug.innerHTML=S.length?'<div style="margin-bottom:10px;padding:8px 10px;border-radius:8px;border:1px dashed var(--org);font-size:12px;color:var(--t2)"><b style="color:var(--org)">Possíveis repetidos:</b> '
+      +S.map(g=>'<a href="#" onclick=\'segMarcarGrupo('+esc(JSON.stringify(g))+');return false\' style="display:inline-block;margin:3px 4px;padding:2px 8px;border-radius:10px;background:var(--s2);border:1px solid var(--bdr);color:var(--t1);text-decoration:none">'+g.map(esc).join(' + ')+'</a>').join('')
+      +'<div style="font-size:11px;color:var(--t3);margin-top:2px">Clique numa sugestão para marcar e depois em Juntar.</div></div>':''; }
+  if(!segs.length){ el.innerHTML='<div style="color:var(--t3);font-size:12px;padding:8px">Nenhum segmento cadastrado.</div>'; _segBarraJuntar(); return; }
+  el.innerHTML=segs.map((s,i)=>{
+    const n=_segClientes(s).length, mk=!!_segMarcados[_segK(s)];
+    return `<div id="seg-row-${i}" style="padding:6px 10px;background:var(--s2);border-radius:7px;border:1px solid ${mk?'var(--acc)':'var(--bdr)'}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" ${mk?'checked':''} onchange="segMarcar(${i},this.checked)" title="Marcar para juntar" style="width:16px;height:16px;cursor:pointer;accent-color:var(--acc)">
+        <input class="fi" id="seg-inp-${i}" value="${esc(s)}" style="flex:1;padding:4px 8px;font-size:12px" onkeydown="if(event.key==='Enter')this.blur()" onchange="editarSegmento(${i},this.value)">
+        <span style="font-size:11px;color:var(--t3);white-space:nowrap;min-width:70px;text-align:right">${n?n+' cliente'+(n>1?'s':''):'sem clientes'}</span>
+        <button class="btn bs" style="padding:2px 8px;font-size:10px;color:var(--red);border-color:var(--red)" onclick="removerSegmento(${i})" title="Excluir"><i class="ti ti-trash"></i></button>
+      </div><div id="seg-rem-${i}"></div></div>`;
+  }).join('');
+  _segBarraJuntar();
+}
+function segMarcar(i,on){ const s=getSegmentos()[i]; if(s===undefined) return; if(on) _segMarcados[_segK(s)]=1; else delete _segMarcados[_segK(s)]; renderCfgSegmentos(); }
+function segMarcarGrupo(g){ _segMarcados={}; g.forEach(s=>_segMarcados[_segK(s)]=1); renderCfgSegmentos(); const b=document.getElementById('cfg-seg-juntar'); if(b) b.scrollIntoView({block:'nearest'}); }
+function _segBarraJuntar(){
+  const box=document.getElementById('cfg-seg-juntar'); if(!box) return;
+  const sel=getSegmentos().filter(s=>_segMarcados[_segK(s)]);
+  if(sel.length<2){ box.style.display=sel.length?'block':'none'; box.innerHTML=sel.length?'<span style="font-size:12px;color:var(--t2)">Marque mais um segmento para juntar com <b>'+esc(sel[0])+'</b>.</span>':''; return; }
+  const maior=sel.slice().sort((a,b)=>_segClientes(b).length-_segClientes(a).length)[0];
+  const tot=sel.reduce((a,s)=>a+_segClientes(s).length,0);
+  box.style.display='block';
+  box.innerHTML='<div style="font-size:12px;color:var(--t1);margin-bottom:6px"><b>Juntar '+sel.length+' segmentos</b> ('+tot+' clientes): '+sel.map(esc).join(', ')+'</div>'
+    +'<div style="display:flex;gap:6px;align-items:center"><span style="font-size:12px;color:var(--t2)">Nome final:</span><input class="fi" id="seg-juntar-nome" list="seg-juntar-dl" value="'+esc(maior)+'" style="flex:1;padding:4px 8px;font-size:12px"><datalist id="seg-juntar-dl">'+sel.map(s=>'<option value="'+esc(s)+'">').join('')+'</datalist>'
+    +'<button class="btn bp" style="padding:4px 12px;font-size:12px" onclick="segJuntar()">Juntar</button><button class="btn bs" style="padding:4px 10px;font-size:12px" onclick="_segMarcados={};renderCfgSegmentos()">Cancelar</button></div>';
+}
+function segJuntar(){
+  const sel=getSegmentos().filter(s=>_segMarcados[_segK(s)]); if(sel.length<2) return;
+  const nome=String((document.getElementById('seg-juntar-nome')||{}).value||'').trim().replace(/\s+/g,' ');
+  if(!nome){ toast('Digite o nome final'); return; }
+  const ks=sel.map(_segK); let n=0;
+  DB.clientes.forEach(c=>{ if(ks.indexOf(_segK(c.seg))>=0&&c.seg!==nome){ c.seg=nome; n++; } });
+  const nova=getSegmentos().filter(s=>ks.indexOf(_segK(s))<0&&_segK(s)!==_segK(nome)).concat([nome]).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  salvarSegmentos(nova); _segMarcados={};
+  renderCfgSegmentos(); atualizarSelectSegmento();
+  try{ if(typeof renderClientes==='function') renderClientes(); }catch(e){}
+  try{ renderSegDash(); }catch(e){}
+  toast('Juntados em "'+nome+'" · '+n+' cliente(s) atualizados');
 }
 function adicionarSegmento(){
   const inp=document.getElementById('cfg-seg-novo'); if(!inp) return;
-  const val=inp.value.trim(); if(!val){ toast('Digite o nome do segmento'); return; }
+  const val=inp.value.trim().replace(/\s+/g,' '); if(!val){ toast('Digite o nome do segmento'); return; }
   const segs=getSegmentos();
-  if(segs.includes(val)){ toast('Segmento já existe'); return; }
-  segs.push(val); segs.sort(); salvarSegmentos(segs);
-  inp.value=''; renderCfgSegmentos(); toast('Segmento adicionado!'); atualizarSelectSegmento();
+  if(segs.some(s=>_segK(s)===_segK(val))){ toast('Segmento já existe'); return; }
+  segs.push(val); salvarSegmentos(segs.sort((a,b)=>a.localeCompare(b,'pt-BR')));
+  inp.value=''; renderCfgSegmentos(); toast('Segmento adicionado!'); atualizarSelectSegmento(); try{ renderSegDash(); }catch(e){}
 }
+// Renomeia na lista E em todos os clientes. Se o novo nome já existe, junta os dois.
 function editarSegmento(idx,val){
-  val=val.trim(); if(!val) return;
-  const segs=getSegmentos(); const old=segs[idx];
-  segs[idx]=val; segs.sort(); salvarSegmentos(segs);
-  DB.clientes.forEach(c=>{ if(c.seg===old) c.seg=val; }); salvarDB();
+  val=String(val||'').trim().replace(/\s+/g,' ');
+  const segs=getSegmentos(); const old=segs[idx]; if(old===undefined) return;
+  if(!val){ toast('O nome não pode ficar vazio'); renderCfgSegmentos(); return; }
+  if(val===old) return;
+  const kOld=_segK(old), kNew=_segK(val);
+  const existe=segs.find((s,i)=>i!==idx&&_segK(s)===kNew);
+  if(existe&&!confirm('Já existe o segmento "'+existe+'". Juntar "'+old+'" com ele?')){ renderCfgSegmentos(); return; }
+  const nome=existe||val;
+  let n=0; DB.clientes.forEach(c=>{ if(_segK(c.seg)===kOld||(existe&&_segK(c.seg)===kNew&&c.seg!==nome)){ c.seg=nome; n++; } });
+  const nova=segs.filter((s,i)=>i!==idx&&_segK(s)!==kNew).concat([nome]).sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  salvarSegmentos(nova);
   renderCfgSegmentos(); atualizarSelectSegmento();
+  try{ if(typeof renderClientes==='function') renderClientes(); }catch(e){}
+  try{ renderSegDash(); }catch(e){}
+  toast(existe?'Segmentos juntados ('+n+' cliente(s))':'Segmento renomeado'+(n?' em '+n+' cliente(s)':''));
 }
+// Excluir: se tem clientes usando, pergunta para onde movê-los (senão o segmento voltaria para a lista)
 function removerSegmento(idx){
-  const segs=getSegmentos();
-  if(!confirm('Remover segmento "'+segs[idx]+'"?')) return;
-  segs.splice(idx,1); salvarSegmentos(segs);
-  renderCfgSegmentos(); atualizarSelectSegmento(); toast('Segmento removido!');
+  const segs=getSegmentos(), nome=segs[idx]; if(nome===undefined) return;
+  const clis=_segClientes(nome);
+  if(!clis.length){
+    if(!confirm('Excluir o segmento "'+nome+'"?')) return;
+    _segExcluir(nome,null); return;
+  }
+  const box=document.getElementById('seg-rem-'+idx); if(!box) return;
+  if(box.innerHTML){ box.innerHTML=''; return; }
+  const outros=segs.filter((s,i)=>i!==idx);
+  box.innerHTML=`<div style="margin-top:8px;padding:8px;border-radius:6px;background:var(--s1);border:1px dashed var(--red);font-size:12px;color:var(--t2)">
+    <b>${clis.length} cliente(s)</b> usam "${esc(nome)}". Mover esses clientes para:
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+      <select class="fi" id="seg-dest-${idx}" style="flex:1;min-width:140px;padding:4px 8px;font-size:12px"><option value="">— deixar sem segmento —</option>${outros.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('')}</select>
+      <button class="btn bp" style="padding:4px 10px;font-size:11px;background:var(--red);border-color:var(--red)" onclick="_segExcluir(${JSON.stringify(nome).replace(/"/g,'&quot;')}, document.getElementById('seg-dest-${idx}').value)">Excluir</button>
+      <button class="btn bs" style="padding:4px 10px;font-size:11px" onclick="document.getElementById('seg-rem-${idx}').innerHTML=''">Cancelar</button>
+    </div></div>`;
+}
+function _segExcluir(nome,destino){
+  const k=_segK(nome); let n=0;
+  DB.clientes.forEach(c=>{ if(_segK(c.seg)===k){ c.seg=destino||''; n++; } });
+  salvarSegmentos(getSegmentos().filter(s=>_segK(s)!==k));
+  renderCfgSegmentos(); atualizarSelectSegmento();
+  try{ if(typeof renderClientes==='function') renderClientes(); }catch(e){}
+  try{ renderSegDash(); }catch(e){}
+  toast('Segmento excluído'+(n?' · '+n+' cliente(s) '+(destino?'movidos para "'+destino+'"':'ficaram sem segmento'):''));
 }
 function atualizarSelectSegmento(){
   const segs=getSegmentos();
-  const opts='<option value="">— Selecione —</option>'+segs.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const opts='<option value="">— Selecione —</option>'+segs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');
   // Atualiza select do modal de novo cliente
   const sel=document.getElementById('cli-seg');
   if(sel){ const v=sel.value; sel.innerHTML=opts; sel.value=v; }
@@ -9648,6 +9756,77 @@ function renderVendasEmpresaDash(){
   tbEmp.innerHTML=htmlRows;
 }
 // ══ FIM VENDAS POR EMPRESA ══
+
+// ══ LOJAS POR SEGMENTO (card do Dashboard) ══
+var _segDashTodos=false, _segDashEdit=null;
+function _segDashDados(){
+  const ativos=DB.clientes.filter(c=>!c.encerrado);
+  const lista=getSegmentos().map(s=>({nome:s, n:ativos.filter(c=>_segK(c.seg)===_segK(s)).length}));
+  lista.sort((a,b)=>b.n-a.n||a.nome.localeCompare(b.nome,'pt-BR'));
+  const sem=ativos.filter(c=>!_segK(c.seg)).length;
+  return {lista, sem, total:ativos.length};
+}
+function renderSegDash(){
+  const tb=document.getElementById('tb-dash-seg'); if(!tb) return;
+  const D=_segDashDados(), segs=getSegmentos();
+  const lbl=document.getElementById('seg-dash-lbl'); if(lbl) lbl.textContent=D.total+' lojas ativas · '+D.lista.length+' segmentos';
+  let nSug=0; try{ nSug=segSugestoes().length; }catch(e){}
+  if(lbl&&nSug) lbl.innerHTML=esc(lbl.textContent)+' · <a href="#" onclick="abrirCfgSegmentos();return false" style="color:var(--org);font-weight:600">⚠️ '+nSug+' possível(is) repetido(s) — unificar</a>';
+  const LIM=8, vis=_segDashTodos?D.lista:D.lista.slice(0,LIM);
+  const pct=n=>D.total?Math.round(n/D.total*100):0;
+  let rows=vis.map((s,i)=>{
+    const idx=segs.indexOf(s.nome), bg=i%2?'background:var(--s2)':'';
+    const editando=_segDashEdit===s.nome;
+    return '<tr style="border-bottom:1px solid var(--s3);'+bg+'">'
+      +'<td style="padding:5px 10px">'+(editando
+        ?'<input class="fi" id="seg-dash-inp" value="'+esc(s.nome)+'" style="padding:3px 7px;font-size:12px;width:100%" onkeydown="if(event.key===\'Enter\')segDashSalvar('+idx+');if(event.key===\'Escape\')segDashEditar(null)" onblur="segDashSalvar('+idx+')">'
+        :'<div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:50%;background:var(--acc2);opacity:'+(s.n?1:.35)+';flex-shrink:0"></div><span style="font-weight:600;color:var(--t1)">'+esc(s.nome)+'</span></div>')+'</td>'
+      +'<td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--t1)">'+s.n+'</td>'
+      +'<td style="padding:5px 10px;text-align:right;color:var(--t3)">'+pct(s.n)+'%</td>'
+      +'<td style="padding:3px 6px;text-align:center">'+(editando?'':'<button class="btn bs" style="padding:2px 6px;font-size:10px" title="Editar nome" onclick="segDashEditar('+JSON.stringify(s.nome).replace(/"/g,'&quot;')+')"><i class="ti ti-pencil"></i></button>')+'</td>'
+      +'</tr>';
+  }).join('');
+  if(D.sem) rows+='<tr style="border-top:1px solid var(--bdr)"><td style="padding:5px 10px;color:var(--t3);font-style:italic">Sem segmento</td><td style="padding:5px 10px;text-align:right;color:var(--t3);font-weight:700">'+D.sem+'</td><td style="padding:5px 10px;text-align:right;color:var(--t3)">'+pct(D.sem)+'%</td><td></td></tr>';
+  if(!D.lista.length) rows='<tr><td colspan="4" style="padding:10px;color:var(--t3)">Nenhum segmento cadastrado. Use <b>Gerenciar</b> para criar.</td></tr>';
+  tb.innerHTML=rows;
+  const mais=document.getElementById('seg-dash-mais');
+  if(mais) mais.innerHTML=D.lista.length>LIM?'<button class="btn bs" style="width:100%;margin-top:6px;padding:4px;font-size:var(--fs-xs)" onclick="_segDashTodos=!_segDashTodos;renderSegDash()">'+(_segDashTodos?'▲ Mostrar só os '+LIM+' maiores':'▼ Ver todos ('+D.lista.length+')')+'</button>':'';
+  if(_segDashEdit){ const inp=document.getElementById('seg-dash-inp'); if(inp){ inp.focus(); inp.select(); } }
+  _segDashGrafico(D);
+}
+// Mini gráfico: barras horizontais (uma cor só — o nome ao lado já identifica)
+function _segDashGrafico(D){
+  const el=document.getElementById('seg-dash-graf'); if(!el) return;
+  let dados=D.lista.filter(s=>s.n>0);
+  const MAX=8;
+  if(dados.length>MAX){ const outros=dados.slice(MAX-1).reduce((a,s)=>a+s.n,0); dados=dados.slice(0,MAX-1).concat([{nome:'Outros', n:outros, outros:true}]); }
+  if(D.sem) dados.push({nome:'Sem segmento', n:D.sem, sem:true});
+  if(!dados.length){ el.innerHTML=''; return; }
+  const max=Math.max(...dados.map(d=>d.n));
+  el.innerHTML='<div style="font-size:var(--fs-sm);color:var(--t3);margin:6px 0 8px">Lojas ativas por segmento</div>'
+    +dados.map(d=>{
+      const w=Math.max(2,Math.round(d.n/max*100)), p=D.total?Math.round(d.n/D.total*100):0;
+      const cor=d.sem?'var(--t3)':d.outros?'color-mix(in srgb, var(--acc2) 45%, var(--s3))':'var(--acc2)';
+      return '<div class="seg-bar-row" title="'+esc(d.nome)+': '+d.n+' loja(s) · '+p+'%" style="display:grid;grid-template-columns:minmax(70px,34%) 1fr 34px;align-items:center;gap:8px;padding:3px 0">'
+        +'<span style="font-size:var(--fs-sm);color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(d.nome)+'</span>'
+        +'<span style="display:block;height:12px;background:var(--s2);border-radius:0 4px 4px 0"><span class="seg-bar" style="display:block;height:100%;width:'+w+'%;background:'+cor+';border-radius:0 4px 4px 0;transition:filter .15s"></span></span>'
+        +'<span style="font-size:var(--fs-sm);font-weight:700;color:var(--t1);text-align:right">'+d.n+'</span></div>';
+    }).join('');
+}
+function segDashEditar(nome){ _segDashEdit=nome; renderSegDash(); }
+function segDashSalvar(idx){
+  if(_segDashEdit===null) return;
+  const inp=document.getElementById('seg-dash-inp'); const val=inp?inp.value:'';
+  const antigo=_segDashEdit; _segDashEdit=null;
+  if(String(val).trim()&&String(val).trim()!==antigo) editarSegmento(idx,val);
+  renderSegDash();
+}
+function abrirCfgSegmentos(){
+  om('mCfg');
+  const tab=document.querySelector('[onclick*="cf-seg"]'); if(tab) setCfgTab(tab,'cf-seg');
+}
+// ══ FIM LOJAS POR SEGMENTO ══
+
 
 // ══ BRIEFING DO DIA ══
 function renderBriefingDia(){
