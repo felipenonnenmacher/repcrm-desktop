@@ -1292,14 +1292,14 @@ if('serviceWorker' in navigator){
   <div id="fpanel-comnf" style="display:none">
     <div class="card" style="margin-bottom:12px">
       <div class="ct" style="padding:10px 14px;flex-wrap:wrap;gap:8px">
-        <div class="ctl"><i class="ti ti-mail"></i> Email NF Comissões — envio mensal para o contador</div>
+        <div class="ctl"><i class="ti ti-mail"></i> Email NF Comissões — referente a <b id="comnf-mes-lbl" style="margin-left:4px;color:var(--acc)"></b></div>
         <div style="display:flex;gap:8px">
           <button class="btn bs" onclick="abrirCfgEmailContador()"><i class="ti ti-settings"></i> Configurar E-mail</button>
           <button class="btn bp" onclick="enviarEmailComNF()"><i class="ti ti-send"></i> Enviar E-mail</button>
         </div>
       </div>
       <div style="padding:0 14px 10px;font-size:12px;color:var(--t3)">
-        Marque as empresas que devem entrar no e-mail deste mês para o contador emitir as notas fiscais de comissão. O nome da empresa é editável — digite livremente para casos de razão social diferente da cadastrada (ex.: mais de uma razão social para a mesma empresa). Ao digitar um nome já cadastrado, o CNPJ é preenchido automaticamente; o valor deve ser informado manualmente.
+        A lista é do mês escolhido nas setas do topo (mesmo mês das outras abas). Para enviar as comissões de setembro, por exemplo, navegue até Setembro. Marque as empresas que devem entrar no e-mail para o contador emitir as notas fiscais de comissão. O nome da empresa é editável — digite livremente para casos de razão social diferente da cadastrada (ex.: mais de uma razão social para a mesma empresa). Ao digitar um nome já cadastrado, o CNPJ é preenchido automaticamente; o valor deve ser informado manualmente.
       </div>
       <datalist id="comnf-emp-list"></datalist>
       <div style="overflow-x:auto">
@@ -1335,7 +1335,7 @@ if('serviceWorker' in navigator){
     <label class="fl">Mensagem (corpo)</label>
     <textarea class="fi" id="cfg-email-corpo" rows="5" style="resize:vertical" placeholder="Olá,&#10;&#10;Segue a lista de empresas para emissão das notas fiscais de comissão referentes a {mes}:"></textarea>
   </div>
-  <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Use <b>{mes}</b> para o sistema preencher o mês de referência automaticamente (sempre o mês anterior ao vigente). A lista de empresas marcadas é adicionada ao final da mensagem.</div>
+  <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Use <b>{mes}</b> para o sistema preencher o mês de referência automaticamente (o mês escolhido no topo da tela Fiscal). A lista de empresas marcadas é adicionada ao final da mensagem.</div>
   <div style="display:flex;gap:8px;justify-content:flex-end">
     <button class="btn bs" onclick="cm('mCfgEmailContador')">Cancelar</button>
     <button class="btn bp" onclick="salvarEmailContador()"><i class="ti ti-check"></i> Salvar</button>
@@ -4837,7 +4837,7 @@ function geralParaLinhas(){
   Object.keys(g).forEach(function(k){
     (g[k]||[]).forEach(function(r,i){
       var cp=Object.assign({},r); delete cp.imgB64; delete cp.imgMime;
-      if(k==='COM_NF_ROWS') cp.id='comnf_'+String(i).padStart(3,'0');
+      if(k.indexOf('COM_NF_')===0) cp.id='comnf_'+k.slice(7)+'_'+String(i).padStart(3,'0');
       if(!cp.id) cp.id='g_'+k+'_'+i;
       cp._card=k; out.push(cp);
     });
@@ -4853,7 +4853,8 @@ function linhasParaGeral(rows){
     if(imgs[cp.id]){ cp.imgB64=imgs[cp.id].b; cp.imgMime=imgs[cp.id].m; }
     (g[k]=g[k]||[]).push(cp);
   });
-  if(g.COM_NF_ROWS){ g.COM_NF_ROWS.sort(function(a,b){return a.id<b.id?-1:1;}); g.COM_NF_ROWS.forEach(function(r){ delete r.id; }); }
+  Object.keys(g).forEach(function(k){ if(k.indexOf('COM_NF_')!==0) return; g[k].sort(function(a,b){return a.id<b.id?-1:1;}); g[k].forEach(function(r){ delete r.id; }); });
+  migrarComNF();
   (typeof CARDS_GERAL!=='undefined'?CARDS_GERAL:[]).forEach(function(c){ if(!g[c.key]) g[c.key]=[]; });
   DB.geral=g;
   salvarGeralLocal(true);
@@ -5254,31 +5255,40 @@ function salvarEmailContador(){
   cm('mCfgEmailContador');
 }
 
+// A lista do e-mail ao contador agora é por mês: segue o mês escolhido no topo do Fiscal
+// (as setas ao lado do nome do mês), igual às abas Gastos, NF Gastos, NF Recebimento e Geral.
+// Cada mês fica guardado em DB.geral['COM_NF_AAAA-MM'].
 function mesRefContadorKey(){
-  // As notas do contador são sempre referentes ao mês ANTERIOR ao vigente
-  // (ex.: em setembro, envia-se a comissão de agosto) — usado tanto para
-  // sugerir o valor de cada empresa quanto para o texto do e-mail.
-  const hoje=new Date();
-  const dRef=new Date(hoje.getFullYear(), hoje.getMonth()-1, 1);
-  return { ano:dRef.getFullYear(), mes:dRef.getMonth(), key: dRef.getFullYear()+'-'+String(dRef.getMonth()+1).padStart(2,'0') };
+  return { ano:_fiscalAno, mes:_fiscalMes, key:_fiscalAno+'-'+String(_fiscalMes+1).padStart(2,'0') };
+}
+function chaveComNF(){ return 'COM_NF_'+mesRefContadorKey().key; }
+function _linhaComNF(l){
+  if(l.nome===undefined && l.empId){
+    const e=(DB.empresas||[]).find(function(x){ return x.id===l.empId; });
+    return { nome:e?(e.nome||''):'', cnpj:l.cnpj||'', valor:l.valor||0, sel:!!l.sel };
+  }
+  return { nome:l.nome||'', cnpj:l.cnpj||'', valor:l.valor||0, sel:!!l.sel };
+}
+// Lista de versões antigas (uma só, sem mês) passa a pertencer ao mês anterior ao atual,
+// que era o mês de referência usado pelo e-mail até agora.
+function migrarComNF(){
+  if(!DB.geral||!DB.geral.COM_NF_ROWS) return false;
+  var velho=DB.geral.COM_NF_ROWS; delete DB.geral.COM_NF_ROWS;
+  var d=new Date(); d=new Date(d.getFullYear(), d.getMonth()-1, 1);
+  var k='COM_NF_'+d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  if(velho.length && !(DB.geral[k]&&DB.geral[k].length)) DB.geral[k]=velho.map(_linhaComNF);
+  return true;
 }
 function linhasComNFPadrao(){
   if(!DB.geral) DB.geral={};
-  const salvo=DB.geral.COM_NF_ROWS;
-  if(salvo && salvo.length){
-    // Migração: linhas salvas antes desta versão guardavam empId em vez do
-    // nome digitado — resolve o nome a partir do cadastro de empresas nesse caso.
-    return salvo.map(function(l){
-      if(l.nome===undefined && l.empId){
-        const e=(DB.empresas||[]).find(function(x){ return x.id===l.empId; });
-        return { nome:e?(e.nome||''):'', cnpj:l.cnpj||'', valor:l.valor||0, sel:!!l.sel };
-      }
-      return { nome:l.nome||'', cnpj:l.cnpj||'', valor:l.valor||0, sel:!!l.sel };
-    });
-  }
-  const linhas=(DB.empresas||[]).map(function(e){
-    return { nome:e.nome||'', cnpj:e.cnpj||'', valor:0, sel:false };
-  });
+  const salvo=DB.geral[chaveComNF()];
+  if(salvo && salvo.length) return salvo.map(_linhaComNF);
+  // Mês ainda sem lista: aproveita as empresas do mês anterior mais próximo que tiver lista (valores em branco)
+  const atual=chaveComNF();
+  const ant=Object.keys(DB.geral).filter(function(k){ return /^COM_NF_\d{4}-\d{2}$/.test(k) && k<atual && (DB.geral[k]||[]).some(function(l){return l.nome;}); }).sort().pop();
+  let linhas;
+  if(ant) linhas=DB.geral[ant].map(_linhaComNF).map(function(l){ return { nome:l.nome, cnpj:l.cnpj, valor:0, sel:l.sel }; });
+  else linhas=(DB.empresas||[]).map(function(e){ return { nome:e.nome||'', cnpj:e.cnpj||'', valor:0, sel:false }; });
   while(linhas.length<COMNF_MIN_LINHAS) linhas.push({ nome:'', cnpj:'', valor:0, sel:false });
   return linhas;
 }
@@ -5287,6 +5297,8 @@ function renderComNF(){
   const tb=document.getElementById('tb-comnf'); if(!tb) return;
   if(!DB.geral) DB.geral={};
   const linhas=linhasComNFPadrao();
+  const lblMes=document.getElementById('comnf-mes-lbl');
+  if(lblMes){ const r=mesRefContadorKey(); lblMes.textContent=NOMES_MES_FISCAL[r.mes]+'/'+r.ano; }
   const dl=document.getElementById('comnf-emp-list');
   if(dl) dl.innerHTML=(DB.empresas||[]).map(function(e){ return '<option value="'+(e.nome||'').replace(/"/g,'&quot;')+'">'; }).join('');
   tb.innerHTML=linhas.map(function(l,i){
@@ -5320,17 +5332,18 @@ function salvarComNF(){
     const selEl=document.getElementById('comnf-sel-'+i);
     linhas.push({ nome:nomeEl?nomeEl.value.trim():'', cnpj:cnpjEl?cnpjEl.value:'', valor:valEl?(+valEl.value||0):0, sel:!!(selEl&&selEl.checked) });
   }
-  DB.geral.COM_NF_ROWS=linhas;
+  DB.geral[chaveComNF()]=linhas;
   salvarGeralLocal();
 }
 
 function enviarEmailComNF(){
+  salvarComNF(); // grava o que está na tela (inclusive a lista sugerida de um mês novo)
   const cfg=loadCfg();
   const destinos=(cfg.emailContador||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
   if(!destinos.length){ toast('Configure o e-mail do contador primeiro'); abrirCfgEmailContador(); return; }
   if(!DB.geral) DB.geral={};
-  const linhas=(DB.geral.COM_NF_ROWS||[]).filter(function(l){ return l.sel && l.nome; });
-  if(!linhas.length){ toast('Selecione ao menos uma empresa na lista'); return; }
+  const linhas=(DB.geral[chaveComNF()]||[]).map(_linhaComNF).filter(function(l){ return l.sel && l.nome; });
+  if(!linhas.length){ const r0=mesRefContadorKey(); toast('Nenhuma empresa marcada em '+NOMES_MES_FISCAL[r0.mes]+'/'+r0.ano); return; }
   const mesesNomes=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   const mesRef=mesRefContadorKey();
   const refMes=mesesNomes[mesRef.mes]+'/'+mesRef.ano;
@@ -6814,6 +6827,7 @@ function carregarGeral(){
     DB.geral = raw ? JSON.parse(raw) : {};
   }catch(e){ DB.geral = {}; }
   CARDS_GERAL.forEach(function(c){ if(!DB.geral[c.key]) DB.geral[c.key]=[]; });
+  if(migrarComNF()) salvarGeralLocal(true);
 }
 function salvarGeralLocal(semNuvem){
   if(!semNuvem){ _cacheVer++; setTimeout(function(){ try{ salvarNuvem(); }catch(e){} },0); }
@@ -7376,6 +7390,7 @@ function renderFiscal(){
   renderListaFinalidades();
   // Cards da aba Geral também acompanham o mês selecionado (igual Gastos/Fotos)
   if(typeof renderGeral==='function') renderGeral();
+  if(_fiscalTab==='comnf') renderComNF();
 }
 
 function renderListaFinalidades(){
